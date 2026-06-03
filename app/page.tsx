@@ -87,7 +87,7 @@ export default function HomePage() {
   return (
     <main className="w-full px-3 md:px-4 py-4 font-sans text-xs">
       {/* Top Banner Advertisement (Vietnam Airlines ad) */}
-      <div className="relative w-full overflow-hidden rounded border border-gray-200 mb-4 bg-gray-50 group">
+      <div className="relative w-auto -mr-3 md:-mr-4 overflow-hidden rounded-l border border-r-0 border-gray-200 mb-4 bg-gray-50 group">
         <a href="#" className="block w-full">
           <img
             src="/vietnam_airlines_ad.png"
