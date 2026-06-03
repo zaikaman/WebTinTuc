@@ -74,9 +74,74 @@ export const mockArticles: Article[] = [
       },
       {
         type: "paragraph",
-        text: "Đợt nắng nóng kéo dài không chỉ ảnh hưởng đến sinh hoạt hằng ngày mà còn làm gia tăng nhu cầu sử dụng điện, nước của người dân. Dự báo trong những ngày tới, nắng nóng gay gắt vẫn tiếp tục duy trì diện rộng trước khi có không khí lạnh yếu tràn về giải nhiệt."
+        text: "Đợt nắng nóng kéo dài không chỉ ảnh hưởng đến sinh hoạt hằng ngày mà còn làm gia tăng nhu cầu sử dụng điện, nước của người dân. Dự báo trong những ngày tới, khu vực miền Bắc vẫn tiếp tục duy trì nền nhiệt cao, thời tiết oi bức còn kéo dài."
+      },
+      {
+        type: "paragraph",
+        text: "Cơ quan khí tượng nhận định, nắng nóng ở Bắc Bộ có khả năng kéo dài đến khoảng ngày 27-28/5, ở Trung Bộ đến khoảng ngày 28/5, ở miền Đông Nam Bộ đến ngày 27/5. Khoảng đêm 28 và ngày 29/5, Hà Nội mưa giông, kết thúc đợt nắng nóng."
+      },
+      {
+        type: "ad" // Second QC 650x300 ad block at the bottom
       }
     ]
+  },
+  // Related Articles (Left column recommendation)
+  {
+    id: "related-1",
+    title: "Mở trend thịt phơi nắng ngày Hà Nội chạm ngưỡng 40 độ C: Bất ngờ với kết quả sau 1 ngày",
+    category: "Tin tức",
+    time: "27/05/2026 9:14",
+    image: "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=600&auto=format&fit=crop"
+  },
+  {
+    id: "related-2",
+    title: "Văn hóa self-care độc hại là gì?",
+    category: "Tin tức",
+    time: "26/05/2026 12:04",
+    image: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?q=80&w=600&auto=format&fit=crop"
+  },
+  {
+    id: "related-3",
+    title: "Hàng loạt brand \"đóng cửa\" trên Instagram: Chuyện gì đang xảy ra?",
+    category: "Tin tức",
+    time: "26/05/2026 12:04",
+    image: "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?q=80&w=600&auto=format&fit=crop"
+  },
+  {
+    id: "related-4",
+    title: "JVevermind bất ngờ trở thành Tổng Giám đốc hãng phim của Vingroup",
+    category: "Tin tức",
+    time: "25/05/2026 23:00",
+    image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=600&auto=format&fit=crop"
+  },
+  // You might also like (Right column recommendation)
+  {
+    id: "like-1",
+    title: "Không thể ngăn cản Doraemon",
+    category: "Anime/manga",
+    time: "27/05/2026 10:27",
+    image: "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?q=80&w=600&auto=format&fit=crop"
+  },
+  {
+    id: "like-2",
+    title: "Kịch bản tranh cãi vẫn ôm trăm tỷ: Phim Việt thắng nhờ “chiêu trò”?",
+    category: "Phim",
+    time: "26/05/2026 12:04",
+    image: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=600&auto=format&fit=crop"
+  },
+  {
+    id: "like-3",
+    title: "Phép màu từ thế giới ảo: Khi nhân vật anime bước ra đời thực để cứu rỗi tâm hồn một bé gái",
+    category: "Anime/manga",
+    time: "26/05/2026 12:04",
+    image: "https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=600&auto=format&fit=crop"
+  },
+  {
+    id: "like-4",
+    title: "Galaxy S27 Pro: ‘Quái vật mini’ mới sở hữu DNA của bản Ultra",
+    category: "Công nghệ",
+    time: "27/05/2026 12:45",
+    image: "https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?q=80&w=600&auto=format&fit=crop"
   },
   // Homepage Featured articles
   {
