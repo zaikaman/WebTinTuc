@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Menu, X, Home, Search, Facebook, Youtube } from "lucide-react";
+import { Menu, X, Search } from "lucide-react";
 
 const navItems = [
   { label: "TIN TỨC", href: "/tin-tuc" },
@@ -11,6 +11,48 @@ const navItems = [
   { label: "PHIM", href: "/phim" },
   { label: "KIẾN THỨC", href: "/kien-thuc" },
 ];
+
+function HomeIcon({ className = "h-5 w-5" }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 32 32"
+      className={className}
+      fill="currentColor"
+      focusable="false"
+    >
+      <path d="M3.25 15.35 15.85 4.9a1.05 1.05 0 0 1 1.34.01l4.16 3.54V6.5c0-.5.4-.9.9-.9h3.3c.5 0 .9.4.9.9v6.36l3.29 2.8c.37.31.46.84.22 1.26-.18.32-.53.51-.9.51h-2.15v9.45c0 .58-.47 1.05-1.05 1.05h-6.74v-7.76a.9.9 0 0 0-.9-.9h-4.43a.9.9 0 0 0-.9.9v7.76H6.14c-.58 0-1.05-.47-1.05-1.05v-9.45H3.95c-.46 0-.86-.3-1-.73a1 1 0 0 1 .3-1.1Z" />
+    </svg>
+  );
+}
+
+function FacebookIcon({ className = "h-3.5 w-3.5" }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className={className}
+      fill="currentColor"
+      focusable="false"
+    >
+      <path d="M14.25 8.1V6.95c0-.7.16-1.08 1.25-1.08h1.66V2.45a22.7 22.7 0 0 0-2.72-.15c-2.7 0-4.55 1.65-4.55 4.68V8.1H6.84v3.83h3.05v9.75h4.36v-9.75h2.96l.47-3.83h-3.43Z" />
+    </svg>
+  );
+}
+
+function YoutubeIcon({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 28 28"
+      className={className}
+      fill="currentColor"
+      focusable="false"
+    >
+      <path d="M25.55 8.48a3.1 3.1 0 0 0-2.18-2.2C21.46 5.77 14 5.77 14 5.77s-7.46 0-9.37.51a3.1 3.1 0 0 0-2.18 2.2A32.1 32.1 0 0 0 1.95 14c0 1.9.18 3.78.5 5.52a3.1 3.1 0 0 0 2.18 2.2c1.91.51 9.37.51 9.37.51s7.46 0 9.37-.51a3.1 3.1 0 0 0 2.18-2.2c.32-1.74.5-3.62.5-5.52s-.18-3.78-.5-5.52ZM11.63 17.68V10.3L18.1 14l-6.47 3.68Z" />
+    </svg>
+  );
+}
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -53,7 +95,7 @@ export function Header() {
               className="w-7 h-7 rounded-full bg-white flex items-center justify-center text-[#e24a48] hover:bg-gray-100 transition-colors"
               aria-label="Facebook"
             >
-              <Facebook size={14} fill="currentColor" stroke="none" />
+              <FacebookIcon className="h-3.5 w-3.5" />
             </a>
             {/* Youtube Play Icon */}
             <a
@@ -63,7 +105,7 @@ export function Header() {
               className="w-7 h-7 rounded-full bg-white flex items-center justify-center text-[#e24a48] hover:bg-gray-100 transition-colors"
               aria-label="YouTube"
             >
-              <Youtube size={14} fill="currentColor" stroke="none" />
+              <YoutubeIcon className="h-4 w-4" />
             </a>
           </div>
 
@@ -103,7 +145,7 @@ export function Header() {
             className="bg-[#333333] h-full flex items-center justify-center px-5 hover:bg-[#df3232] transition-colors border-r border-[#2d2d2d]"
             aria-label="Home"
           >
-            <Home size={16} className="text-white" fill="currentColor" />
+            <HomeIcon className="h-[21px] w-[21px] text-white" />
           </Link>
           <nav className="flex items-center h-full text-xs font-bold tracking-wider">
             {navItems.map((item) => (
@@ -154,7 +196,7 @@ export function Header() {
                   rel="noopener noreferrer"
                   className="w-7 h-7 rounded-full bg-[#df3232] flex items-center justify-center text-white"
                 >
-                  <Facebook size={12} fill="currentColor" stroke="none" />
+                  <FacebookIcon className="h-3.5 w-3.5" />
                 </a>
                 <a
                   href="https://youtube.com"
@@ -162,7 +204,7 @@ export function Header() {
                   rel="noopener noreferrer"
                   className="w-7 h-7 rounded-full bg-[#df3232] flex items-center justify-center text-white"
                 >
-                  <Youtube size={12} fill="currentColor" stroke="none" />
+                  <YoutubeIcon className="h-4 w-4" />
                 </a>
               </div>
             </div>
