@@ -92,25 +92,31 @@ export function Header() {
       </div>
 
       {/* Bottom Row: Dark Grey Navbar - Desktop Only */}
-      <div className="hidden md:flex bg-[#404040] h-[36px] items-center text-white border-b border-[#2d2d2d]">
-        <Link
-          href="/"
-          className="bg-[#333333] h-full flex items-center justify-center px-5 hover:bg-[#df3232] transition-colors border-r border-[#2d2d2d]"
-          aria-label="Home"
-        >
-          <Home size={16} className="text-white" fill="currentColor" />
-        </Link>
-        <nav className="flex items-center h-full text-xs font-bold tracking-wider">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="px-5 lg:px-7 h-full flex items-center hover:bg-[#333333] hover:text-[#ffd600] transition-colors border-r border-[#2d2d2d]"
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
+      <div className="hidden md:flex h-[36px] items-center text-white">
+        {/* Spacer aligning with main content padding (matches the ad below) */}
+        <div className="w-4 flex-shrink-0" />
+        
+        {/* Actual dark navbar container */}
+        <div className="flex-1 bg-[#404040] h-full flex items-center border-b border-[#2d2d2d]">
+          <Link
+            href="/"
+            className="bg-[#333333] h-full flex items-center justify-center px-5 hover:bg-[#df3232] transition-colors border-r border-[#2d2d2d]"
+            aria-label="Home"
+          >
+            <Home size={16} className="text-white" fill="currentColor" />
+          </Link>
+          <nav className="flex items-center h-full text-xs font-bold tracking-wider">
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="px-5 lg:px-7 h-full flex items-center hover:bg-[#333333] hover:text-[#ffd600] transition-colors border-r border-[#2d2d2d]"
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+        </div>
       </div>
 
       {/* Mobile Menu Dropdown */}
