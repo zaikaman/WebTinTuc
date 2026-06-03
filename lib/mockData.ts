@@ -364,3 +364,649 @@ export function getOrGenerateArticle(id: string): Article | undefined {
     ]
   };
 }
+
+// Category Mock Data
+export const categoryData: Record<
+  string,
+  { label: string; featured: Article; list: Article[] }
+> = {
+  "tin-tuc": {
+    label: "TIN TỨC",
+    featured: {
+      id: "hanoi-nang-nong-38-7",
+      title: "Hà Nội ghi nhận mức nhiệt cao nhất cả nước: Trung tâm Thủ đô nóng ngột ngạt khó thở, người dân vật vã giữa \"chảo lửa\" 38,7 độ C",
+      category: "Tin tức",
+      time: "24/05/2026 15:18",
+      image: "https://images.unsplash.com/photo-1509062522246-3755977927d7?q=80&w=600&auto=format&fit=crop",
+      badge: "Tin tức"
+    },
+    list: [
+      {
+        id: "vietnam-thailand-tiem-nang",
+        title: "Việt Nam và Thái Lan có tiềm năng trở thành trung tâm sản xuất lớn của thế giới",
+        category: "Tin tức",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1540317580384-e5d43616b9aa?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "cong-an-tphcm-bat-ma-tuy",
+        title: "Công an TPHCM bắt hơn 170 đối tượng ma túy, khống chế nhiều kẻ hung hãn",
+        category: "Tin tức",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "chung-cu-36-tang-nut-moi",
+        title: "Chung cư 36 tầng ở TPHCM lại xuất hiện vết nứt mới",
+        category: "Tin tức",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "gia-xang-e10-giam-manh",
+        title: "Giá xăng E10 giảm mạnh trước ngày bán đại trà, thấp hơn RON95 là 494 đồng/lít",
+        category: "Tin tức",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1527018601619-a508a2be00cd?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "du-bao-thoi-tiet-28-5",
+        title: "Dự báo thời tiết 28/5/2026: Không khí mát tràn về, miền Bắc mưa giông giảm nhiệt",
+        category: "Tin tức",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1534274988757-a28bf1a57c17?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "de-thi-toan-lop-10-hue-gia-mao",
+        title: "Đề thi Toán lớp 10 ở Huế có 8 câu, tổng 11 điểm lan truyền trên mạng là giả mạo",
+        category: "Tin tức",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "treo-co-khong-lo-song-huong",
+        title: "Treo cờ khổng lồ bên sông Hương đón mừng đại lễ Phật đản",
+        category: "Tin tức",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "quy-hoach-ven-song-hong-bat-dong-san",
+        title: "Quy hoạch ven sông Hồng tái định hình bản đồ giá trị bất động sản Hà Nội",
+        category: "Tin tức",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "csgt-tphcm-dot-kich-lo-do-xe-dien",
+        title: "CSGT TPHCM đột kích loạt lò 'độ' xe điện, tạm giữ hàng trăm phương tiện",
+        category: "Tin tức",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "sua-cau-phu-my-phan-luong-giao-thong",
+        title: "Sửa cầu Phú Mỹ gần 1,5 tháng, CSGT TPHCM hướng dẫn phân luồng giao thông",
+        category: "Tin tức",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1519003722824-192514ad9360?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "chim-tau-11-ngu-dan-song-sot",
+        title: "Chìm tàu, 11 ngư dân sống sót sau 12 giờ lênh đênh trên biển",
+        category: "Tin tức",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "sinh-vien-tot-nghiep-xuat-sac-quan-doi",
+        title: "Sinh viên tốt nghiệp đại học xuất sắc vào quân đội có thể được phong thượng úy",
+        category: "Tin tức",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "tin-tuc-extra-1",
+        title: "Thủ tướng Chính phủ chủ trì Hội nghị phát triển vùng Đông Nam Bộ thúc đẩy liên kết kinh tế",
+        category: "Tin tức",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "tin-tuc-extra-2",
+        title: "Bộ Y tế khuyến cáo phòng chống bệnh mùa hè nắng nóng và các dịch bệnh truyền nhiễm",
+        category: "Tin tức",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1530026405186-ed1ea0ac7a63?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "tin-tuc-extra-3",
+        title: "Tỷ giá USD tiếp tục biến động nhẹ, ngân hàng nhà nước duy trì chính sách ổn định vĩ mô",
+        category: "Tin tức",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "tin-tuc-extra-4",
+        title: "Hà Nội ra quân xử lý nghiêm các trường hợp vi phạm lấn chiếm lòng lề đường làm nơi kinh doanh",
+        category: "Tin tức",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1513829096999-4978602294fc?q=80&w=600&auto=format&fit=crop"
+      }
+    ]
+  },
+  "anime-manga": {
+    label: "ANIME/MANGA",
+    featured: {
+      id: "anime-featured",
+      title: "One Piece 1116 chính thức ra mắt: Hé lộ sự thật chấn động về vũ khí cổ đại Uranus và số phận Vương quốc cổ đại",
+      category: "Anime/Manga",
+      time: "24/05/2026 15:18",
+      image: "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?q=80&w=600&auto=format&fit=crop",
+      badge: "Anime/Manga"
+    },
+    list: [
+      {
+        id: "anime-list-1",
+        title: "Kimetsu no Yaiba: Pháo Đài Vô Tận sẽ được chuyển thể thành trilogy movie chiếu rạp",
+        category: "Anime/Manga",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "anime-list-2",
+        title: "Tác giả Jujutsu Kaisen hé lộ cái kết gây tranh cãi của các nhân vật chính",
+        category: "Anime/Manga",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1560169897-fc0cdbdfa4d5?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "anime-list-3",
+        title: "Solo Leveling mùa 2 công bố trailer chính thức và lịch phát sóng cuối năm 2026",
+        category: "Anime/Manga",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "anime-list-4",
+        title: "My Hero Academia bước vào chương cuối cùng: Cuộc đối đầu lịch sử giữa Deku và Shigaraki",
+        category: "Anime/Manga",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "anime-list-5",
+        title: "Top 10 bộ Manga có doanh thu cao nhất mọi thời đại: One Piece dẫn đầu danh sách",
+        category: "Anime/Manga",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1618336753974-aae8e04506aa?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "anime-list-6",
+        title: "Bleach: Huyết Chiến Ngàn Năm phần 3 tung visual mới cực ngầu của Ichigo Kurosaki",
+        category: "Anime/Manga",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1580477667995-2b94f01c9516?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "anime-list-7",
+        title: "Spy x Family Movie đạt doanh thu kỷ lục tại thị trường Việt Nam sau tuần đầu công chiếu",
+        category: "Anime/Manga",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1501183007986-d0d080b147f9?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "anime-list-8",
+        title: "Chainsaw Man phần phim Reze Arc tung teaser đầu tiên đầy ám ảnh",
+        category: "Anime/Manga",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1541701494587-cb58502866ab?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "anime-list-9",
+        title: "Hunter x Hunter bất ngờ công bố chương mới sau thời gian dài tạm hoãn",
+        category: "Anime/Manga",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "anime-list-10",
+        title: "Các rạp phim Việt nhộn nhịp đón làn sóng fan anime trong mùa hè này",
+        category: "Anime/Manga",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1513151233558-d860c5398176?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "anime-list-11",
+        title: "Doraemon Movie 2026 chính thức hé lộ chủ đề phiêu lưu thời tiền sử cực kỳ hấp dẫn",
+        category: "Anime/Manga",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "anime-list-12",
+        title: "Fan hâm mộ trầm trồ trước bộ cosplay Frieren cực kỳ chất lượng tại lễ hội manga Hà Nội",
+        category: "Anime/Manga",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1531058020387-3be344559767?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "anime-extra-1",
+        title: "Genshin Impact công bố dự án anime chuyển thể dài tập hợp tác cùng studio Ufotable",
+        category: "Anime/Manga",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "anime-extra-2",
+        title: "Black Clover Movie đạt thứ hạng cao trên bảng xếp hạng thịnh hành toàn cầu của Netflix",
+        category: "Anime/Manga",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "anime-extra-3",
+        title: "Thương hiệu Yu-Gi-Oh! ra mắt bộ bài kỷ niệm 25 năm với những lá bài cực hiếm",
+        category: "Anime/Manga",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1618336753974-aae8e04506aa?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "anime-extra-4",
+        title: "Triển lãm tranh vẽ gốc của tác giả Akira Toriyama thu hút hàng ngàn lượt khách tham quan",
+        category: "Anime/Manga",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?q=80&w=600&auto=format&fit=crop"
+      }
+    ]
+  },
+  "cong-nghe": {
+    label: "CÔNG NGHỆ",
+    featured: {
+      id: "tech-featured",
+      title: "NVIDIA GeForce RTX 5090 rò rỉ thông số khủng: Mạnh gấp đôi thế hệ trước, tiêu thụ điện năng kỷ lục",
+      category: "Công nghệ",
+      time: "24/05/2026 15:18",
+      image: "https://images.unsplash.com/photo-1591488320449-011701bb6704?q=80&w=600&auto=format&fit=crop",
+      badge: "Công nghệ"
+    },
+    list: [
+      {
+        id: "tech-list-1",
+        title: "Apple công bố chip M5 với nhân xử lý AI thế hệ mới vượt trội đối thủ",
+        category: "Công nghệ",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "tech-list-2",
+        title: "ChatGPT-5 chính thức ra mắt toàn cầu: Đạt mức trí tuệ nhân tạo tổng hợp (AGI) sơ khai?",
+        category: "Công nghệ",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1677442136019-21780efad99a?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "tech-list-3",
+        title: "Trên tay SSD PCIe Gen 6 đầu tiên thế giới với tốc độ đọc ghi lên tới 28 GB/s",
+        category: "Công nghệ",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1597852074816-d933c4d2b988?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "tech-list-4",
+        title: "Các mẫu điện thoại gập năm 2026: Nếp gấp màn hình biến mất hoàn toàn",
+        category: "Công nghệ",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "tech-list-5",
+        title: "Microsoft giới thiệu Windows 12 tích hợp sâu trợ lý ảo Copilot AI vào nhân hệ điều hành",
+        category: "Công nghệ",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1624555130581-1d9cca783bc0?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "tech-list-6",
+        title: "So sánh hiệu năng chip xử lý Snapdragon 8 Gen 5 và Apple A19 Pro",
+        category: "Công nghệ",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "tech-list-7",
+        title: "Bàn phím cơ từ tính (HE) đang dần trở thành tiêu chuẩn mới cho các game thủ chuyên nghiệp",
+        category: "Công nghệ",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1618384887929-16ec33fab9ef?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "tech-list-8",
+        title: "Các mẫu tai nghe chống ồn chủ động (ANC) tốt nhất năm 2026",
+        category: "Công nghệ",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "tech-list-9",
+        title: "Google ra mắt xe tự lái thế hệ mới không có vô lăng và bàn đạp tại California",
+        category: "Công nghệ",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "tech-list-10",
+        title: "Cách tối ưu hóa hiệu năng máy tính chơi game chạy Windows 11 cực kỳ đơn giản",
+        category: "Công nghệ",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1547082299-de196ea013d6?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "tech-list-11",
+        title: "Công nghệ màn hình OLED Micro-lens Array giúp tăng 50% độ sáng mà không tốn điện",
+        category: "Công nghệ",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "tech-list-12",
+        title: "Người dùng Việt Nam đổ xô mua thiết bị nhà thông minh tương thích chuẩn Matter",
+        category: "Công nghệ",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1558002038-1055907df827?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "tech-extra-1",
+        title: "Qualcomm công bố vi xử lý Snapdragon X Elite dành cho laptop Windows AI hiệu năng cực đỉnh",
+        category: "Công nghệ",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1587829741301-dc798b83add3?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "tech-extra-2",
+        title: "Sony giới thiệu máy ảnh Alpha 7R VI với cảm biến 100 megapixel tích hợp lấy nét AI tự động",
+        category: "Công nghệ",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "tech-extra-3",
+        title: "Mạng di động 6G bắt đầu giai đoạn thử nghiệm tiêu chuẩn kỹ thuật đầu tiên tại Nhật Bản",
+        category: "Công nghệ",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "tech-extra-4",
+        title: "Hãng xe điện Tesla ra mắt phiên bản nâng cấp của Model Y với quãng đường di chuyển tăng 20%",
+        category: "Công nghệ",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1563720223185-11003d516935?q=80&w=600&auto=format&fit=crop"
+      }
+    ]
+  },
+  "phim": {
+    label: "PHIM",
+    featured: {
+      id: "movie-featured",
+      title: "Avatar 3: Fire and Ash công bố trailer đầu tiên với bối cảnh bộ tộc tro tàn cực kỳ hoành tráng",
+      category: "Phim",
+      time: "24/05/2026 15:18",
+      image: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=600&auto=format&fit=crop",
+      badge: "Phim"
+    },
+    list: [
+      {
+        id: "movie-list-1",
+        title: "Dune: Part Three chính thức khởi quay: Đạo diễn Denis Villeneuve hứa hẹn kết thúc hoành tráng",
+        category: "Phim",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "movie-list-2",
+        title: "Bom tấn Marvel tiếp theo đạt mốc doanh thu 1 tỷ USD chỉ sau 10 ngày ra rạp",
+        category: "Phim",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1478720568477-152d9b164e26?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "movie-list-3",
+        title: "Phim điện ảnh Việt Nam đề tài lịch sử tạo nên cơn sốt phòng vé chưa từng có",
+        category: "Phim",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "movie-list-4",
+        title: "Batman: Part II tung trailer đen tối hơn, Joker lộ diện với tạo hình gây ám ảnh",
+        category: "Phim",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1509281373149-e957c6296406?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "movie-list-5",
+        title: "Top 10 phim truyền hình có điểm IMDb cao nhất nửa đầu năm 2026",
+        category: "Phim",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1598899134739-24c46f58b8c0?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "movie-list-6",
+        title: "Đạo diễn Christopher Nolan công bố dự án phim giả tưởng tiếp theo hợp tác cùng Universal",
+        category: "Phim",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1440404653325-ab127d49abc1?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "movie-list-7",
+        title: "Netflix đầu tư khủng cho loạt phim truyền hình hành động chuyển thể từ game ăn khách",
+        category: "Phim",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1522869635100-9f4c5e86aa37?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "movie-list-8",
+        title: "Các rạp phim IMAX tại Việt Nam cháy vé liên tục trước sức hút của bom tấn viễn tưởng",
+        category: "Phim",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1513106580091-1d82408b8cd6?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "movie-list-9",
+        title: "Loạt phim hoạt hình Disney kinh điển sẽ được làm lại dưới dạng live-action trong năm 2027",
+        category: "Phim",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1626814026160-2237a95fc5a0?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "movie-list-10",
+        title: "LHP Cannes 2026: Phim độc lập châu Á thắng lớn với hàng loạt giải thưởng quan trọng",
+        category: "Phim",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1542204172-e7052809a86f?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "movie-list-11",
+        title: "Mads Mikkelsen xác nhận tham gia vai phản diện chính trong bom tấn hành động sắp tới",
+        category: "Phim",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1505686994434-e3cc5abf1330?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "movie-list-12",
+        title: "Bộ phim trinh thám tâm lý của Hàn Quốc nhận bão lời khen từ giới chuyên môn Việt",
+        category: "Phim",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1492446845049-9c50cc313f00?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "movie-extra-1",
+        title: "Spider-Man: Beyond the Spider-Verse dời lịch chiếu sang mùa hè năm 2027 để hoàn thiện đồ họa",
+        category: "Phim",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1509281373149-e957c6296406?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "movie-extra-2",
+        title: "Gladiator II của đạo diễn Ridley Scott nhận phản hồi tích cực từ các nhà phê bình sớm",
+        category: "Phim",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "movie-extra-3",
+        title: "Phim truyền hình The Last of Us mùa 2 tung poster chính thức hứa hẹn cốt truyện đầy kịch tính",
+        category: "Phim",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1522869635100-9f4c5e86aa37?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "movie-extra-4",
+        title: "Bí quyết đằng sau những cảnh kỹ xảo hành động mãn nhãn trong bom tấn Hollywood mới nhất",
+        category: "Phim",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=600&auto=format&fit=crop"
+      }
+    ]
+  },
+  "kien-thuc": {
+    label: "KIẾN THỨC",
+    featured: {
+      id: "knowledge-featured",
+      title: "Kính viễn vọng James Webb phát hiện hành tinh có bầu khí quyển chứa nước ở khoảng cách 100 năm ánh sáng",
+      category: "Kiến thức",
+      time: "24/05/2026 15:18",
+      image: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=600&auto=format&fit=crop",
+      badge: "Kiến thức"
+    },
+    list: [
+      {
+        id: "knowledge-list-1",
+        title: "Tại sao bộ não con người lại thích những thông tin giật gân? Giải mã dưới góc độ khoa học thần kinh",
+        category: "Kiến thức",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "knowledge-list-2",
+        title: "Khám phá rãnh Mariana: Nơi sâu nhất hành tinh ẩn chứa những sinh vật kỳ dị chưa từng biết",
+        category: "Kiến thức",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "knowledge-list-3",
+        title: "Những phát minh vĩ đại thời cổ đại mà khoa học hiện đại vẫn chưa thể giải thích cách chế tạo",
+        category: "Kiến thức",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1461360370896-922624d12aa1?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "knowledge-list-4",
+        title: "Bí ẩn về sự sụp đổ của nền văn minh Maya dưới góc nhìn của các nhà khảo cổ học thế kỷ 21",
+        category: "Kiến thức",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "knowledge-list-5",
+        title: "Hiện tượng Aurora (Cực quang): Bản giao hưởng ánh sáng kỳ diệu của tự nhiên giải thích thế nào?",
+        category: "Kiến thức",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1531366936337-7c912a4589a7?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "knowledge-list-6",
+        title: "Vật lý lượng tử cho người mới bắt đầu: Hiểu về thế giới vi mô siêu việt cực kỳ đơn giản",
+        category: "Kiến thức",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "knowledge-list-7",
+        title: "Lịch sử của đồng tiền: Từ vỏ sò, tiền vàng đến thời đại của tiền mã hóa và tiền kỹ thuật số",
+        category: "Kiến thức",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1621416894569-0f39ed31d247?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "knowledge-list-8",
+        title: "Hiệu ứng cánh bướm (Butterfly Effect): Thay đổi nhỏ có thể định hình lại toàn bộ lịch sử nhân loại",
+        category: "Kiến thức",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "knowledge-list-9",
+        title: "Trái Đất sẽ ra sao nếu loài ong hoàn toàn biến mất? Thảm họa sinh thái khó lường trước",
+        category: "Kiến thức",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1473081556163-2a17de81fc97?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "knowledge-list-10",
+        title: "Bản đồ gen người được giải mã hoàn toàn: Kỷ nguyên y học cá nhân hóa đang đến rất gần",
+        category: "Kiến thức",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1530026405186-ed1ea0ac7a63?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "knowledge-list-11",
+        title: "Sự thật bất ngờ về loài cá voi xanh: Động vật lớn nhất lịch sử Trái Đất giao tiếp như thế nào?",
+        category: "Kiến thức",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1518467166002-646897ef13a7?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "knowledge-list-12",
+        title: "Tại sao muối biển lại mặn còn nước sông suối lại ngọt? Chu kỳ nước giải thích chi tiết",
+        category: "Kiến thức",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1501854140801-50d01698950b?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "knowledge-extra-1",
+        title: "Phát hiện loài khủng long mới có kích thước khổng lồ tại sa mạc Patagonia, Nam Mỹ",
+        category: "Kiến thức",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "knowledge-extra-2",
+        title: "Tại sao một số người có khả năng ghi nhớ siêu việt còn người khác thì không? Khám phá y học",
+        category: "Kiến thức",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "knowledge-extra-3",
+        title: "Dự án sinh học tổng hợp: Các nhà khoa học chế tạo thành công tế bào nhân tạo tự nhân đôi",
+        category: "Kiến thức",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1530026405186-ed1ea0ac7a63?q=80&w=600&auto=format&fit=crop"
+      },
+      {
+        id: "knowledge-extra-4",
+        title: "Nước biển dâng cao đe dọa sự sinh tồn của các đảo quốc nhỏ tại khu vực Thái Bình Dương",
+        category: "Kiến thức",
+        time: "24/05/2026 15:18",
+        image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=600&auto=format&fit=crop"
+      }
+    ]
+  }
+};
+
+// Register in mockArticles list dynamically
+if (typeof window === "undefined" || true) {
+  Object.values(categoryData).forEach((cat) => {
+    if (!mockArticles.some((a) => a.id === cat.featured.id)) {
+      mockArticles.push(cat.featured);
+    }
+    cat.list.forEach((item) => {
+      if (!mockArticles.some((a) => a.id === item.id)) {
+        mockArticles.push(item);
+      }
+    });
+  });
+}

@@ -1,0 +1,238 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { Clock } from "lucide-react";
+import { Article } from "@/lib/mockData";
+
+interface CategoryContentProps {
+  category: string;
+  label: string;
+  featured: Article;
+  initialList: Article[];
+}
+
+export function CategoryContent({ category, label, featured, initialList }: CategoryContentProps) {
+  // We display first 12 items (6 before ad, 6 after ad).
+  // The rest (items 12 to 16) are loaded when clicking "Xem Thêm".
+  const initialDisplayList = initialList.slice(0, 12);
+  const hiddenList = initialList.slice(12);
+
+  const [visibleList, setVisibleList] = useState<Article[]>(initialDisplayList);
+  const [extraList, setExtraList] = useState<Article[]>(hiddenList);
+  const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(hiddenList.length > 0);
+
+  const handleLoadMore = () => {
+    if (loading || !hasMore) return;
+    setLoading(true);
+
+    // Simulate loading transition
+    setTimeout(() => {
+      setVisibleList((prev) => [...prev, ...extraList]);
+      setExtraList([]);
+      setLoading(false);
+      setHasMore(false);
+    }, 600);
+  };
+
+  const listPart1 = visibleList.slice(0, 6);
+  const listPart2 = visibleList.slice(6);
+
+  return (
+    <main className="w-full px-3 md:px-4 py-4 font-sans text-xs">
+      {/* Top Banner Advertisement (QC 970x250) */}
+      <div className="relative w-full overflow-hidden rounded border border-gray-200 mb-5 bg-gray-50 flex items-center justify-center aspect-[970/250] max-h-[250px] shadow-sm select-none">
+        <div className="absolute inset-0 bg-[#d9d9d9] flex items-center justify-center border border-gray-300">
+          <span className="text-black font-extrabold text-[24px] sm:text-[40px] md:text-[46px] tracking-tight">
+            QC 970&times;250
+          </span>
+        </div>
+        <div className="absolute top-1 right-1 bg-black/40 hover:bg-black/70 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
+          Quảng cáo &times;
+        </div>
+      </div>
+
+      {/* Main Two-Column Content Layout */}
+      <div className="flex flex-col lg:flex-row gap-5 items-start">
+        {/* Left Column: Category Posts */}
+        <div className="w-full lg:w-[650px] flex-shrink-0 flex flex-col gap-5">
+          {/* Featured Article */}
+          <div className="bg-white border border-gray-200 p-3 sm:p-4 rounded-sm shadow-sm">
+            <Link
+              href={`/posts/${featured.id}`}
+              className="group block cursor-pointer overflow-hidden rounded-sm"
+            >
+              <div className="relative aspect-[16/9] w-full overflow-hidden bg-gray-100 rounded-sm border border-gray-200">
+                <img
+                  src={featured.image}
+                  alt={featured.title}
+                  className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
+                />
+                {featured.badge && (
+                  <span className="absolute top-2.5 left-2.5 bg-[#df3232] text-white text-[9px] font-bold px-1.5 py-0.5 uppercase rounded-sm z-10">
+                    {featured.badge}
+                  </span>
+                )}
+              </div>
+              <h2 className="text-gray-900 font-bold text-sm sm:text-base md:text-lg leading-snug mt-3 hover:text-[#df3232] transition-colors">
+                {featured.title}
+              </h2>
+            </Link>
+            {/* Divider */}
+            <div className="h-[2px] bg-[#df3232] mt-3" />
+          </div>
+
+          {/* List Part 1 (First 6 items) */}
+          <div className="bg-white border border-gray-200 p-3 sm:p-4 rounded-sm shadow-sm flex flex-col gap-4">
+            {listPart1.map((item) => (
+              <Link
+                key={item.id}
+                href={`/posts/${item.id}`}
+                className="group flex gap-3.5 cursor-pointer pb-4 border-b border-gray-100 last:border-b-0 last:pb-0 transition-colors"
+              >
+                <div className="w-[110px] h-[75px] sm:w-[130px] sm:h-[88px] flex-shrink-0 overflow-hidden border border-gray-200 bg-gray-50 rounded-sm">
+                  <img
+                    src={item.image}
+                    alt={item.title}
+                    className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300"
+                  />
+                </div>
+                <div className="flex flex-col justify-between py-0.5 flex-1">
+                  <h3 className="text-gray-800 font-bold text-xs sm:text-[13px] leading-snug group-hover:text-[#df3232] transition-colors line-clamp-2 sm:line-clamp-3">
+                    {item.title}
+                  </h3>
+                  <div className="flex items-center gap-1.5 text-gray-400 font-semibold text-[10px] uppercase mt-1">
+                    <span className="text-[#df3232] font-bold">{item.category}</span>
+                    <span className="text-gray-200 font-normal">|</span>
+                    <span>{item.time.split(" ")[0]}</span>
+                    {item.time.includes(" ") && (
+                      <>
+                        <Clock size={11} className="text-gray-400 flex-shrink-0 -mt-0.5" />
+                        <span className="font-normal lowercase">{item.time.split(" ")[1]}</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          {/* Middle Banner Ad (QC 650x300) */}
+          <div className="relative w-full overflow-hidden rounded border border-gray-200 bg-gray-50 flex items-center justify-center aspect-[650/300] max-h-[300px] shadow-sm select-none">
+            <div className="absolute inset-0 bg-[#d9d9d9] flex items-center justify-center border border-gray-300">
+              <span className="text-black font-extrabold text-[24px] sm:text-[36px] md:text-[40px] tracking-tight">
+                QC 650&times;300
+              </span>
+            </div>
+            <div className="absolute top-1 right-1 bg-black/45 hover:bg-black/75 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
+              Quảng cáo &times;
+            </div>
+          </div>
+
+          {/* List Part 2 (Next 6 items + Load More items) */}
+          <div className="bg-white border border-gray-200 p-3 sm:p-4 rounded-sm shadow-sm flex flex-col gap-4">
+            {listPart2.map((item) => (
+              <Link
+                key={item.id}
+                href={`/posts/${item.id}`}
+                className="group flex gap-3.5 cursor-pointer pb-4 border-b border-gray-100 last:border-b-0 last:pb-0 transition-colors"
+              >
+                <div className="w-[110px] h-[75px] sm:w-[130px] sm:h-[88px] flex-shrink-0 overflow-hidden border border-gray-200 bg-gray-50 rounded-sm">
+                  <img
+                    src={item.image}
+                    alt={item.title}
+                    className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300"
+                  />
+                </div>
+                <div className="flex flex-col justify-between py-0.5 flex-1">
+                  <h3 className="text-gray-800 font-bold text-xs sm:text-[13px] leading-snug group-hover:text-[#df3232] transition-colors line-clamp-2 sm:line-clamp-3">
+                    {item.title}
+                  </h3>
+                  <div className="flex items-center gap-1.5 text-gray-400 font-semibold text-[10px] uppercase mt-1">
+                    <span className="text-[#df3232] font-bold">{item.category}</span>
+                    <span className="text-gray-200 font-normal">|</span>
+                    <span>{item.time.split(" ")[0]}</span>
+                    {item.time.includes(" ") && (
+                      <>
+                        <Clock size={11} className="text-gray-400 flex-shrink-0 -mt-0.5" />
+                        <span className="font-normal lowercase">{item.time.split(" ")[1]}</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          {/* "Xem Thêm" Load More Section */}
+          <div className="bg-[#f2f2f2] p-4 flex justify-center items-center border border-gray-200 rounded-sm shadow-sm">
+            {hasMore ? (
+              <button
+                onClick={handleLoadMore}
+                disabled={loading}
+                className="bg-white hover:bg-gray-50 hover:scale-102 disabled:hover:scale-100 disabled:opacity-85 text-gray-800 border border-gray-300 font-extrabold text-[13px] px-10 py-2.5 rounded-[20px] shadow-sm flex items-center gap-2 transition-all select-none active:scale-98"
+              >
+                {loading ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4 text-gray-700" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    <span>Đang tải...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Xem Thêm</span>
+                    <svg className="w-4 h-4 text-gray-700 stroke-[3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                    </svg>
+                  </>
+                )}
+              </button>
+            ) : (
+              <span className="text-gray-400 font-bold tracking-wide py-1 text-center">
+                Đã hiển thị tất cả bài viết trong chuyên mục này.
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Right Column: Sticky Sidebar Ads */}
+        <aside className="w-full lg:w-[310px] flex-shrink-0 lg:sticky lg:top-4 flex flex-col gap-4">
+          {/* Ad 1 (QC 300x600) */}
+          <div className="relative w-full overflow-hidden rounded border border-gray-200 bg-gray-50 flex items-center justify-center aspect-[300/600] max-h-[600px] shadow-sm select-none">
+            <div className="absolute inset-0 bg-[#d9d9d9] flex items-center justify-center border border-gray-300">
+              <span className="text-black font-extrabold text-[28px] sm:text-[34px] md:text-[36px] leading-tight text-center px-4">
+                QC
+                <br />
+                300&times;
+                <br />
+                600
+              </span>
+            </div>
+            <div className="absolute top-1 right-1 bg-black/45 hover:bg-black/75 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
+              Quảng cáo &times;
+            </div>
+          </div>
+
+          {/* Ad 2 (QC 300x600) */}
+          <div className="relative w-full overflow-hidden rounded border border-gray-200 bg-gray-50 flex items-center justify-center aspect-[300/600] max-h-[600px] shadow-sm select-none">
+            <div className="absolute inset-0 bg-[#d9d9d9] flex items-center justify-center border border-gray-300">
+              <span className="text-black font-extrabold text-[28px] sm:text-[34px] md:text-[36px] leading-tight text-center px-4">
+                QC
+                <br />
+                300&times;
+                <br />
+                600
+              </span>
+            </div>
+            <div className="absolute top-1 right-1 bg-black/45 hover:bg-black/75 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
+              Quảng cáo &times;
+            </div>
+          </div>
+        </aside>
+      </div>
+    </main>
+  );
+}

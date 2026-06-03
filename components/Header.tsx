@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Menu, X, Search } from "lucide-react";
 
 const navItems = [
@@ -56,6 +57,7 @@ function YoutubeIcon({ className = "h-4 w-4" }: { className?: string }) {
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const pathname = usePathname();
 
   return (
     <header className="w-full select-none font-sans">
@@ -148,15 +150,25 @@ export function Header() {
             <HomeIcon className="h-[21px] w-[21px] text-white" />
           </Link>
           <nav className="flex-1 flex h-full text-[11px] lg:text-xs font-bold tracking-wider">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="flex-1 px-2 h-full flex items-center justify-center hover:bg-[#333333] hover:text-[#ffd600] transition-colors border-r border-[#2d2d2d] text-center whitespace-nowrap"
-              >
-                {item.label}
-              </Link>
-            ))}
+            {navItems.map((item) => {
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex-1 px-2 h-full flex items-center justify-center transition-colors border-r border-[#2d2d2d] text-center whitespace-nowrap relative ${
+                    isActive
+                      ? "text-[#df3232] bg-[#333333]"
+                      : "text-white hover:bg-[#333333] hover:text-[#ffd600]"
+                  }`}
+                >
+                  <span>{item.label}</span>
+                  {isActive && (
+                    <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#df3232]" />
+                  )}
+                </Link>
+              );
+            })}
           </nav>
         </div>
       </div>
@@ -175,16 +187,23 @@ export function Header() {
             </div>
           </div>
           <div className="font-bold text-xs text-gray-700">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="block px-6 py-3 hover:bg-gray-100 hover:text-[#df3232] border-b border-gray-100 uppercase"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {item.label}
-              </Link>
-            ))}
+            {navItems.map((item) => {
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`block px-6 py-3 border-b border-gray-100 uppercase transition-colors ${
+                    isActive
+                      ? "text-[#df3232] bg-gray-50 font-extrabold border-l-4 border-l-[#df3232]"
+                      : "text-gray-700 hover:bg-gray-100 hover:text-[#df3232]"
+                  }`}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
             <div className="flex items-center gap-4 px-6 py-3 border-t border-gray-200 mt-2 bg-gray-50">
               <a href="#" className="text-gray-600 hover:text-[#df3232] font-bold">
                 Liên hệ quảng cáo

@@ -45,7 +45,7 @@ export default async function PostDetailPage({ params }: PageProps) {
 
       {/* Main Two-Column Content Layout */}
       <div className="flex flex-col lg:flex-row gap-5 items-start">
-        {/* Left Column: Post Content (Width matches GameK desktop 650px) */}
+        {/* Left Column: Post Content */}
         <div className="w-full lg:w-[650px] flex-shrink-0 flex flex-col gap-5">
           <article className="w-full bg-white border border-gray-200 p-4 sm:p-5 rounded-sm shadow-sm">
             {/* Metadata: Category & Date Time */}
@@ -222,7 +222,7 @@ export default async function PostDetailPage({ params }: PageProps) {
           </article>
         </div>
 
-        {/* Right Column: Sidebar (Width matches GameK desktop 310px) */}
+        {/* Right Column: Sidebar */}
         {/* Sticky sidebar behavior applied using lg:sticky lg:top-4 */}
         <aside className="w-full lg:w-[310px] flex-shrink-0 lg:sticky lg:top-4 space-y-4">
           {/* Ad 1: QC 300x600 */}

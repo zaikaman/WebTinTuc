@@ -104,7 +104,7 @@ export default function HomePage() {
 
       {/* Main Two-Column Layout */}
       <div className="flex flex-col lg:flex-row gap-5">
-        {/* Left Column: Main Articles (Width matches GameK desktop 650px) */}
+        {/* Left Column: Main Articles */}
         <div className="w-full lg:w-[650px] flex-shrink-0 space-y-5">
           {/* 2x2 Grid of Featured Articles */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
@@ -246,7 +246,7 @@ export default function HomePage() {
           ))}
         </div>
 
-        {/* Right Column: Sidebar (Width matches GameK desktop 300px) */}
+        {/* Right Column: Sidebar */}
         <div className="w-full lg:w-[310px] flex-shrink-0 space-y-4">
           {/* Ad 1: Zento Premium Cabinet */}
           <div className="relative w-full overflow-hidden rounded border border-gray-200 bg-gray-50 flex justify-center group shadow-sm">
