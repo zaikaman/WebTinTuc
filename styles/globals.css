@@ -20,14 +20,14 @@
     --muted-foreground: 215.4 16.3% 46.9%;
     --accent: 210 40% 96.1%;
     --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 79% 65%;
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%;
     --radius: 0.5rem;
-    --brand-red: 0 78% 65%;
-    --brand-dark-red: 2 64% 58%;
+    --brand-red: 0 79% 65%;
+    --brand-dark-red: 0 68% 57%;
     --brand-nav: 0 1% 31%;
     --brand-home-btn: 0 0% 39%;
     --brand-search: 213 24% 47%;
@@ -38,9 +38,23 @@
 @layer base {
   * {
     @apply border-border;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
   }
   body {
-    @apply bg-background text-foreground;
+    font-family: Tahoma, Geneva, sans-serif;
+    font-size: 12px;
+    color: #333;
+    background-color: #f4f6f8;
+    line-height: 1.5;
+  }
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+  ul, ol {
+    list-style: none;
   }
   :where(p, span, li, h1, h2, h3, h4, h5, h6, a, button, label, td, th) {
     overflow-wrap: anywhere;

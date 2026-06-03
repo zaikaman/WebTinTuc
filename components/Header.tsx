@@ -2,129 +2,180 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Home, Search, Facebook, Youtube, Rss } from "lucide-react";
 
-const navItems = [
-  { label: "TIN TỨC", href: "/tin-tuc" },
-  { label: "ANIME/MANGA", href: "/anime-manga" },
-  { label: "CÔNG NGHỆ", href: "/cong-nghe" },
-  { label: "PHIM", href: "/phim" },
-  { label: "KIẾN THỨC", href: "/kien-thuc" },
+const mainNavItems = [
+  { label: "GAME MOBILE", href: "/game-mobile" },
+  { label: "ESPORTS", href: "/esports" },
+  { label: "KHÁM PHÁ", href: "/kham-pha" },
+  { label: "MANGA/FILM", href: "/manga-film" },
+  { label: "HÓNG", href: "/hong" },
+  { label: "CỘNG ĐỒNG", href: "/cong-dong" },
+];
+
+const subNavItems = [
+  { label: "GUNNY ORIGIN", href: "/gunny-origin" },
+  { label: "LMHT", href: "/lmht" },
+  { label: "LIÊN QUÂN MOBILE", href: "/lien-quan-mobile" },
+  { label: "LMHT: TỐC CHIẾN", href: "/lmht-toc-chien" },
+  { label: "GAMING GEAR", href: "/gaming-gear" },
+  { label: "GAME ONLINE", href: "/game-online" },
+  { label: "PC/CONSOLE", href: "/pc-console" },
+  { label: "360° GAMEFI", href: "/360-gamefi" },
 ];
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <header className="w-full font-['Inter',sans-serif]">
-      <div className="flex">
+    <header className="w-full bg-white select-none">
+      {/* Top Banner and Navigation Area (Tier 1) */}
+      <div className="flex items-stretch border-b border-gray-200 md:border-b-0">
+        {/* Left: Red Logo Block */}
         <Link
           href="/"
-          className="flex-shrink-0 bg-brand-dark-red flex items-center gap-3 px-5 py-4 min-w-[160px] md:min-w-[230px] z-10"
+          className="bg-brand-red text-white flex flex-col justify-center items-center px-4 py-3 md:px-7 md:py-4 flex-shrink-0"
         >
-          <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-[#D9D9D9] flex-shrink-0" />
-          <div className="flex flex-col">
-            <span className="text-white font-bold text-sm md:text-base leading-tight">LOGO</span>
-            <span className="text-white font-bold text-xs md:text-sm leading-tight whitespace-nowrap">
-              TIN TỨC GAME
-            </span>
-          </div>
+          <span className="text-3xl md:text-[38px] font-black tracking-tighter leading-none select-none font-sans">
+            GAMEK
+          </span>
+          <span className="text-[7px] md:text-[8px] font-bold text-center mt-1 tracking-widest leading-none text-[#fff1f1]">
+            TRANG THÔNG TIN ĐIỆN TỬ TỔNG HỢP
+          </span>
         </Link>
 
-        <div className="flex-1 bg-brand-red flex items-center justify-between px-4 md:px-6 lg:px-8 py-4">
-          <div className="flex items-center gap-3 md:gap-5">
+        {/* Right: Multi-row navigation */}
+        <div className="flex-1 flex flex-col justify-between">
+          {/* Social Row (White bg) - Desktop Only */}
+          <div className="hidden md:flex h-[28px] items-center justify-end px-4 gap-3 bg-white border-b border-gray-100">
+            <a
+              href="https://facebook.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-500 hover:text-brand-red transition-colors"
+              aria-label="Facebook"
+            >
+              <Facebook size={12} fill="currentColor" className="text-gray-500 hover:text-brand-red" />
+            </a>
+            <a
+              href="https://youtube.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-500 hover:text-brand-red transition-colors"
+              aria-label="YouTube"
+            >
+              <Youtube size={12} fill="currentColor" className="text-gray-500 hover:text-brand-red" />
+            </a>
             <a
               href="#"
-              className="text-white font-bold text-sm md:text-xl hidden sm:block whitespace-nowrap"
+              className="text-gray-500 hover:text-brand-red transition-colors"
+              aria-label="RSS Feed"
             >
-              Liên hệ quảng cáo
-            </a>
-            <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
-              <svg width="34" height="34" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M36.6667 20C36.6667 10.8 29.2 3.33333 20 3.33333C10.8 3.33333 3.33337 10.8 3.33337 20C3.33337 28.0667 9.06671 34.7833 16.6667 36.3333V25H13.3334V20H16.6667V15.8333C16.6667 12.6167 19.2834 10 22.5 10H26.6667V15H23.3334C22.4167 15 21.6667 15.75 21.6667 16.6667V20H26.6667V25H21.6667V36.5833C30.0834 35.75 36.6667 28.65 36.6667 20Z" fill="white"/>
-              </svg>
-            </a>
-            <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" aria-label="YouTube">
-              <svg width="34" height="34" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M16.6667 25L25.3167 20L16.6667 15V25ZM35.9334 11.95C36.15 12.7333 36.3 13.7833 36.4 15.1167C36.5167 16.45 36.5667 17.6 36.5667 18.6L36.6667 20C36.6667 23.65 36.4 26.3333 35.9334 28.05C35.5167 29.55 34.55 30.5167 33.05 30.9333C32.2667 31.15 30.8334 31.3 28.6334 31.4C26.4667 31.5167 24.4834 31.5667 22.65 31.5667L20 31.6667C13.0167 31.6667 8.66671 31.4 6.95004 30.9333C5.45004 30.5167 4.48337 29.55 4.06671 28.05C3.85004 27.2667 3.70004 26.2167 3.60004 24.8833C3.48337 23.55 3.43337 22.4 3.43337 21.4L3.33337 20C3.33337 16.35 3.60004 13.6667 4.06671 11.95C4.48337 10.45 5.45004 9.48333 6.95004 9.06667C7.73337 8.85 9.16671 8.7 11.3667 8.6C13.5334 8.48333 15.5167 8.43333 17.35 8.43333L20 8.33333C26.9834 8.33333 31.3334 8.6 33.05 9.06667C34.55 9.48333 35.5167 10.45 35.9334 11.95Z" fill="white"/>
-              </svg>
+              <Rss size={12} className="text-gray-500 hover:text-brand-red" />
             </a>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="hidden md:flex items-center bg-[#E7E5E5] border border-[#7D7D7D] rounded-[15px] px-4 py-2 gap-2 w-[200px] lg:w-[295px]">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M21 21L16.66 16.66M19 11C19 15.4183 15.4183 19 11 19C6.58172 19 3 15.4183 3 11C3 6.58172 6.58172 3 11 3C15.4183 3 19 6.58172 19 11Z" stroke="#4C6281" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
+          {/* Red Navigation Row */}
+          <div className="bg-brand-red h-full md:h-[42px] flex items-center justify-between px-3 md:px-4">
+            {/* Desktop Menu */}
+            <nav className="hidden md:flex items-center gap-4 lg:gap-6">
+              {mainNavItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="text-white font-bold text-[12px] lg:text-[13px] hover:text-[#fff1f1] transition-colors whitespace-nowrap"
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+
+            {/* Mobile Header elements */}
+            <div className="flex md:hidden items-center justify-between w-full">
+              <span className="text-white text-xs font-bold">MENU CHÍNH</span>
+              <button
+                className="text-white p-1 hover:bg-brand-dark-red rounded transition-colors"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                aria-label="Toggle menu"
+              >
+                {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+              </button>
+            </div>
+
+            {/* Search Input - Desktop Only */}
+            <div className="hidden md:flex items-center bg-[#f1f1f1] border border-gray-300 rounded px-2 py-0.5 w-[160px] lg:w-[200px] h-[26px]">
               <input
                 type="text"
-                placeholder="Tìm kiếm"
-                className="bg-transparent text-brand-search font-bold text-lg placeholder-brand-search outline-none w-full"
+                placeholder="Tìm kiếm..."
+                className="bg-transparent text-gray-700 text-[11px] placeholder-gray-400 outline-none w-full"
               />
+              <Search size={12} className="text-gray-400 cursor-pointer hover:text-brand-red flex-shrink-0" />
             </div>
-            <button
-              className="md:hidden text-white p-1"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              aria-label="Toggle menu"
-            >
-              {mobileMenuOpen ? <X size={26} /> : <Menu size={26} />}
-            </button>
           </div>
         </div>
       </div>
 
-      <div className="bg-brand-nav border-t border-b border-brand-nav-border">
-        <div className="flex items-center">
-          <Link
-            href="/"
-            className="bg-brand-home-btn flex items-center justify-center w-16 h-16 flex-shrink-0 hover:bg-[#707070] transition-colors"
-            aria-label="Home"
-          >
-            <svg width="36" height="36" viewBox="0 0 45 45" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M23.8256 4.29938L40.7006 21.1744C41.8819 22.3556 41.0456 24.375 39.375 24.375H37.5V35.625C37.5 37.1169 36.9074 38.5476 35.8525 39.6025C34.7976 40.6574 33.3668 41.25 31.875 41.25H30V28.125C30.0001 26.6902 29.4519 25.3097 28.4676 24.2658C27.4833 23.2219 26.1373 22.5936 24.705 22.5094L24.375 22.5H20.625C19.1331 22.5 17.7024 23.0926 16.6475 24.1475C15.5926 25.2024 15 26.6332 15 28.125V41.25H13.125C11.6331 41.25 10.2024 40.6574 9.14751 39.6025C8.09261 38.5476 7.49998 37.1169 7.49998 35.625V24.375H5.62498C3.95623 24.375 3.11811 22.3556 4.29936 21.1744L21.1744 4.29938C21.526 3.94787 22.0028 3.7504 22.5 3.7504C22.9972 3.7504 23.474 3.94787 23.8256 4.29938ZM24.375 26.25C24.8723 26.25 25.3492 26.4476 25.7008 26.7992C26.0524 27.1508 26.25 27.6277 26.25 28.125V41.25H18.75V28.125C18.75 27.6658 18.9186 27.2225 19.2238 26.8793C19.529 26.5361 19.9495 26.3169 20.4056 26.2631L20.625 26.25H24.375Z" fill="white"/>
-            </svg>
-          </Link>
+      {/* Sub Navigation Area (Tier 2) - Desktop Only */}
+      <div className="hidden md:flex bg-[#2a2a2a] h-[34px] items-center text-white border-b border-[#1f1f1f]">
+        <Link
+          href="/"
+          className="bg-[#3a3a3a] h-full flex items-center justify-center px-4 hover:bg-brand-red transition-colors border-r border-[#1f1f1f]"
+          aria-label="Home"
+        >
+          <Home size={14} className="text-white" />
+        </Link>
+        <nav className="flex items-center h-full text-[11px] font-bold">
+          {subNavItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="px-3 lg:px-4 h-full flex items-center hover:bg-[#3a3a3a] hover:text-[#ffd600] transition-colors border-r border-[#1f1f1f]"
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+      </div>
 
-          <nav className="hidden md:flex items-center h-16 px-4 gap-6 lg:gap-10 overflow-x-auto">
-            {navItems.map((item) => (
+      {/* Mobile Menu Dropdown */}
+      {mobileMenuOpen && (
+        <div className="md:hidden border-t border-gray-200 bg-[#f9f9f9] py-2 transition-all">
+          <div className="px-4 py-2 border-b border-gray-200">
+            <div className="flex items-center bg-white border border-gray-300 rounded px-3 py-1.5 w-full">
+              <input
+                type="text"
+                placeholder="Tìm kiếm..."
+                className="bg-transparent text-gray-700 text-xs placeholder-gray-400 outline-none w-full"
+              />
+              <Search size={14} className="text-gray-400" />
+            </div>
+          </div>
+          <div className="font-bold text-xs text-gray-700">
+            <div className="bg-gray-200 px-4 py-1 text-[10px] text-gray-500 uppercase tracking-wider">CHUYÊN MỤC CHÍNH</div>
+            {mainNavItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                className="text-white font-semibold text-base lg:text-xl whitespace-nowrap hover:text-gray-300 transition-colors"
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-        </div>
-
-        {mobileMenuOpen && (
-          <div className="md:hidden border-t border-brand-nav-border">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="block px-6 py-3 text-white font-semibold text-base hover:bg-brand-home-btn transition-colors border-b border-brand-nav-border last:border-0"
+                className="block px-6 py-2.5 hover:bg-gray-100 hover:text-brand-red border-b border-gray-100"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 {item.label}
               </Link>
             ))}
-            <div className="px-4 py-3">
-              <div className="flex items-center bg-[#E7E5E5] border border-[#7D7D7D] rounded-[15px] px-4 py-2 gap-2">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M21 21L16.66 16.66M19 11C19 15.4183 15.4183 19 11 19C6.58172 19 3 15.4183 3 11C3 6.58172 6.58172 3 11 3C15.4183 3 19 6.58172 19 11Z" stroke="#4C6281" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                <input
-                  type="text"
-                  placeholder="Tìm kiếm"
-                  className="bg-transparent text-brand-search font-bold text-base placeholder-brand-search outline-none w-full"
-                />
-              </div>
-            </div>
+            <div className="bg-gray-200 px-4 py-1 text-[10px] text-gray-500 uppercase tracking-wider mt-2">DÒNG GAME HOT</div>
+            {subNavItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="block px-6 py-2.5 hover:bg-gray-100 hover:text-[#ffd600] border-b border-gray-100 text-gray-600 text-[11px]"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                {item.label}
+              </Link>
+            ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </header>
   );
 }
