@@ -28,9 +28,9 @@ export default async function PostDetailPage({ params }: PageProps) {
     .filter(Boolean);
 
   return (
-    <main className="w-full px-3 md:px-4 py-4 font-sans text-xs">
+    <main className="w-full px-3 md:px-0 py-4 font-sans text-xs">
       {/* Top Banner Advertisement (QC 970x250) */}
-      <div className="relative w-full max-w-[970px] mx-auto overflow-hidden rounded border border-gray-200 mb-5 bg-gray-50 group shadow-sm aspect-[970/250]">
+      <div className="relative w-full md:w-[970px] md:h-[250px] overflow-hidden rounded border border-gray-200 mb-5 bg-gray-50 group shadow-sm mx-auto">
         <a href="#" className="block w-full h-full">
           <img
             src="/qc_970_250.svg"
@@ -223,10 +223,9 @@ export default async function PostDetailPage({ params }: PageProps) {
         </div>
 
         {/* Right Column: Sidebar */}
-        {/* Sticky sidebar behavior applied using lg:sticky lg:top-4 */}
-        <aside className="w-full lg:w-[310px] flex-shrink-0 lg:sticky lg:top-4 space-y-4">
+        <aside className="w-full lg:w-[300px] flex-shrink-0 lg:sticky lg:top-4 space-y-4">
           {/* Ad 1: QC 300x600 */}
-          <div className="relative w-full overflow-hidden rounded border border-gray-200 bg-gray-50 flex justify-center group shadow-sm aspect-[300/600]">
+          <div className="relative w-full md:w-[300px] md:h-[600px] overflow-hidden rounded border border-gray-200 bg-gray-50 flex justify-center group shadow-sm mx-auto">
             <a href="#" className="block w-full h-full">
               <img
                 src="/qc_300_600.svg"
@@ -240,7 +239,7 @@ export default async function PostDetailPage({ params }: PageProps) {
           </div>
 
           {/* Ad 2: QC 300x600 */}
-          <div className="relative w-full overflow-hidden rounded border border-gray-200 bg-gray-50 flex justify-center group shadow-sm aspect-[300/600]">
+          <div className="relative w-full md:w-[300px] md:h-[600px] overflow-hidden rounded border border-gray-200 bg-gray-50 flex justify-center group shadow-sm mx-auto">
             <a href="#" className="block w-full h-full">
               <img
                 src="/qc_300_600.svg"
@@ -255,8 +254,8 @@ export default async function PostDetailPage({ params }: PageProps) {
         </aside>
       </div>
 
-      {/* Bottom QC 970x250 Ad (Placed below the 2-column content-sidebar split, full container width) */}
-      <div className="relative w-full max-w-[970px] mx-auto overflow-hidden rounded border border-gray-200 mt-6 bg-gray-50 flex justify-center group shadow-sm aspect-[970/250]">
+      {/* Bottom QC 970x250 Ad */}
+      <div className="relative w-full md:w-[970px] md:h-[250px] overflow-hidden rounded border border-gray-200 mt-6 bg-gray-50 flex justify-center group shadow-sm mx-auto">
         <a href="#" className="block w-full h-full">
           <img
             src="/qc_970_250.svg"

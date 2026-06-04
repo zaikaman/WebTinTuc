@@ -87,14 +87,14 @@ function CategoryBadge({ category }: { category: string }) {
 
 export default function HomePage() {
   return (
-    <main className="w-full px-3 md:px-4 py-4 font-sans text-xs">
+    <main className="w-full px-3 md:px-0 py-4 font-sans text-xs">
       {/* Top Banner Advertisement (Vietnam Airlines ad) */}
-      <div className="relative w-auto -mr-3 md:-mr-4 overflow-hidden rounded-l border border-r-0 border-gray-200 mb-4 bg-gray-50 group">
-        <a href="#" className="block w-full">
+      <div className="relative w-full md:w-[970px] md:h-[250px] overflow-hidden rounded border border-gray-200 mb-4 bg-gray-50 group mx-auto">
+        <a href="#" className="block w-full h-full">
           <img
             src="/vietnam_airlines_ad.png"
             alt="Vietnam Airlines Banner Perth"
-            className="w-full h-auto object-cover max-h-[160px] md:max-h-[200px]"
+            className="w-full h-full object-cover"
           />
         </a>
         <div className="absolute top-1 right-1 bg-black/40 hover:bg-black/70 text-white/90 text-[9px] px-1 py-0.5 cursor-pointer rounded select-none">
@@ -247,14 +247,14 @@ export default function HomePage() {
         </div>
 
         {/* Right Column: Sidebar */}
-        <div className="w-full lg:w-[310px] flex-shrink-0 space-y-4">
+        <div className="w-full lg:w-[300px] flex-shrink-0 space-y-4">
           {/* Ad 1: Zento Premium Cabinet */}
-          <div className="relative w-full overflow-hidden rounded border border-gray-200 bg-gray-50 flex justify-center group shadow-sm">
-            <a href="#" className="block w-full">
+          <div className="relative w-full md:w-[300px] md:h-[600px] overflow-hidden rounded border border-gray-200 bg-gray-50 flex justify-center group shadow-sm mx-auto">
+            <a href="#" className="block w-full h-full">
               <img
                 src="/zento_cabinet_ad.png"
                 alt="Zento Premium Cabinet Ad"
-                className="w-full h-auto object-cover"
+                className="w-full h-full object-cover"
               />
             </a>
             <div className="absolute top-1 right-1 bg-black/45 hover:bg-black/75 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
@@ -263,12 +263,12 @@ export default function HomePage() {
           </div>
 
           {/* Ad 2: ZTC Massage Bathtub */}
-          <div className="relative w-full overflow-hidden rounded border border-gray-200 bg-gray-50 flex justify-center group shadow-sm">
-            <a href="#" className="block w-full">
+          <div className="relative w-full md:w-[300px] md:h-[600px] overflow-hidden rounded border border-gray-200 bg-gray-50 flex justify-center group shadow-sm mx-auto">
+            <a href="#" className="block w-full h-full">
               <img
                 src="/ztc_bathtub_ad.png"
                 alt="ZTC Massage Bathtub Ad"
-                className="w-full h-auto object-cover"
+                className="w-full h-full object-cover"
               />
             </a>
             <div className="absolute top-1 right-1 bg-black/45 hover:bg-black/75 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
@@ -277,12 +277,12 @@ export default function HomePage() {
           </div>
 
           {/* Ad 3: Zento Premium Toilet */}
-          <div className="relative w-full overflow-hidden rounded border border-gray-200 bg-gray-50 flex justify-center group shadow-sm">
-            <a href="#" className="block w-full">
+          <div className="relative w-full md:w-[300px] md:h-[600px] overflow-hidden rounded border border-gray-200 bg-gray-50 flex justify-center group shadow-sm mx-auto">
+            <a href="#" className="block w-full h-full">
               <img
                 src="/zento_toilet_ad.png"
                 alt="Zento Premium Toilet Banner Ad"
-                className="w-full h-auto object-cover"
+                className="w-full h-full object-cover"
               />
             </a>
             <div className="absolute top-1 right-1 bg-black/45 hover:bg-black/75 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">

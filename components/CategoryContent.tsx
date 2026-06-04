@@ -40,9 +40,9 @@ export function CategoryContent({ category, label, featured, initialList }: Cate
   const listPart2 = visibleList.slice(6);
 
   return (
-    <main className="w-full px-3 md:px-4 py-4 font-sans text-xs">
+    <main className="w-full px-3 md:px-0 py-4 font-sans text-xs">
       {/* Top Banner Advertisement (QC 970x250) */}
-      <div className="relative w-full overflow-hidden rounded border border-gray-200 mb-5 bg-gray-50 flex items-center justify-center aspect-[970/250] max-h-[250px] shadow-sm select-none">
+      <div className="relative w-full md:w-[970px] md:h-[250px] overflow-hidden rounded border border-gray-200 mb-5 bg-gray-50 flex items-center justify-center shadow-sm select-none mx-auto">
         <div className="absolute inset-0 bg-[#d9d9d9] flex items-center justify-center border border-gray-300">
           <span className="text-black font-extrabold text-[24px] sm:text-[40px] md:text-[46px] tracking-tight">
             QC 970&times;250
@@ -199,9 +199,9 @@ export function CategoryContent({ category, label, featured, initialList }: Cate
         </div>
 
         {/* Right Column: Sticky Sidebar Ads */}
-        <aside className="w-full lg:w-[310px] flex-shrink-0 lg:sticky lg:top-4 flex flex-col gap-4">
+        <aside className="w-full lg:w-[300px] flex-shrink-0 lg:sticky lg:top-4 flex flex-col gap-4">
           {/* Ad 1 (QC 300x600) */}
-          <div className="relative w-full overflow-hidden rounded border border-gray-200 bg-gray-50 flex items-center justify-center aspect-[300/600] max-h-[600px] shadow-sm select-none">
+          <div className="relative w-full md:w-[300px] md:h-[600px] overflow-hidden rounded border border-gray-200 bg-gray-50 flex items-center justify-center shadow-sm select-none mx-auto">
             <div className="absolute inset-0 bg-[#d9d9d9] flex items-center justify-center border border-gray-300">
               <span className="text-black font-extrabold text-[28px] sm:text-[34px] md:text-[36px] leading-tight text-center px-4">
                 QC
@@ -217,7 +217,7 @@ export function CategoryContent({ category, label, featured, initialList }: Cate
           </div>
 
           {/* Ad 2 (QC 300x600) */}
-          <div className="relative w-full overflow-hidden rounded border border-gray-200 bg-gray-50 flex items-center justify-center aspect-[300/600] max-h-[600px] shadow-sm select-none">
+          <div className="relative w-full md:w-[300px] md:h-[600px] overflow-hidden rounded border border-gray-200 bg-gray-50 flex items-center justify-center shadow-sm select-none mx-auto">
             <div className="absolute inset-0 bg-[#d9d9d9] flex items-center justify-center border border-gray-300">
               <span className="text-black font-extrabold text-[28px] sm:text-[34px] md:text-[36px] leading-tight text-center px-4">
                 QC
