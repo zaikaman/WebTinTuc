@@ -17,6 +17,31 @@ export interface Article {
 }
 
 export const mockArticles: Article[] = [
+  // Oc Muon Hon Movie Article
+  {
+    id: "oc-muon-hon-poster",
+    title: "Ốc Mượn Hồn tung dàn poster nhân vật cực chất",
+    category: "Phim",
+    time: "27/05/2026 9:14",
+    image: "/oc_muon_hon_poster.png",
+    badge: "Phim",
+    intro: "Phim điện ảnh kinh dị kì bí 'Ốc Mượn Hồn' vừa tung bộ poster nhân vật chính thức hé lộ những tạo hình đầy ma mị và ám ảnh của dàn diễn viên tên tuổi.",
+    content: [
+      {
+        type: "paragraph",
+        text: "Dự án phim điện ảnh 'Ốc Mượn Hồn' đang là tâm điểm chú ý của khán giả yêu thích thể loại kinh dị giật gân tại Việt Nam. Mới đây, nhà phát hành đã chính thức tung ra bộ poster nhân vật cực chất, hé lộ tạo hình ấn tượng của nhân vật nữ chính bên cạnh chiếc vỏ ốc mượn hồn khổng lồ đầy bí ẩn."
+      },
+      {
+        type: "image",
+        src: "/oc_muon_hon_poster.png",
+        caption: "Tạo hình ma mị đầy ám ảnh của nữ chính bên cạnh vỏ ốc mượn hồn cổ xưa"
+      },
+      {
+        type: "paragraph",
+        text: "Bộ phim xoay quanh câu chuyện về một gia đình dọn đến căn biệt thự cổ ven biển, nơi họ vô tình tìm thấy những chiếc vỏ ốc mang lời nguyền tà ác từ hàng trăm năm trước. Mỗi nhân vật trong phim đều mang những góc khuất tâm lý phức tạp, hứa hẹn sẽ mang đến những màn rượt đuổi nghẹt thở và những cú twist bất ngờ."
+      }
+    ]
+  },
   // Hanoi Heatwave Article (from the screenshots)
   {
     id: "hanoi-nang-nong-38-7",

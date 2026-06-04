@@ -1,253 +1,123 @@
 import Link from "next/link";
-
-const featuredArticles = [
-  {
-    id: "featured-1",
-    image: "/soulslike_game.png",
-    title: "Vừa ra mắt, tựa game Soulslike mới trên Steam đã nhận rating 97% tích cực, phong cách chơi cực sáng tạo",
-    category: "Game Steam",
-    time: "2 giờ trước",
-  },
-  {
-    id: "featured-2",
-    image: "/gta6_beta.png",
-    title: "Hào hứng trải nghiệm beta sớm của GTA 6, hàng loạt game thủ nhận cái kết \"trong mơ cũng không nghĩ tới\"",
-    category: "GTA 6",
-    time: "1 giờ trước",
-  },
-  {
-    id: "featured-3",
-    image: "/esports_news.png",
-    title: "HLE vào nhánh thắng Road to MSI 2026 nhưng cũng khiến fan dấy lên nỗi lo",
-    category: "Liên Minh Huyền Thoại",
-    time: "3 giờ trước",
-    badge: "Liên Minh Huyền Thoại",
-  },
-  {
-    id: "featured-4",
-    image: "/video_news.png",
-    title: "Video Trần Hà Linh bị \"giật tóc\" thu hút gần 8 triệu lượt xem, CĐM tò mò đi tìm nguyên nhân",
-    category: "Đời sống",
-    time: "5 giờ trước",
-  },
-];
-
-const mainArticles = [
-  {
-    id: "hanoi-nang-nong-38-7",
-    category: "TIN TỨC",
-    title: "Hà Nội ghi nhận mức nhiệt cao nhất cả nước: Trung tâm Thủ đô nóng ngột ngạt khó thở, người dân vật vã giữa \"chảo lửa\" 38,7 độ C",
-    time: "24/05/2026 15:18",
-    image: "https://images.unsplash.com/photo-1509062522246-3755977927d7?q=80&w=600&auto=format&fit=crop"
-  },
-  { id: "main-1", category: "ANIME/MANGA", title: "Anime mùa hè 2026: Top những bộ không thể bỏ qua", time: "1 giờ trước" },
-  { id: "main-2", category: "GAME MOBILE", title: "Tựa game bắn súng sinh tồn mobile mở đợt thử nghiệm thứ 2 cực hot", time: "3 giờ trước" },
-  { id: "main-3", category: "CÔNG NGHỆ", title: "Thế hệ card đồ họa tiếp theo hứa hẹn tăng gấp đôi hiệu năng xử lý AI", time: "5 giờ trước" },
-  { id: "main-4", category: "PHIM/FILM", title: "Bom tấn rạp chiếu phim đạt doanh thu kỷ lục chỉ sau 3 ngày ra mắt", time: "6 giờ trước" },
-  { id: "main-5", category: "GAMING GEAR", title: "Trên tay bàn phím cơ hot-swap giá rẻ đáng mua nhất phân khúc giá rẻ", time: "8 giờ trước" },
-];
-
-const categoryArticles = [
-  {
-    section: "ANIME/MANGA",
-    items: [
-      { id: "anime-1", title: "One Piece chương mới: Bí ẩn kho báu thế giới cổ đại dần hé lộ", time: "30 phút trước" },
-      { id: "anime-2", title: "Sát Thủ Diệt Quỷ phần tiếp theo chính thức khởi chiếu tại cụm rạp", time: "2 giờ trước" },
-      { id: "anime-3", title: "Bảng xếp hạng manga bán chạy nhất nửa đầu năm 2026", time: "4 giờ trước" },
-    ],
-  },
-  {
-    section: "CÔNG NGHỆ",
-    items: [
-      { id: "tech-1", title: "Thử nghiệm chip xử lý di động mới nhất trên các game đồ họa nặng", time: "1 giờ trước" },
-      { id: "tech-2", title: "Có nên nâng cấp lên chuẩn RAM thế hệ mới ở thời điểm hiện tại?", time: "3 giờ trước" },
-      { id: "tech-3", title: "Tốc độ đọc ghi ổ cứng SSD thế hệ thứ 5 đạt kỷ lục ấn tượng", time: "5 giờ trước" },
-    ],
-  },
-];
-
-const categoryBadgeColor: Record<string, string> = {
-  "TIN TỨC": "bg-brand-red",
-  "ANIME/MANGA": "bg-[#8b5cf6]",
-  "GAME MOBILE": "bg-[#3b82f6]",
-  "CÔNG NGHỆ": "bg-[#10b981]",
-  "PHIM/FILM": "bg-[#f59e0b]",
-  "GAMING GEAR": "bg-[#ec4899]",
-  "CỘNG ĐỒNG": "bg-[#6b7280]",
-};
-
-function CategoryBadge({ category }: { category: string }) {
-  const color = categoryBadgeColor[category] ?? "bg-brand-red";
-  return (
-    <span className={`${color} text-white text-[9px] font-bold px-1.5 py-0.5 rounded-sm uppercase tracking-wide`}>
-      {category}
-    </span>
-  );
-}
+import { mockArticles } from "@/lib/mockData";
+import { Clock } from "lucide-react";
 
 export default function HomePage() {
+  // Find the Hanoi Heatwave article as the main featured article
+  const featuredArticle = mockArticles.find((a) => a.id === "hanoi-nang-nong-38-7") || mockArticles[0];
+
+  // Let's create a list of articles under it following the layout of the screenshots
+  const listArticleIds = [
+    "oc-muon-hon-poster",
+    "vietnam-thailand-tiem-nang",
+    "cong-an-tphcm-bat-ma-tuy",
+    "oc-muon-hon-poster",
+    "oc-muon-hon-poster",
+    "oc-muon-hon-poster",
+    "oc-muon-hon-poster",
+    "anime-list-1",
+    "tech-list-1",
+    "movie-list-1",
+  ];
+
+  // Map to get full article structures
+  const listArticles = listArticleIds
+    .map((id) => mockArticles.find((a) => a.id === id))
+    .filter(Boolean);
+
   return (
     <main className="w-full px-3 md:px-0 py-4 font-sans text-xs">
-      {/* Top Banner Advertisement (Vietnam Airlines ad) */}
-      <div className="relative w-full md:w-[970px] md:h-[250px] overflow-hidden rounded border border-gray-200 mb-4 bg-gray-50 group mx-auto">
-        <a href="#" className="block w-full h-full">
-          <img
-            src="/vietnam_airlines_ad.png"
-            alt="Vietnam Airlines Banner Perth"
-            className="w-full h-full object-cover"
-          />
-        </a>
-        <div className="absolute top-1 right-1 bg-black/40 hover:bg-black/70 text-white/90 text-[9px] px-1 py-0.5 cursor-pointer rounded select-none">
-          Quảng cáo &times;
-        </div>
-      </div>
-
       {/* Main Two-Column Layout */}
-      <div className="flex flex-col lg:flex-row gap-5">
-        {/* Left Column: Main Articles */}
-        <div className="w-full lg:w-[650px] flex-shrink-0 space-y-5">
-          {/* 2x2 Grid of Featured Articles */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-            {featuredArticles.map((article) => (
-              <Link
-                key={article.id}
-                href={`/posts/${article.id}`}
-                className="relative group cursor-pointer overflow-hidden border border-gray-100 rounded-sm bg-black aspect-[4/3] shadow-sm block"
-              >
+      <div className="flex flex-col lg:flex-row gap-5 items-start">
+        {/* Left Column: Articles */}
+        <div className="w-full lg:w-[650px] flex-shrink-0 flex flex-col gap-4">
+          
+          {/* Main Featured Article at the Top */}
+          {featuredArticle && (
+            <Link
+              href={`/posts/${featuredArticle.id}`}
+              className="group block cursor-pointer bg-white border border-gray-200 rounded-sm overflow-hidden p-3.5 shadow-sm hover:shadow-md transition-shadow"
+            >
+              <div className="w-full aspect-[16/9] overflow-hidden bg-gray-100 rounded-sm border border-gray-200">
                 <img
-                  src={article.image}
-                  alt={article.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 opacity-90 group-hover:opacity-100"
+                  src={featuredArticle.image}
+                  alt={featuredArticle.title}
+                  className="w-full h-full object-cover group-hover:scale-[1.01] transition-transform duration-500"
                 />
-                {/* Badge if present */}
-                {article.badge && (
-                  <span className="absolute top-2.5 left-2.5 bg-[#f57c00] text-white text-[9px] font-bold px-1.5 py-0.5 uppercase rounded-sm z-10">
-                    {article.badge}
-                  </span>
-                )}
-                {/* Dark overlay at bottom */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent flex flex-col justify-end p-3">
-                  <h2 className="text-white font-bold text-xs sm:text-[13px] leading-snug group-hover:text-[#ffd600] transition-colors line-clamp-3">
-                    {article.title}
-                  </h2>
-                  <div className="flex items-center gap-2 mt-1.5 text-[10px] text-gray-300">
-                    <span className="font-semibold text-gray-400 uppercase text-[9px] border-r border-gray-600 pr-1.5">
-                      {article.category}
-                    </span>
-                    <span>{article.time}</span>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
+              </div>
+              <h2 className="text-gray-900 font-bold text-base sm:text-[19px] leading-snug tracking-tight mt-3 mb-2 font-sans group-hover:text-brand-red transition-colors">
+                {featuredArticle.title}
+              </h2>
+              {/* Thick solid red horizontal line below the title */}
+              <div className="w-full h-[3px] bg-[#e24a48] mt-2.5 mb-1" />
+            </Link>
+          )}
 
-          {/* "MỚI NHẤT" section */}
-          <div className="space-y-3.5">
-            <div className="flex items-center gap-2 border-b-2 border-brand-red pb-1">
-              <span className="bg-brand-red text-white font-bold text-[11px] px-3 py-1 uppercase tracking-wider rounded-sm">
-                Mới nhất
-              </span>
-              <div className="flex-1 h-px bg-gray-200" />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {mainArticles.map((article) => (
+          {/* List of Articles Stretching Down */}
+          <div className="flex flex-col bg-white border border-gray-200 rounded-sm p-4 shadow-sm divide-y divide-gray-200">
+            {listArticles.map((article, index) => {
+              if (!article) return null;
+              return (
                 <Link
-                  key={article.id}
+                  key={`${article.id}-${index}`}
                   href={`/posts/${article.id}`}
-                  className="group flex gap-3 cursor-pointer p-2 border border-gray-100 rounded bg-white hover:bg-gray-50 transition-colors shadow-sm"
+                  className="group flex gap-4 py-4 first:pt-1 last:pb-1 cursor-pointer transition-colors hover:bg-gray-50/30"
                 >
-                  <div className="bg-gray-100 w-24 h-18 sm:w-28 sm:h-20 flex-shrink-0 overflow-hidden border border-gray-200">
+                  {/* Thumbnail Left */}
+                  <div className="relative w-[130px] h-[82px] sm:w-[160px] sm:h-[100px] flex-shrink-0 overflow-hidden border border-gray-200 bg-gray-50 rounded-sm">
                     <img
                       src={article.image || "/placeholder.svg"}
-                      alt="Thumbnail"
+                      alt={article.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                   </div>
-                  <div className="flex flex-col justify-between py-0.5 flex-1">
+
+                  {/* Title & Metadata Right */}
+                  <div className="flex flex-col justify-between py-0.5 flex-1 min-h-[82px] sm:min-h-[100px]">
                     <div>
-                      <div className="mb-1">
-                        <CategoryBadge category={article.category} />
-                      </div>
-                      <h3 className="text-gray-800 font-bold text-xs leading-snug group-hover:text-brand-red transition-colors line-clamp-2">
+                      <h3 className="text-gray-900 font-bold text-xs sm:text-[14px] leading-snug tracking-tight group-hover:text-brand-red transition-colors line-clamp-2 font-sans">
                         {article.title}
                       </h3>
                     </div>
-                    <span className="text-gray-400 text-[10px] mt-1">{article.time}</span>
+
+                    {/* Metadata */}
+                    <div className="flex items-center gap-2 mt-2 text-[10px] sm:text-[11px] text-gray-500 font-sans font-medium">
+                      <span className="text-gray-700 font-semibold text-[10px] sm:text-[11px] tracking-wide">
+                        {article.category}
+                      </span>
+                      <span className="text-gray-300">&#8226;</span>
+                      <span>{article.time.split(" ")[0]}</span>
+                      {article.time.includes(" ") && (
+                        <span className="flex items-center gap-0.5 ml-1 text-gray-400">
+                          <Clock size={11} className="mr-0.5" />
+                          <span>{article.time.split(" ")[1]}</span>
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </Link>
-              ))}
+              );
+            })}
+          </div>
+
+          {/* Bottom Advertisement Banner (QC 650x300) */}
+          <div className="relative w-full aspect-[650/300] overflow-hidden rounded-sm border border-gray-200 bg-gray-50 flex justify-center group shadow-sm">
+            <a href="#" className="block w-full h-full">
+              <img
+                src="/qc_650_300_premium.png"
+                alt="Quảng cáo 650x300"
+                className="w-full h-full object-cover"
+              />
+            </a>
+            <div className="absolute top-1 right-1 bg-black/45 hover:bg-black/75 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded-sm select-none z-10 transition-colors">
+              Quảng cáo &times;
             </div>
           </div>
 
-          {/* Category Shelf Sections */}
-          {categoryArticles.map((section) => (
-            <div key={section.section} className="space-y-3">
-              <div className="flex items-center justify-between border-b-2 border-gray-800 pb-1">
-                <span className="bg-[#2a2a2a] text-white font-bold text-[11px] px-3 py-1 uppercase tracking-wider rounded-sm">
-                  {section.section}
-                </span>
-                <Link
-                  href={`/${section.section.toLowerCase().replace("/", "-")}`}
-                  className="text-brand-red text-[11px] font-bold hover:underline"
-                >
-                  XEM THÊM &rsaquo;
-                </Link>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {/* Main Article in Category */}
-                <Link
-                  href={`/posts/${section.items[0].id}`}
-                  className="sm:col-span-1 group cursor-pointer border border-gray-200 rounded overflow-hidden hover:shadow-sm transition-shadow bg-white p-2 block"
-                >
-                  <div className="bg-gray-100 w-full aspect-video overflow-hidden border border-gray-100 mb-2">
-                    <img
-                      src="/placeholder.svg"
-                      alt="Category Main Thumbnail"
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <CategoryBadge category={section.section} />
-                    <h3 className="text-gray-800 font-bold text-xs leading-snug group-hover:text-brand-red transition-colors">
-                      {section.items[0].title}
-                    </h3>
-                    <span className="text-gray-400 text-[10px] block">{section.items[0].time}</span>
-                  </div>
-                </Link>
-
-                {/* Sub Articles List */}
-                <div className="sm:col-span-2 flex flex-col gap-2.5">
-                  {section.items.slice(1).map((item) => (
-                    <Link
-                      key={item.id}
-                      href={`/posts/${item.id}`}
-                      className="group flex gap-3 cursor-pointer p-2 border border-gray-100 rounded bg-white hover:bg-gray-50 transition-colors block"
-                    >
-                      <div className="bg-gray-100 w-20 h-14 flex-shrink-0 overflow-hidden border border-gray-150">
-                        <img
-                          src="/placeholder.svg"
-                          alt="Category sub thumbnail"
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div className="flex flex-col justify-center">
-                        <h4 className="text-gray-800 font-bold text-xs leading-snug line-clamp-2 group-hover:text-brand-red transition-colors">
-                          {item.title}
-                        </h4>
-                        <span className="text-gray-400 text-[10px] mt-1">{item.time}</span>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ))}
         </div>
 
         {/* Right Column: Sidebar */}
-        <div className="w-full lg:w-[300px] flex-shrink-0 space-y-4">
+        <div className="w-full lg:w-[300px] flex-shrink-0 space-y-4 lg:sticky lg:top-4">
           {/* Ad 1: Zento Premium Cabinet */}
           <div className="relative w-full md:w-[300px] md:h-[600px] overflow-hidden rounded border border-gray-200 bg-gray-50 flex justify-center group shadow-sm mx-auto">
             <a href="#" className="block w-full h-full">
