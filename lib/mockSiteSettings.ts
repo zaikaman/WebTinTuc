@@ -21,14 +21,14 @@ export const mockSiteSettings: SiteSettings = {
     ],
     socialLinks: [
       {
-        label: "Facebook",
-        href: "https://facebook.com",
-        platform: "facebook",
+        label: "Zalo",
+        href: "https://zalo.me",
+        platform: "zalo",
       },
       {
-        label: "YouTube",
-        href: "https://youtube.com",
-        platform: "youtube",
+        label: "Email",
+        href: "mailto:quangcao@linhka.vn",
+        platform: "email",
       },
     ],
     primaryLinks: [

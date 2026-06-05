@@ -40,7 +40,7 @@ export interface NavigationItem {
 }
 
 export interface SocialLink extends NavigationItem {
-  platform?: "facebook" | "youtube" | "discord" | "other";
+  platform?: "zalo" | "email" | "facebook" | "youtube" | "discord" | "other";
 }
 
 export interface FooterColumn {

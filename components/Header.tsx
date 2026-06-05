@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, Search, X } from "lucide-react";
+import { Mail, Menu, Search, X } from "lucide-react";
 import type { SiteSettings, SocialLink } from "@/lib/types/news";
 
 interface HeaderProps {
@@ -24,30 +24,23 @@ function HomeIcon({ className = "h-5 w-5" }: { className?: string }) {
   );
 }
 
-function FacebookIcon({ className = "h-3.5 w-3.5" }: { className?: string }) {
+function ZaloIcon({ className = "h-4 w-4" }: { className?: string }) {
   return (
     <svg
       aria-hidden="true"
       viewBox="0 0 24 24"
       className={className}
-      fill="currentColor"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
       focusable="false"
     >
-      <path d="M14.25 8.1V6.95c0-.7.16-1.08 1.25-1.08h1.66V2.45a22.7 22.7 0 0 0-2.72-.15c-2.7 0-4.55 1.65-4.55 4.68V8.1H6.84v3.83h3.05v9.75h4.36v-9.75h2.96l.47-3.83h-3.43Z" />
-    </svg>
-  );
-}
-
-function YoutubeIcon({ className = "h-4 w-4" }: { className?: string }) {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 28 28"
-      className={className}
-      fill="currentColor"
-      focusable="false"
-    >
-      <path d="M25.55 8.48a3.1 3.1 0 0 0-2.18-2.2C21.46 5.77 14 5.77 14 5.77s-7.46 0-9.37.51a3.1 3.1 0 0 0-2.18 2.2A32.1 32.1 0 0 0 1.95 14c0 1.9.18 3.78.5 5.52a3.1 3.1 0 0 0 2.18 2.2c1.91.51 9.37.51 9.37.51s7.46 0 9.37-.51a3.1 3.1 0 0 0 2.18-2.2c.32-1.74.5-3.62.5-5.52s-.18-3.78-.5-5.52ZM11.63 17.68V10.3L18.1 14l-6.47 3.68Z" />
+      {/* Speech bubble path */}
+      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+      {/* Centered capital 'Z' */}
+      <path d="M9.5 9h5l-5 6h5" />
     </svg>
   );
 }
@@ -76,20 +69,6 @@ export function Header({ settings }: HeaderProps) {
         </Link>
 
         <div className="flex-1 bg-[#e24a48] flex items-center justify-between px-4 md:px-6">
-          <div className="hidden md:flex items-center gap-4 lg:gap-6">
-            {utilityLink && (
-              <Link
-                href={utilityLink.href}
-                className="text-white font-bold text-sm lg:text-[15px] hover:text-[#ffebeb] transition-colors"
-              >
-                {utilityLink.label}
-              </Link>
-            )}
-            {settings.socialLinks.map((item) => (
-              <HeaderSocialLink key={`${item.label}-${item.href}`} item={item} />
-            ))}
-          </div>
-
           <div className="flex md:hidden items-center justify-between w-full">
             <span className="text-white text-xs font-bold uppercase tracking-wider">
               {settings.logoSubtitle}
@@ -103,13 +82,32 @@ export function Header({ settings }: HeaderProps) {
             </button>
           </div>
 
-          <div className="hidden md:flex items-center bg-[#e7e5e5] border border-gray-300 rounded-[15px] px-3.5 py-1 w-[180px] lg:w-[250px] h-[30px]">
-            <Search size={14} className="text-[#4c6281] mr-2 flex-shrink-0" />
-            <input
-              type="text"
-              placeholder={settings.searchPlaceholder}
-              className="bg-transparent text-[#4c6281] font-bold text-xs placeholder-[#4c6281]/70 outline-none w-full"
-            />
+          <div className="hidden md:grid w-full grid-cols-[minmax(260px,1fr)_auto] items-center gap-5 lg:gap-7">
+            <div className="flex justify-center">
+              <div className="flex h-[34px] w-full max-w-[760px] items-center rounded-[17px] border border-[#d5d5d5] bg-[#f0eeee] px-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] transition-colors focus-within:border-white focus-within:bg-white">
+                <Search size={15} className="mr-2.5 flex-shrink-0 text-[#4c6281]" />
+                <input
+                  type="text"
+                  placeholder={settings.searchPlaceholder}
+                  className="h-full w-full bg-transparent text-[13px] font-bold text-[#4c6281] outline-none placeholder:text-[#4c6281]/70"
+                />
+              </div>
+            </div>
+            <div className="flex shrink-0 items-center justify-end gap-3 lg:gap-4">
+              {utilityLink && (
+                <Link
+                  href={utilityLink.href}
+                  className="whitespace-nowrap text-sm font-bold text-white transition-colors hover:text-[#ffebeb] lg:text-[15px]"
+                >
+                  {utilityLink.label}
+                </Link>
+              )}
+              <div className="flex items-center gap-2.5">
+                {settings.socialLinks.map((item) => (
+                  <HeaderSocialLink key={`${item.label}-${item.href}`} item={item} />
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -224,12 +222,12 @@ function HeaderSocialLink({
 }
 
 function getSocialIcon(item: SocialLink) {
-  if (item.platform === "facebook") {
-    return <FacebookIcon className="h-3.5 w-3.5" />;
+  if (item.platform === "zalo") {
+    return <ZaloIcon className="h-4 w-4" />;
   }
 
-  if (item.platform === "youtube") {
-    return <YoutubeIcon className="h-4 w-4" />;
+  if (item.platform === "email") {
+    return <Mail className="h-4 w-4" />;
   }
 
   return <span className="text-[10px] font-bold">{item.label.slice(0, 1).toUpperCase()}</span>;
