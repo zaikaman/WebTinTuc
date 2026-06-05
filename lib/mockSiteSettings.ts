@@ -16,7 +16,6 @@ export const mockSiteSettings: SiteSettings = {
     utilityLinks: [
       {
         label: "Liên hệ quảng cáo",
-        href: "/lien-he-quang-cao",
       },
     ],
     socialLinks: [
@@ -53,7 +52,7 @@ export const mockSiteSettings: SiteSettings = {
       {
         title: "Hỗ trợ",
         links: [
-          { label: "Liên hệ quảng cáo", href: "/lien-he-quang-cao" },
+          { label: "Liên hệ quảng cáo" },
           { label: "Điều khoản sử dụng", href: "/dieu-khoan-su-dung" },
           { label: "Chính sách bảo mật", href: "/chinh-sach-bao-mat" },
         ],

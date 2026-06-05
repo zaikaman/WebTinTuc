@@ -42,8 +42,12 @@ export function Footer({ settings }: FooterProps) {
   );
 }
 
-function FooterLink({ href, children }: { href: string; children: ReactNode }) {
+function FooterLink({ href, children }: { href?: string; children: ReactNode }) {
   const className = "text-gray-300 text-[11px] hover:text-white transition-colors";
+
+  if (!href) {
+    return <span className={className}>{children}</span>;
+  }
 
   if (isExternalHref(href)) {
     return (

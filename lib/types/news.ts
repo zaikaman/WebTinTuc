@@ -36,7 +36,7 @@ export interface PostRecommendations {
 
 export interface NavigationItem {
   label: string;
-  href: string;
+  href?: string;
 }
 
 export interface SocialLink extends NavigationItem {
