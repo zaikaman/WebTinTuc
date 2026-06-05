@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Clock } from "lucide-react";
-import { Article } from "@/lib/mockData";
+import type { Article } from "@/lib/types/news";
 
 interface CategoryContentProps {
   category: string;

@@ -13,5 +13,19 @@ A Next.js news-style front-end built with TypeScript and Tailwind CSS.
 
 - App routes live in `app/`.
 - Shared UI components live in `components/`.
-- Utility helpers live in `lib/` and `hooks/`.
-- No environment variables are required yet, but `.env.example` is included for future additions.
+- Frontend data access lives in `lib/api/`.
+- Shared frontend/backend data shapes live in `lib/types/`.
+- Mock content remains in `lib/mockData.ts`.
+- Mock layout settings for navbar/footer live in `lib/mockSiteSettings.ts`.
+- Backend integration contract is documented in `docs/frontend-api-contract.md`.
+
+## Data Source
+
+Mock data is enabled by default.
+
+To call backend APIs instead, create a local `.env` file:
+
+```bash
+NEXT_PUBLIC_USE_MOCKS=false
+NEXT_PUBLIC_API_BASE_URL=http://localhost:4000/api
+```

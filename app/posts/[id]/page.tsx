@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getOrGenerateArticle, mockArticles, getCategorySlug } from "@/lib/mockData";
+import {
+  getArticleById,
+  getCategorySlug,
+  getPostRecommendations,
+} from "@/lib/api/news";
 import { Clock, Link2, Star } from "lucide-react";
 
 interface PageProps {
@@ -9,23 +13,13 @@ interface PageProps {
 
 export default async function PostDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const article = getOrGenerateArticle(id);
+  const article = await getArticleById(id);
 
   if (!article) {
     notFound();
   }
 
-  // Get related and like posts in specific order
-  const relatedIds = ["related-1", "related-2", "related-3", "related-4"];
-  const likeIds = ["like-1", "like-2", "like-3", "like-4"];
-
-  const relatedPosts = relatedIds
-    .map((rid) => mockArticles.find((a) => a.id === rid))
-    .filter(Boolean);
-
-  const likePosts = likeIds
-    .map((lid) => mockArticles.find((a) => a.id === lid))
-    .filter(Boolean);
+  const { relatedPosts, likePosts } = await getPostRecommendations(id);
 
   return (
     <main className="w-full px-3 md:px-0 py-4 font-sans text-xs">
@@ -145,7 +139,6 @@ export default async function PostDetailPage({ params }: PageProps) {
 
                 <div className="flex flex-col gap-4">
                   {relatedPosts.map((item) => {
-                    if (!item) return null;
                     const catSlug = getCategorySlug(item.category);
                     return (
                       <div
@@ -197,7 +190,6 @@ export default async function PostDetailPage({ params }: PageProps) {
 
                 <div className="flex flex-col gap-4">
                   {likePosts.map((item) => {
-                    if (!item) return null;
                     const catSlug = getCategorySlug(item.category);
                     return (
                       <div

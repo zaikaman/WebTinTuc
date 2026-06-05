@@ -1,20 +1,4 @@
-export interface ContentBlock {
-  type: "paragraph" | "bold-paragraph" | "image" | "ad";
-  text?: string;
-  src?: string;
-  caption?: string;
-}
-
-export interface Article {
-  id: string;
-  title: string;
-  category: string;
-  time: string;
-  image: string;
-  badge?: string;
-  intro?: string;
-  content?: ContentBlock[];
-}
+import type { Article, CategoryFeed } from "@/lib/types/news";
 
 export function getCategorySlug(category: string): string {
   const norm = category.toLowerCase().trim();
@@ -403,7 +387,7 @@ export function getOrGenerateArticle(id: string): Article | undefined {
 // Category Mock Data
 export const categoryData: Record<
   string,
-  { label: string; featured: Article; list: Article[] }
+  CategoryFeed
 > = {
   "tin-tuc": {
     label: "TIN TỨC",

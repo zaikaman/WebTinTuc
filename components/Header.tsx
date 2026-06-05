@@ -3,15 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, Search } from "lucide-react";
+import { Menu, Search, X } from "lucide-react";
+import type { SiteSettings, SocialLink } from "@/lib/types/news";
 
-const navItems = [
-  { label: "TIN TỨC", href: "/tin-tuc" },
-  { label: "ANIME/MANGA", href: "/anime-manga" },
-  { label: "CÔNG NGHỆ", href: "/cong-nghe" },
-  { label: "PHIM", href: "/phim" },
-  { label: "KIẾN THỨC", href: "/kien-thuc" },
-];
+interface HeaderProps {
+  settings: SiteSettings["header"];
+}
 
 function HomeIcon({ className = "h-5 w-5" }: { className?: string }) {
   return (
@@ -55,15 +52,14 @@ function YoutubeIcon({ className = "h-4 w-4" }: { className?: string }) {
   );
 }
 
-export function Header() {
+export function Header({ settings }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
+  const utilityLink = settings.utilityLinks[0];
 
   return (
     <header className="w-full select-none font-sans">
-      {/* Top Row: Logo & Red Navbar */}
       <div className="flex items-stretch">
-        {/* Left Logo Block */}
         <Link
           href="/"
           className="bg-[#df3232] text-white flex items-center gap-3 px-5 py-3.5 min-w-[160px] md:min-w-[220px] flex-shrink-0"
@@ -71,49 +67,33 @@ export function Header() {
           <div className="w-9 h-9 rounded-full bg-[#d9d9d9] flex-shrink-0" />
           <div className="flex flex-col">
             <span className="text-white font-extrabold text-sm md:text-[15px] leading-tight tracking-wider">
-              LOGO
+              {settings.logoText}
             </span>
             <span className="text-white font-bold text-[10px] md:text-[11px] leading-tight whitespace-nowrap tracking-wide">
-              TIN TỨC GAME
+              {settings.logoSubtitle}
             </span>
           </div>
         </Link>
 
-        {/* Right Red Navigation Bar */}
         <div className="flex-1 bg-[#e24a48] flex items-center justify-between px-4 md:px-6">
-          {/* Main items (Liên hệ quảng cáo + Social icons) - Desktop Only */}
           <div className="hidden md:flex items-center gap-4 lg:gap-6">
-            <a
-              href="#"
-              className="text-white font-bold text-sm lg:text-[15px] hover:text-[#ffebeb] transition-colors"
-            >
-              Liên hệ quảng cáo
-            </a>
-            {/* Facebook Solid Circle */}
-            <a
-              href="https://facebook.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-7 h-7 rounded-full bg-white flex items-center justify-center text-[#e24a48] hover:bg-gray-100 transition-colors"
-              aria-label="Facebook"
-            >
-              <FacebookIcon className="h-3.5 w-3.5" />
-            </a>
-            {/* Youtube Play Icon */}
-            <a
-              href="https://youtube.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-7 h-7 rounded-full bg-white flex items-center justify-center text-[#e24a48] hover:bg-gray-100 transition-colors"
-              aria-label="YouTube"
-            >
-              <YoutubeIcon className="h-4 w-4" />
-            </a>
+            {utilityLink && (
+              <Link
+                href={utilityLink.href}
+                className="text-white font-bold text-sm lg:text-[15px] hover:text-[#ffebeb] transition-colors"
+              >
+                {utilityLink.label}
+              </Link>
+            )}
+            {settings.socialLinks.map((item) => (
+              <HeaderSocialLink key={`${item.label}-${item.href}`} item={item} />
+            ))}
           </div>
 
-          {/* Mobile Header Toggle */}
           <div className="flex md:hidden items-center justify-between w-full">
-            <span className="text-white text-xs font-bold uppercase tracking-wider">TIN TỨC GAME</span>
+            <span className="text-white text-xs font-bold uppercase tracking-wider">
+              {settings.logoSubtitle}
+            </span>
             <button
               className="text-white p-1 hover:bg-[#c83939] rounded transition-colors"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -123,19 +103,17 @@ export function Header() {
             </button>
           </div>
 
-          {/* Search Box */}
           <div className="hidden md:flex items-center bg-[#e7e5e5] border border-gray-300 rounded-[15px] px-3.5 py-1 w-[180px] lg:w-[250px] h-[30px]">
             <Search size={14} className="text-[#4c6281] mr-2 flex-shrink-0" />
             <input
               type="text"
-              placeholder="Tìm kiếm"
+              placeholder={settings.searchPlaceholder}
               className="bg-transparent text-[#4c6281] font-bold text-xs placeholder-[#4c6281]/70 outline-none w-full"
             />
           </div>
         </div>
       </div>
 
-      {/* Bottom Row: Dark Grey Navbar - Desktop Only */}
       <div className="hidden md:flex h-[36px] items-center text-white bg-[#404040] border-b border-[#2d2d2d]">
         <Link
           href="/"
@@ -145,11 +123,11 @@ export function Header() {
           <HomeIcon className="h-[21px] w-[21px] text-white" />
         </Link>
         <nav className="flex-1 flex h-full text-[11px] lg:text-xs font-bold tracking-wider">
-          {navItems.map((item) => {
+          {settings.primaryLinks.map((item) => {
             const isActive = pathname === item.href;
             return (
               <Link
-                key={item.href}
+                key={`${item.label}-${item.href}`}
                 href={item.href}
                 className={`flex-1 px-2 h-full flex items-center justify-center transition-colors border-r border-[#2d2d2d] text-center whitespace-nowrap relative ${
                   isActive
@@ -167,7 +145,6 @@ export function Header() {
         </nav>
       </div>
 
-      {/* Mobile Menu Dropdown */}
       {mobileMenuOpen && (
         <div className="md:hidden border-t border-gray-200 bg-[#f9f9f9] py-2 transition-all">
           <div className="px-4 py-2 border-b border-gray-200">
@@ -175,17 +152,17 @@ export function Header() {
               <Search size={14} className="text-[#4c6281] mr-2" />
               <input
                 type="text"
-                placeholder="Tìm kiếm"
+                placeholder={settings.searchPlaceholder}
                 className="bg-transparent text-[#4c6281] font-bold text-xs placeholder-[#4c6281]/70 outline-none w-full"
               />
             </div>
           </div>
           <div className="font-bold text-xs text-gray-700">
-            {navItems.map((item) => {
+            {settings.primaryLinks.map((item) => {
               const isActive = pathname === item.href;
               return (
                 <Link
-                  key={item.href}
+                  key={`${item.label}-${item.href}`}
                   href={item.href}
                   className={`block px-6 py-3 border-b border-gray-100 uppercase transition-colors ${
                     isActive
@@ -199,26 +176,19 @@ export function Header() {
               );
             })}
             <div className="flex items-center gap-4 px-6 py-3 border-t border-gray-200 mt-2 bg-gray-50">
-              <a href="#" className="text-gray-600 hover:text-[#df3232] font-bold">
-                Liên hệ quảng cáo
-              </a>
+              {utilityLink && (
+                <Link href={utilityLink.href} className="text-gray-600 hover:text-[#df3232] font-bold">
+                  {utilityLink.label}
+                </Link>
+              )}
               <div className="flex gap-2.5 ml-auto">
-                <a
-                  href="https://facebook.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-7 h-7 rounded-full bg-[#df3232] flex items-center justify-center text-white"
-                >
-                  <FacebookIcon className="h-3.5 w-3.5" />
-                </a>
-                <a
-                  href="https://youtube.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-7 h-7 rounded-full bg-[#df3232] flex items-center justify-center text-white"
-                >
-                  <YoutubeIcon className="h-4 w-4" />
-                </a>
+                {settings.socialLinks.map((item) => (
+                  <HeaderSocialLink
+                    key={`${item.label}-${item.href}`}
+                    item={item}
+                    variant="mobile"
+                  />
+                ))}
               </div>
             </div>
           </div>
@@ -226,4 +196,45 @@ export function Header() {
       )}
     </header>
   );
+}
+
+function HeaderSocialLink({
+  item,
+  variant = "desktop",
+}: {
+  item: SocialLink;
+  variant?: "desktop" | "mobile";
+}) {
+  const className =
+    variant === "desktop"
+      ? "w-7 h-7 rounded-full bg-white flex items-center justify-center text-[#e24a48] hover:bg-gray-100 transition-colors"
+      : "w-7 h-7 rounded-full bg-[#df3232] flex items-center justify-center text-white";
+
+  return (
+    <a
+      href={item.href}
+      target={isExternalHref(item.href) ? "_blank" : undefined}
+      rel={isExternalHref(item.href) ? "noopener noreferrer" : undefined}
+      className={className}
+      aria-label={item.label}
+    >
+      {getSocialIcon(item)}
+    </a>
+  );
+}
+
+function getSocialIcon(item: SocialLink) {
+  if (item.platform === "facebook") {
+    return <FacebookIcon className="h-3.5 w-3.5" />;
+  }
+
+  if (item.platform === "youtube") {
+    return <YoutubeIcon className="h-4 w-4" />;
+  }
+
+  return <span className="text-[10px] font-bold">{item.label.slice(0, 1).toUpperCase()}</span>;
+}
+
+function isExternalHref(href: string) {
+  return href.startsWith("http://") || href.startsWith("https://");
 }

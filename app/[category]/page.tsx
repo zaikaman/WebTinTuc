@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { categoryData } from "@/lib/mockData";
+import { getCategoryFeed, getKnownCategorySlugs } from "@/lib/api/news";
 import { CategoryContent } from "@/components/CategoryContent";
 
 const labelMap: Record<string, string> = {
@@ -14,10 +14,15 @@ interface PageProps {
   params: Promise<{ category: string }>;
 }
 
+export function generateStaticParams() {
+  return getKnownCategorySlugs().map((category) => ({ category }));
+}
+
 export async function generateMetadata({ params }: PageProps) {
   const { category } = await params;
+  const data = await getCategoryFeed(category);
   
-  if (!categoryData[category]) {
+  if (!data) {
     return {
       title: "Không tìm thấy chuyên mục",
     };
@@ -32,7 +37,7 @@ export async function generateMetadata({ params }: PageProps) {
 
 export default async function CategoryPage({ params }: PageProps) {
   const { category } = await params;
-  const data = categoryData[category];
+  const data = await getCategoryFeed(category);
 
   if (!data) {
     notFound();
@@ -47,4 +52,3 @@ export default async function CategoryPage({ params }: PageProps) {
     />
   );
 }
-

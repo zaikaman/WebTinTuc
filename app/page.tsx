@@ -1,29 +1,9 @@
 import Link from "next/link";
-import { mockArticles, getCategorySlug } from "@/lib/mockData";
+import { getCategorySlug, getHomeFeed } from "@/lib/api/news";
 import { Clock } from "lucide-react";
 
-export default function HomePage() {
-  // Find the Hanoi Heatwave article as the main featured article
-  const featuredArticle = mockArticles.find((a) => a.id === "hanoi-nang-nong-38-7") || mockArticles[0];
-
-  // Let's create a list of articles under it following the layout of the screenshots
-  const listArticleIds = [
-    "oc-muon-hon-poster",
-    "vietnam-thailand-tiem-nang",
-    "cong-an-tphcm-bat-ma-tuy",
-    "oc-muon-hon-poster",
-    "oc-muon-hon-poster",
-    "oc-muon-hon-poster",
-    "oc-muon-hon-poster",
-    "anime-list-1",
-    "tech-list-1",
-    "movie-list-1",
-  ];
-
-  // Map to get full article structures
-  const listArticles = listArticleIds
-    .map((id) => mockArticles.find((a) => a.id === id))
-    .filter(Boolean);
+export default async function HomePage() {
+  const { featuredArticle, latestArticles } = await getHomeFeed();
 
   return (
     <main className="w-full px-3 md:px-0 py-4 font-sans text-xs">
@@ -75,8 +55,7 @@ export default function HomePage() {
 
           {/* List of Articles Stretching Down */}
           <div className="flex flex-col bg-white border border-gray-200 rounded-sm p-4 shadow-sm divide-y divide-gray-200">
-            {listArticles.map((article, index) => {
-              if (!article) return null;
+            {latestArticles.map((article, index) => {
               const categorySlug = getCategorySlug(article.category);
               return (
                 <div
