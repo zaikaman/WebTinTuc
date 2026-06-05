@@ -94,18 +94,18 @@ export function Header({ settings }: HeaderProps) {
               </div>
             </div>
             <div className="flex shrink-0 items-center justify-end gap-3 lg:gap-4">
-                {utilityLink && utilityLink.href ? (
+              {utilityLink && utilityLink.href ? (
                 <Link
                   href={utilityLink.href}
                   className="whitespace-nowrap text-sm font-bold text-white transition-colors hover:text-[#ffebeb] lg:text-[15px]"
                 >
                   {utilityLink.label}
                 </Link>
-                ) : utilityLink ? (
-                  <span className="whitespace-nowrap text-sm font-bold text-white lg:text-[15px]">
-                    {utilityLink.label}
-                  </span>
-              )}
+              ) : utilityLink ? (
+                <span className="whitespace-nowrap text-sm font-bold text-white lg:text-[15px]">
+                  {utilityLink.label}
+                </span>
+              ) : null}
               <div className="flex items-center gap-2.5">
                 {settings.socialLinks.map((item) => (
                   <HeaderSocialLink key={`${item.label}-${item.href}`} item={item} />
