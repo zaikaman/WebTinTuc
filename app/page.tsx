@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { mockArticles } from "@/lib/mockData";
+import { mockArticles, getCategorySlug } from "@/lib/mockData";
 import { Clock } from "lucide-react";
 
 export default function HomePage() {
@@ -77,34 +77,42 @@ export default function HomePage() {
           <div className="flex flex-col bg-white border border-gray-200 rounded-sm p-4 shadow-sm divide-y divide-gray-200">
             {listArticles.map((article, index) => {
               if (!article) return null;
+              const categorySlug = getCategorySlug(article.category);
               return (
-                <Link
+                <div
                   key={`${article.id}-${index}`}
-                  href={`/posts/${article.id}`}
-                  className="group flex gap-4 py-4 first:pt-1 last:pb-1 cursor-pointer transition-colors hover:bg-gray-50/30"
+                  className="group flex gap-4 py-4 first:pt-1 last:pb-1 transition-colors hover:bg-gray-50/30"
                 >
                   {/* Thumbnail Left */}
-                  <div className="relative w-[130px] h-[82px] sm:w-[160px] sm:h-[100px] flex-shrink-0 overflow-hidden border border-gray-200 bg-gray-50 rounded-sm">
+                  <Link
+                    href={`/posts/${article.id}`}
+                    className="relative w-[130px] h-[82px] sm:w-[160px] sm:h-[100px] flex-shrink-0 overflow-hidden border border-gray-200 bg-gray-50 rounded-sm block"
+                  >
                     <img
                       src={article.image || "/placeholder.svg"}
                       alt={article.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
-                  </div>
+                  </Link>
 
                   {/* Title & Metadata Right */}
                   <div className="flex flex-col justify-between py-0.5 flex-1 min-h-[82px] sm:min-h-[100px]">
                     <div>
-                      <h3 className="text-gray-900 font-bold text-xs sm:text-[14px] leading-snug tracking-tight group-hover:text-brand-red transition-colors line-clamp-2 font-sans">
-                        {article.title}
-                      </h3>
+                      <Link href={`/posts/${article.id}`} className="block">
+                        <h3 className="text-gray-900 font-bold text-xs sm:text-[14px] leading-snug tracking-tight group-hover:text-brand-red transition-colors line-clamp-2 font-sans">
+                          {article.title}
+                        </h3>
+                      </Link>
                     </div>
 
                     {/* Metadata */}
                     <div className="flex items-center gap-2 mt-2 text-[10px] sm:text-[11px] text-gray-500 font-sans font-medium">
-                      <span className="text-gray-700 font-semibold text-[10px] sm:text-[11px] tracking-wide">
+                      <Link
+                        href={`/${categorySlug}`}
+                        className="text-gray-700 hover:text-brand-red font-semibold text-[10px] sm:text-[11px] tracking-wide transition-colors duration-150 hover:underline"
+                      >
                         {article.category}
-                      </span>
+                      </Link>
                       <span className="text-gray-300">&#8226;</span>
                       <span>{article.time.split(" ")[0]}</span>
                       {article.time.includes(" ") && (
@@ -115,7 +123,7 @@ export default function HomePage() {
                       )}
                     </div>
                   </div>
-                </Link>
+                </div>
               );
             })}
           </div>

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getOrGenerateArticle, mockArticles } from "@/lib/mockData";
+import { getOrGenerateArticle, mockArticles, getCategorySlug } from "@/lib/mockData";
 import { Clock, Link2, Star } from "lucide-react";
 
 interface PageProps {
@@ -50,9 +50,12 @@ export default async function PostDetailPage({ params }: PageProps) {
           <article className="w-full bg-white border border-gray-200 p-4 sm:p-5 rounded-sm shadow-sm">
             {/* Metadata: Category & Date Time */}
             <div className="flex items-center gap-1.5 text-gray-500 font-semibold mb-2">
-              <span className="text-brand-red font-bold uppercase tracking-wide text-[11px]">
+              <Link
+                href={`/${getCategorySlug(article.category)}`}
+                className="text-brand-red font-bold uppercase tracking-wide text-[11px] hover:underline"
+              >
                 {article.category}
-              </span>
+              </Link>
               <span className="text-gray-300">&#8226;</span>
               <span className="text-[11px]">{article.time.split(" ")[0]}</span>
               {article.time.includes(" ") && (
@@ -143,24 +146,33 @@ export default async function PostDetailPage({ params }: PageProps) {
                 <div className="flex flex-col gap-4">
                   {relatedPosts.map((item) => {
                     if (!item) return null;
+                    const catSlug = getCategorySlug(item.category);
                     return (
-                      <Link
+                      <div
                         key={item.id}
-                        href={`/posts/${item.id}`}
                         className="group block space-y-1.5 pb-3 border-b border-gray-100 last:border-b-0 last:pb-0"
                       >
-                        <div className="relative aspect-video w-full overflow-hidden bg-gray-100 rounded-sm border border-gray-200">
-                          <img
-                            src={item.image}
-                            alt={item.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          />
-                        </div>
-                        <h3 className="text-gray-900 font-bold text-[11px] sm:text-xs leading-snug group-hover:text-brand-red transition-colors line-clamp-2">
-                          {item.title}
-                        </h3>
+                        <Link href={`/posts/${item.id}`} className="block">
+                          <div className="relative aspect-video w-full overflow-hidden bg-gray-100 rounded-sm border border-gray-200">
+                            <img
+                              src={item.image}
+                              alt={item.title}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                          </div>
+                        </Link>
+                        <Link href={`/posts/${item.id}`} className="block">
+                          <h3 className="text-gray-900 font-bold text-[11px] sm:text-xs leading-snug group-hover:text-brand-red transition-colors line-clamp-2">
+                            {item.title}
+                          </h3>
+                        </Link>
                         <div className="flex items-center gap-1 text-[9px] sm:text-[10px] text-gray-500 font-semibold">
-                          <span className="text-[#e24a48] font-bold uppercase">{item.category}</span>
+                          <Link
+                            href={`/${catSlug}`}
+                            className="text-[#e24a48] font-bold uppercase hover:underline"
+                          >
+                            {item.category}
+                          </Link>
                           <span className="text-gray-300">&#8226;</span>
                           <span className="text-gray-400 font-normal">{item.time.split(" ")[0]}</span>
                           {item.time.includes(" ") && (
@@ -170,7 +182,7 @@ export default async function PostDetailPage({ params }: PageProps) {
                             </>
                           )}
                         </div>
-                      </Link>
+                      </div>
                     );
                   })}
                 </div>
@@ -186,24 +198,33 @@ export default async function PostDetailPage({ params }: PageProps) {
                 <div className="flex flex-col gap-4">
                   {likePosts.map((item) => {
                     if (!item) return null;
+                    const catSlug = getCategorySlug(item.category);
                     return (
-                      <Link
+                      <div
                         key={item.id}
-                        href={`/posts/${item.id}`}
                         className="group block space-y-1.5 pb-3 border-b border-gray-100 last:border-b-0 last:pb-0"
                       >
-                        <div className="relative aspect-video w-full overflow-hidden bg-gray-100 rounded-sm border border-gray-200">
-                          <img
-                            src={item.image}
-                            alt={item.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          />
-                        </div>
-                        <h3 className="text-gray-900 font-bold text-[11px] sm:text-xs leading-snug group-hover:text-brand-red transition-colors line-clamp-2">
-                          {item.title}
-                        </h3>
+                        <Link href={`/posts/${item.id}`} className="block">
+                          <div className="relative aspect-video w-full overflow-hidden bg-gray-100 rounded-sm border border-gray-200">
+                            <img
+                              src={item.image}
+                              alt={item.title}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                          </div>
+                        </Link>
+                        <Link href={`/posts/${item.id}`} className="block">
+                          <h3 className="text-gray-900 font-bold text-[11px] sm:text-xs leading-snug group-hover:text-brand-red transition-colors line-clamp-2">
+                            {item.title}
+                          </h3>
+                        </Link>
                         <div className="flex items-center gap-1 text-[9px] sm:text-[10px] text-gray-500 font-semibold">
-                          <span className="text-[#e24a48] font-bold uppercase">{item.category}</span>
+                          <Link
+                            href={`/${catSlug}`}
+                            className="text-[#e24a48] font-bold uppercase hover:underline"
+                          >
+                            {item.category}
+                          </Link>
                           <span className="text-gray-300">&#8226;</span>
                           <span className="text-gray-400 font-normal">{item.time.split(" ")[0]}</span>
                           {item.time.includes(" ") && (
@@ -213,7 +234,7 @@ export default async function PostDetailPage({ params }: PageProps) {
                             </>
                           )}
                         </div>
-                      </Link>
+                      </div>
                     );
                   })}
                 </div>

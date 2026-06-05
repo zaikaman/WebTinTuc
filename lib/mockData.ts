@@ -16,6 +16,16 @@ export interface Article {
   content?: ContentBlock[];
 }
 
+export function getCategorySlug(category: string): string {
+  const norm = category.toLowerCase().trim();
+  if (norm.includes("tin tức") || norm.includes("tin-tuc")) return "tin-tuc";
+  if (norm.includes("anime") || norm.includes("manga")) return "anime-manga";
+  if (norm.includes("công nghệ") || norm.includes("cong-nghe") || norm.includes("gear")) return "cong-nghe";
+  if (norm.includes("phim") || norm.includes("film")) return "phim";
+  if (norm.includes("kiến thức") || norm.includes("kien-thuc")) return "kien-thuc";
+  return "tin-tuc";
+}
+
 export const mockArticles: Article[] = [
   // Oc Muon Hon Movie Article
   {
