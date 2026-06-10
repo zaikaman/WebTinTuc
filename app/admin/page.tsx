@@ -1700,8 +1700,7 @@ export default function AdminPage() {
                         return (
                           <div
                             key={post.id}
-                            onClick={() => handleOpenEditDialog(post)}
-                            className="flex items-center justify-between p-3.5 rounded-xl border border-transparent hover:border-gray-100 hover:bg-slate-50/50 transition-all cursor-pointer group"
+                            className="flex items-center justify-between p-3.5 rounded-xl border border-transparent group"
                           >
                             <div className="flex items-center gap-3.5 min-w-0 flex-1">
                               <span className={`w-6.5 h-6.5 rounded-full flex items-center justify-center text-xs font-black flex-shrink-0 ${badgeColors[index] || "bg-gray-100 text-gray-600"}`}>
