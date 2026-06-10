@@ -17,7 +17,21 @@ import {
   PlusCircle,
   HelpCircle,
   TrendingUp,
-  LayoutDashboard
+  LayoutDashboard,
+  ArrowLeft,
+  Save,
+  Bold,
+  Italic,
+  Underline,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  AlignJustify,
+  List,
+  ListOrdered,
+  Video,
+  Upload,
+  ChevronDown
 } from "lucide-react";
 import { Toaster, toast } from "sonner";
 import { AnimatePresence, motion } from "framer-motion";
@@ -39,6 +53,8 @@ interface Post {
   views: number;
   status: "Đã đăng" | "Nháp";
   createdAt: string;
+  content?: string;
+  coverImage?: string;
 }
 
 interface Category {
@@ -67,6 +83,9 @@ export default function AdminPage() {
   // ==========================================
   const [activeTab, setActiveTab] = useState<TabType>("posts");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [currentView, setCurrentView] = useState<"list" | "editor">("list");
+  const [postCoverImage, setPostCoverImage] = useState<string | null>(null);
+  const [postContent, setPostContent] = useState<string>("");
 
   // Search & Filters state
   const [searchQuery, setSearchQuery] = useState("");
@@ -317,11 +336,14 @@ export default function AdminPage() {
     if (activeTab === "posts") {
       setPostForm({
         title: "",
-        category: categoryOptions[0] || "Công nghệ",
+        category: categoryOptions[0] || "Tin tức",
         views: 0,
-        status: "Đã đăng",
+        status: "Nháp",
         createdAt: new Date().toISOString().split("T")[0]
       });
+      setPostContent("");
+      setPostCoverImage(null);
+      setCurrentView("editor");
     } else if (activeTab === "categories") {
       setCategoryForm({
         name: "",
@@ -329,6 +351,7 @@ export default function AdminPage() {
         priority: categories.length + 1,
         status: "Hoạt động"
       });
+      setDialogOpen(true);
     } else {
       setAdForm({
         name: "",
@@ -338,8 +361,8 @@ export default function AdminPage() {
         endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
         status: "Hoạt động"
       });
+      setDialogOpen(true);
     }
-    setDialogOpen(true);
   };
 
   const handleOpenEditDialog = (item: any) => {
@@ -347,12 +370,16 @@ export default function AdminPage() {
     setEditId(item.id);
     if (activeTab === "posts") {
       setPostForm(item);
+      setPostContent(item.content || "");
+      setPostCoverImage(item.coverImage || null);
+      setCurrentView("editor");
     } else if (activeTab === "categories") {
       setCategoryForm(item);
+      setDialogOpen(true);
     } else {
       setAdForm(item);
+      setDialogOpen(true);
     }
-    setDialogOpen(true);
   };
 
   const handleConfirmDelete = (id: number) => {
@@ -459,6 +486,292 @@ export default function AdminPage() {
     resetFilters(false);
     setSidebarOpen(false);
   };
+
+  const handleSavePost = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!postForm.title?.trim()) {
+      toast.error("Vui lòng nhập tiêu đề bài viết!");
+      return;
+    }
+
+    if (dialogMode === "add") {
+      const newPost: Post = {
+        id: posts.length > 0 ? Math.max(...posts.map(p => p.id)) + 1 : 1,
+        title: postForm.title,
+        category: postForm.category || "Tin tức",
+        views: 0,
+        status: postForm.status || "Đã đăng",
+        createdAt: postForm.createdAt || new Date().toISOString().split("T")[0],
+        content: postContent,
+        coverImage: postCoverImage || undefined
+      };
+      setPosts([newPost, ...posts]);
+      toast.success("Thêm bài viết mới thành công!");
+    } else {
+      setPosts(
+        posts.map(p =>
+          p.id === editId
+            ? ({
+                ...p,
+                ...postForm,
+                content: postContent,
+                coverImage: postCoverImage || undefined
+              } as Post)
+            : p
+        )
+      );
+      toast.success("Cập nhật bài viết thành công!");
+    }
+    setCurrentView("list");
+  };
+
+  const handleTriggerImageUpload = () => {
+    document.getElementById("cover-upload-input")?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPostCoverImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  if (currentView === "editor") {
+    return (
+      <div className="min-h-screen bg-[#fafbfc] text-[#2c3e50] font-sans antialiased flex flex-col animate-fade-in">
+        <Toaster position="top-right" richColors />
+        
+        {/* Top Header */}
+        <header className="h-[65px] bg-white border-b border-gray-200 px-6 flex items-center justify-between sticky top-0 z-30 shadow-sm">
+          <button
+            type="button"
+            onClick={() => {
+              setCurrentView("list");
+              setPostCoverImage(null);
+            }}
+            className="flex items-center gap-2 text-gray-800 hover:text-gray-950 font-bold text-sm transition-all"
+          >
+            <ArrowLeft size={18} />
+            <span>Quay lại</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleSavePost}
+            className="flex items-center gap-2 px-5 py-2.5 bg-[#E55956] hover:bg-[#cb4643] text-white text-sm font-bold rounded-xl transition-all shadow-md active:scale-[0.98]"
+          >
+            <Save size={16} />
+            <span>Lưu bài viết</span>
+          </button>
+        </header>
+
+        {/* Editor Body */}
+        <main className="max-w-6xl w-full mx-auto p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          
+          {/* Left Column (Main Editor) */}
+          <div className="lg:col-span-8 flex flex-col gap-4">
+            
+            {/* Title */}
+            <div className="space-y-1.5 flex-shrink-0">
+              <label className="text-sm font-bold text-gray-700">Tiêu đề bài viết</label>
+              <input
+                type="text"
+                value={postForm.title || ""}
+                onChange={(e) => setPostForm({ ...postForm, title: e.target.value })}
+                placeholder="Nhập tiêu đề..."
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-base outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white shadow-sm font-medium"
+                required
+              />
+            </div>
+
+            {/* Rich Text Toolbar */}
+            <div className="flex flex-wrap items-center gap-1 bg-white border border-gray-200 rounded-xl p-1.5 shadow-sm text-gray-600 flex-shrink-0">
+              
+              {/* Font Family Dropdown */}
+              <div className="relative">
+                <select className="bg-transparent hover:bg-gray-100 px-2.5 py-1.5 rounded-lg text-xs font-semibold outline-none cursor-pointer appearance-none pr-6 border-none text-gray-700">
+                  <option value="Arial">Arial</option>
+                  <option value="Times New Roman">Times New Roman</option>
+                  <option value="Helvetica">Helvetica</option>
+                  <option value="Georgia">Georgia</option>
+                </select>
+                <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              </div>
+
+              <div className="h-4 w-px bg-gray-200 mx-1" />
+
+              {/* Font Size Dropdown */}
+              <div className="relative">
+                <select className="bg-transparent hover:bg-gray-100 px-2.5 py-1.5 rounded-lg text-xs font-semibold outline-none cursor-pointer appearance-none pr-6 border-none text-gray-700">
+                  <option value="12px">12px</option>
+                  <option value="14px">14px</option>
+                  <option value="16px">16px</option>
+                  <option value="18px">18px</option>
+                  <option value="20px">20px</option>
+                  <option value="24px">24px</option>
+                </select>
+                <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              </div>
+
+              <div className="h-4 w-px bg-gray-200 mx-1" />
+
+              {/* Formatting buttons */}
+              <button type="button" className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900" title="Bold">
+                <Bold size={15} />
+              </button>
+              <button type="button" className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900" title="Italic">
+                <Italic size={15} />
+              </button>
+              <button type="button" className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900" title="Underline">
+                <Underline size={15} />
+              </button>
+
+              <div className="h-4 w-px bg-gray-200 mx-1" />
+
+              {/* Alignment */}
+              <button type="button" className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900" title="Align Left">
+                <AlignLeft size={15} />
+              </button>
+              <button type="button" className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900" title="Align Center">
+                <AlignCenter size={15} />
+              </button>
+              <button type="button" className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900" title="Align Right">
+                <AlignRight size={15} />
+              </button>
+              <button type="button" className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900" title="Align Justify">
+                <AlignJustify size={15} />
+              </button>
+
+              <div className="h-4 w-px bg-gray-200 mx-1" />
+
+              {/* Lists */}
+              <button type="button" className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900" title="Bullet List">
+                <List size={15} />
+              </button>
+              <button type="button" className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900" title="Numbered List">
+                <ListOrdered size={15} />
+              </button>
+
+              <div className="h-4 w-px bg-gray-200 mx-1" />
+
+              {/* Media */}
+              <button type="button" className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900" title="Insert Image">
+                <ImageIcon size={15} />
+              </button>
+              <button type="button" className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900" title="Insert Video">
+                <Video size={15} />
+              </button>
+
+            </div>
+
+            {/* Editor Textarea */}
+            <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 flex flex-col min-h-[450px]">
+              <textarea
+                value={postContent}
+                onChange={(e) => setPostContent(e.target.value)}
+                placeholder="Bắt đầu nội dung bài viết..."
+                className="w-full flex-1 resize-none outline-none text-sm leading-relaxed text-gray-800 placeholder-gray-400 bg-transparent border-none"
+              />
+            </div>
+
+          </div>
+
+          {/* Right Column (Settings) */}
+          <div className="lg:col-span-4 flex flex-col gap-5">
+            
+            {/* Card: Thông tin bài viết */}
+            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4 flex-shrink-0">
+              <h3 className="text-sm font-bold text-gray-800 border-b border-gray-100 pb-2.5">
+                Thông tin bài viết
+              </h3>
+
+              <div className="space-y-3.5">
+                
+                {/* Category Selection */}
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Danh mục</label>
+                  <div className="relative">
+                    <select
+                      value={postForm.category || ""}
+                      onChange={(e) => setPostForm({ ...postForm, category: e.target.value })}
+                      className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-gray-50/50 appearance-none font-semibold text-gray-800"
+                    >
+                      {categoryOptions.map(cat => (
+                        <option key={cat} value={cat}>
+                          {cat}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown size={14} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  </div>
+                </div>
+
+                {/* Status Selection */}
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Trạng thái</label>
+                  <div className="relative">
+                    <select
+                      value={postForm.status || "Nháp"}
+                      onChange={(e) => setPostForm({ ...postForm, status: e.target.value as "Đã đăng" | "Nháp" })}
+                      className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-gray-50/50 appearance-none font-semibold text-gray-800"
+                    >
+                      <option value="Đã đăng">Đã đăng</option>
+                      <option value="Nháp">Nháp</option>
+                    </select>
+                    <ChevronDown size={14} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            {/* Card: Ảnh bìa */}
+            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm flex flex-col gap-4">
+              <h3 className="text-sm font-bold text-gray-800 border-b border-gray-100 pb-2.5 flex-shrink-0">
+                Ảnh bìa
+              </h3>
+
+              {postCoverImage ? (
+                <div className="relative rounded-xl overflow-hidden border border-gray-200 group aspect-[16/10] w-full flex-shrink-0">
+                  <img src={postCoverImage} alt="Cover Preview" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <button
+                      type="button"
+                      onClick={() => setPostCoverImage(null)}
+                      className="px-3.5 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg transition-colors shadow-md"
+                    >
+                      Xóa ảnh
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  onClick={handleTriggerImageUpload}
+                  className="border-2 border-dashed border-gray-200 hover:border-[#E55956] hover:bg-[#E55956]/5 transition-all rounded-xl p-6 flex flex-col items-center justify-center gap-2 cursor-pointer aspect-[16/10] w-full flex-shrink-0 group"
+                >
+                  <Upload size={24} className="text-gray-400 group-hover:text-[#E55956] transition-colors" />
+                  <span className="text-xs font-bold text-gray-500 group-hover:text-[#E55956] transition-colors">Tải ảnh bìa lên</span>
+                  <input
+                    type="file"
+                    id="cover-upload-input"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                  />
+                </div>
+              )}
+            </div>
+
+          </div>
+
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#f4f6f8] flex font-sans antialiased text-[#2c3e50]">
