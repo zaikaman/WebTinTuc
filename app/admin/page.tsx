@@ -73,6 +73,7 @@ interface Ad {
   startDate: string;
   endDate: string;
   status: "Hoạt động" | "Ngừng hoạt động";
+  image?: string;
 }
 
 type TabType = "posts" | "categories" | "ads";
@@ -243,6 +244,7 @@ export default function AdminPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<"add" | "edit">("add");
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
+  const [adDialogOpen, setAdDialogOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [targetIdToDelete, setTargetIdToDelete] = useState<number | null>(null);
 
@@ -375,9 +377,10 @@ export default function AdminPage() {
         clicks: 0,
         startDate: new Date().toISOString().split("T")[0],
         endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-        status: "Hoạt động"
+        status: "Hoạt động",
+        image: undefined
       });
-      setDialogOpen(true);
+      setAdDialogOpen(true);
     }
   };
 
@@ -400,7 +403,7 @@ export default function AdminPage() {
       setCategoryDialogOpen(true);
     } else {
       setAdForm(item);
-      setDialogOpen(true);
+      setAdDialogOpen(true);
     }
   };
 
@@ -481,7 +484,8 @@ export default function AdminPage() {
           clicks: Number(adForm.clicks) || 0,
           startDate: adForm.startDate || new Date().toISOString().split("T")[0],
           endDate: adForm.endDate || new Date().toISOString().split("T")[0],
-          status: adForm.status || "Hoạt động"
+          status: adForm.status || "Hoạt động",
+          image: adForm.image
         };
         setAds([newAd, ...ads]);
         toast.success("Thêm quảng cáo mới thành công!");
@@ -1655,99 +1659,7 @@ export default function AdminPage() {
 
 
 
-            {/* ADS FIELDS */}
-            {activeTab === "ads" && (
-              <>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">
-                    Tên AD
-                  </label>
-                  <input
-                    type="text"
-                    value={adForm.name || ""}
-                    onChange={(e) => setAdForm({ ...adForm, name: e.target.value })}
-                    placeholder="Nhập tên AD..."
-                    className="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-gray-50/50"
-                    required
-                  />
-                </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">
-                      Vị trí hiển thị
-                    </label>
-                    <select
-                      value={adForm.position || ""}
-                      onChange={(e) => setAdForm({ ...adForm, position: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-gray-50/50"
-                    >
-                      <option value="Header">Header</option>
-                      <option value="Top Banner">Top Banner</option>
-                      <option value="SideBar 1">SideBar 1</option>
-                      <option value="SideBar 2">SideBar 2</option>
-                      <option value="SideBar 3">SideBar 3</option>
-                      <option value="Footer">Footer</option>
-                    </select>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">
-                      Clicks
-                    </label>
-                    <input
-                      type="number"
-                      value={adForm.clicks ?? 0}
-                      onChange={(e) => setAdForm({ ...adForm, clicks: Number(e.target.value) })}
-                      className="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-gray-50/50"
-                      min="0"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">
-                      Ngày bắt đầu
-                    </label>
-                    <input
-                      type="date"
-                      value={adForm.startDate || ""}
-                      onChange={(e) => setAdForm({ ...adForm, startDate: e.target.value })}
-                      className="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-gray-50/50"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">
-                      Ngày kết thúc
-                    </label>
-                    <input
-                      type="date"
-                      value={adForm.endDate || ""}
-                      onChange={(e) => setAdForm({ ...adForm, endDate: e.target.value })}
-                      className="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-gray-50/50"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">
-                    Trạng thái
-                  </label>
-                  <select
-                    value={adForm.status || ""}
-                    onChange={(e) =>
-                      setAdForm({ ...adForm, status: e.target.value as "Hoạt động" | "Ngừng hoạt động" })
-                    }
-                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-gray-50/50"
-                  >
-                    <option value="Hoạt động">Hoạt động</option>
-                    <option value="Ngừng hoạt động">Ngừng hoạt động</option>
-                  </select>
-                </div>
-              </>
-            )}
 
             <DialogFooter className="pt-4 border-t border-gray-100 flex flex-row items-center justify-end gap-2.5">
               <button
@@ -1818,6 +1730,142 @@ export default function AdminPage() {
               <button
                 type="button"
                 onClick={() => setCategoryDialogOpen(false)}
+                className="w-36 py-3 border border-gray-200 hover:bg-gray-50 text-gray-900 text-lg font-bold rounded-xl transition-all shadow-sm flex items-center justify-center"
+              >
+                Hủy
+              </button>
+              <button
+                type="submit"
+                className="w-36 py-3 bg-[#e86b6b] hover:bg-[#e55956] text-white text-lg font-bold rounded-xl transition-all shadow-md flex items-center justify-center"
+              >
+                {dialogMode === "add" ? "Thêm" : "Sửa"}
+              </button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ==========================================
+          MODAL: ADD / EDIT AD DIALOG FORM
+          ========================================== */}
+      <Dialog open={adDialogOpen} onOpenChange={setAdDialogOpen}>
+        <DialogContent className="max-w-[480px] w-[95%] rounded-[24px] p-6 border border-gray-100 shadow-2xl bg-white text-[#2c3e50] outline-none [&>button]:hidden">
+          <DialogHeader className="border-b border-gray-150 pb-3 -mx-6 px-6">
+            <DialogTitle className="text-xl font-bold text-gray-900 text-left">
+              {dialogMode === "add" ? "Thêm quảng cáo" : "Sửa quảng cáo"}
+            </DialogTitle>
+          </DialogHeader>
+
+          <form onSubmit={handleFormSubmit} className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-gray-900">
+                Tên quảng cáo
+              </label>
+              <input
+                type="text"
+                value={adForm.name || ""}
+                onChange={(e) => setAdForm({ ...adForm, name: e.target.value })}
+                placeholder="Nhập tên quảng cáo..."
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white shadow-sm font-medium"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-gray-900">
+                Vị trí quảng cáo
+              </label>
+              <div className="relative">
+                <select
+                  value={adForm.position || "Header"}
+                  onChange={(e) => setAdForm({ ...adForm, position: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white shadow-sm font-semibold text-gray-800 appearance-none cursor-pointer"
+                >
+                  <option value="Header">Header</option>
+                  <option value="Top Banner">Top Banner</option>
+                  <option value="SideBar 1">SideBar 1</option>
+                  <option value="SideBar 2">SideBar 2</option>
+                  <option value="SideBar 3">SideBar 3</option>
+                  <option value="Footer">Footer</option>
+                </select>
+                <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-gray-900">
+                Thời gian quảng cáo
+              </label>
+              <div className="flex items-center gap-4 text-sm font-bold text-gray-900">
+                <span className="flex-shrink-0 text-gray-800">Từ:</span>
+                <input
+                  type="date"
+                  value={adForm.startDate || ""}
+                  onChange={(e) => setAdForm({ ...adForm, startDate: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm font-medium outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white shadow-sm"
+                  required
+                />
+                <span className="flex-shrink-0 text-gray-800">Đến:</span>
+                <input
+                  type="date"
+                  value={adForm.endDate || ""}
+                  onChange={(e) => setAdForm({ ...adForm, endDate: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm font-medium outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white shadow-sm"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-gray-900">
+                Ảnh quảng cáo
+              </label>
+              {adForm.image ? (
+                <div className="relative rounded-xl overflow-hidden border border-gray-200 group aspect-[2.2/1] w-full flex-shrink-0 bg-gray-50 flex items-center justify-center">
+                  <img src={adForm.image} alt="Ad Preview" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <button
+                      type="button"
+                      onClick={() => setAdForm({ ...adForm, image: undefined })}
+                      className="px-3.5 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg transition-colors shadow-md"
+                    >
+                      Xóa ảnh
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  onClick={() => document.getElementById("ad-upload-input")?.click()}
+                  className="border-2 border-dashed border-gray-200 hover:border-[#E55956] hover:bg-[#E55956]/5 transition-all rounded-xl p-5 flex flex-col items-center justify-center gap-2 cursor-pointer aspect-[2.2/1] w-full group bg-gray-50/20"
+                >
+                  <Upload size={24} className="text-gray-400 group-hover:text-[#E55956] transition-colors" />
+                  <span className="text-xs font-bold text-gray-500 group-hover:text-[#E55956] transition-colors">
+                    Click để tải ảnh hoặc kéo thả
+                  </span>
+                  <input
+                    type="file"
+                    id="ad-upload-input"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          setAdForm({ ...adForm, image: reader.result as string });
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-center gap-6 pt-4 pb-2">
+              <button
+                type="button"
+                onClick={() => setAdDialogOpen(false)}
                 className="w-36 py-3 border border-gray-200 hover:bg-gray-50 text-gray-900 text-lg font-bold rounded-xl transition-all shadow-sm flex items-center justify-center"
               >
                 Hủy
