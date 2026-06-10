@@ -1110,7 +1110,7 @@ export default function AdminPage() {
           </div>
 
           {/* Right Column (Settings) */}
-          <div className="lg:col-span-4 flex flex-col gap-5">
+          <div className="lg:col-span-4 flex flex-col gap-5 lg:sticky lg:top-[85px]">
             
             {/* Card: Thông tin bài viết */}
             <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4 flex-shrink-0">
@@ -1328,7 +1328,7 @@ export default function AdminPage() {
       <div
         className={`fixed top-0 bottom-0 left-0 z-40 w-[260px] bg-[#E55956] text-white p-5 flex flex-col justify-between transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } lg:relative lg:flex`}
+        } lg:sticky lg:top-0 lg:h-screen lg:flex`}
       >
         <div>
           {/* Logo Brand Header */}
