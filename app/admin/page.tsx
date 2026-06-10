@@ -242,6 +242,7 @@ export default function AdminPage() {
   // Dialog / Modal Form states
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<"add" | "edit">("add");
+  const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [targetIdToDelete, setTargetIdToDelete] = useState<number | null>(null);
 
@@ -363,10 +364,10 @@ export default function AdminPage() {
       setCategoryForm({
         name: "",
         postCount: 0,
-        priority: categories.length + 1,
+        priority: 0,
         status: "Hoạt động"
       });
-      setDialogOpen(true);
+      setCategoryDialogOpen(true);
     } else {
       setAdForm({
         name: "",
@@ -396,7 +397,7 @@ export default function AdminPage() {
       setCurrentView("editor");
     } else if (activeTab === "categories") {
       setCategoryForm(item);
-      setDialogOpen(true);
+      setCategoryDialogOpen(true);
     } else {
       setAdForm(item);
       setDialogOpen(true);
@@ -456,9 +457,9 @@ export default function AdminPage() {
         const newCategory: Category = {
           id: categories.length > 0 ? Math.max(...categories.map(c => c.id)) + 1 : 1,
           name: categoryForm.name,
-          postCount: Number(categoryForm.postCount) || 0,
+          postCount: 0,
           priority: Number(categoryForm.priority) || 0,
-          status: categoryForm.status || "Hoạt động"
+          status: "Hoạt động"
         };
         setCategories([...categories, newCategory]);
         toast.success("Thêm danh mục mới thành công!");
@@ -466,6 +467,7 @@ export default function AdminPage() {
         setCategories(categories.map(c => (c.id === editId ? { ...c, ...categoryForm } as Category : c)));
         toast.success("Cập nhật danh mục thành công!");
       }
+      setCategoryDialogOpen(false);
     } else {
       if (!adForm.name?.trim()) {
         toast.error("Vui lòng nhập tên quảng cáo!");
@@ -1651,71 +1653,7 @@ export default function AdminPage() {
               </>
             )}
 
-            {/* CATEGORIES FIELDS */}
-            {activeTab === "categories" && (
-              <>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">
-                    Tên danh mục
-                  </label>
-                  <input
-                    type="text"
-                    value={categoryForm.name || ""}
-                    onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
-                    placeholder="Nhập tên danh mục..."
-                    className="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-gray-50/50"
-                    required
-                  />
-                </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">
-                      Priority
-                    </label>
-                    <input
-                      type="number"
-                      value={categoryForm.priority ?? 0}
-                      onChange={(e) => setCategoryForm({ ...categoryForm, priority: Number(e.target.value) })}
-                      className="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-gray-50/50"
-                      min="0"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">
-                      Số bài viết
-                    </label>
-                    <input
-                      type="number"
-                      value={categoryForm.postCount ?? 0}
-                      onChange={(e) => setCategoryForm({ ...categoryForm, postCount: Number(e.target.value) })}
-                      className="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-gray-50/50"
-                      min="0"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">
-                    Trạng thái
-                  </label>
-                  <select
-                    value={categoryForm.status || ""}
-                    onChange={(e) =>
-                      setCategoryForm({
-                        ...categoryForm,
-                        status: e.target.value as "Hoạt động" | "Ngừng hoạt động"
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-gray-50/50"
-                  >
-                    <option value="Hoạt động">Hoạt động</option>
-                    <option value="Ngừng hoạt động">Ngừng hoạt động</option>
-                  </select>
-                </div>
-              </>
-            )}
 
             {/* ADS FIELDS */}
             {activeTab === "ads" && (
@@ -1826,6 +1764,71 @@ export default function AdminPage() {
                 {dialogMode === "add" ? "Thêm mới" : "Lưu thay đổi"}
               </button>
             </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ==========================================
+          MODAL: ADD / EDIT CATEGORY DIALOG FORM
+          ========================================== */}
+      <Dialog open={categoryDialogOpen} onOpenChange={setCategoryDialogOpen}>
+        <DialogContent className="max-w-[460px] w-[95%] rounded-[24px] p-6 border border-gray-100 shadow-2xl bg-white text-[#2c3e50] outline-none [&>button]:hidden">
+          <DialogHeader className="border-b border-gray-150 pb-3 -mx-6 px-6">
+            <DialogTitle className="text-xl font-bold text-gray-900 text-left">
+              {dialogMode === "add" ? "Thêm danh mục" : "Cập nhật danh mục"}
+            </DialogTitle>
+          </DialogHeader>
+
+          <form onSubmit={handleFormSubmit} className="space-y-5 pt-4">
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-gray-900">
+                Tên danh mục
+              </label>
+              <input
+                type="text"
+                value={categoryForm.name || ""}
+                onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
+                placeholder="Nhập tên danh mục..."
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white shadow-sm font-medium"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-gray-900">
+                Priority
+              </label>
+              <div className="relative">
+                <select
+                  value={categoryForm.priority ?? 0}
+                  onChange={(e) => setCategoryForm({ ...categoryForm, priority: Number(e.target.value) })}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white shadow-sm font-semibold text-gray-800 appearance-none cursor-pointer"
+                >
+                  {Array.from({ length: 11 }).map((_, i) => (
+                    <option key={i} value={i}>
+                      {i}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-center gap-6 pt-6 pb-2">
+              <button
+                type="button"
+                onClick={() => setCategoryDialogOpen(false)}
+                className="w-36 py-3 border border-gray-200 hover:bg-gray-50 text-gray-900 text-lg font-bold rounded-xl transition-all shadow-sm flex items-center justify-center"
+              >
+                Hủy
+              </button>
+              <button
+                type="submit"
+                className="w-36 py-3 bg-[#e86b6b] hover:bg-[#e55956] text-white text-lg font-bold rounded-xl transition-all shadow-md flex items-center justify-center"
+              >
+                {dialogMode === "add" ? "Thêm" : "Lưu"}
+              </button>
+            </div>
           </form>
         </DialogContent>
       </Dialog>
