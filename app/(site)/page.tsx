@@ -54,15 +54,16 @@ export default async function HomePage() {
               <div className="flex flex-col bg-white border border-gray-200 rounded-sm p-4 shadow-sm divide-y divide-gray-200">
                 {group.map((article, index) => {
                   const categorySlug = getCategorySlug(article.category);
+                  const displayIntro = article.intro || `Bản tin mới nhất về ${article.category.toLowerCase()} - Cập nhật nhanh các thông tin xoay quanh chủ đề "${article.title}" đang thu hút sự chú ý của độc giả.`;
                   return (
                     <div
                       key={`${article.id}-${index}`}
-                      className="group flex gap-4 py-4 first:pt-1 last:pb-1 transition-colors hover:bg-gray-50/30"
+                      className="group flex gap-4 py-5 first:pt-2 last:pb-2 transition-colors hover:bg-gray-50/30"
                     >
                       {/* Thumbnail Left */}
                       <Link
                         href={`/posts/${article.id}`}
-                        className="relative w-[130px] h-[82px] sm:w-[160px] sm:h-[100px] flex-shrink-0 overflow-hidden border border-gray-200 bg-gray-50 rounded-sm block"
+                        className="relative w-[130px] h-[82px] sm:w-[220px] sm:h-[138px] flex-shrink-0 overflow-hidden border border-gray-200 bg-gray-50 rounded-sm block"
                       >
                         <img
                           src={article.image || "/placeholder.svg"}
@@ -72,13 +73,16 @@ export default async function HomePage() {
                       </Link>
 
                       {/* Title & Metadata Right */}
-                      <div className="flex flex-col justify-between py-0.5 flex-1 min-h-[82px] sm:min-h-[100px]">
+                      <div className="flex flex-col justify-between py-0.5 flex-1 min-h-[82px] sm:min-h-[138px]">
                         <div>
                           <Link href={`/posts/${article.id}`} className="block">
-                            <h3 className="text-gray-900 font-bold text-xs sm:text-[14px] leading-snug tracking-tight group-hover:text-[#e24a48] transition-colors line-clamp-2 font-sans">
+                            <h3 className="text-gray-900 font-bold text-xs sm:text-[16px] leading-snug tracking-tight group-hover:text-[#e24a48] transition-colors line-clamp-2 font-sans">
                               {article.title}
                             </h3>
                           </Link>
+                          <p className="hidden sm:line-clamp-2 text-gray-500 text-[12.5px] leading-relaxed mt-2 font-sans">
+                            {displayIntro}
+                          </p>
                         </div>
 
                         {/* Metadata */}
