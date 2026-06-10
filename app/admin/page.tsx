@@ -86,6 +86,10 @@ export default function AdminPage() {
   const [currentView, setCurrentView] = useState<"list" | "editor">("list");
   const [postCoverImage, setPostCoverImage] = useState<string | null>(null);
   const [postContent, setPostContent] = useState<string>("");
+  const [videoDialogOpen, setVideoDialogOpen] = useState(false);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoFileName, setVideoFileName] = useState<string>("");
+  const [videoUrl, setVideoUrl] = useState<string>("");
 
   // Search & Filters state
   const [searchQuery, setSearchQuery] = useState("");
@@ -540,6 +544,63 @@ export default function AdminPage() {
     }
   };
 
+  const handleTriggerVideoUpload = () => {
+    document.getElementById("video-upload-input")?.click();
+  };
+
+  const handleVideoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setVideoFile(file);
+      setVideoFileName(file.name);
+      setVideoUrl("");
+    }
+  };
+
+  const handleInsertVideo = () => {
+    if (!videoFile && !videoUrl.trim()) {
+      toast.error("Vui lòng chọn file video hoặc nhập link video!");
+      return;
+    }
+
+    let videoHtml = "";
+    if (videoFile) {
+      const videoSrc = URL.createObjectURL(videoFile);
+      videoHtml = `\n<video controls src="${videoSrc}" class="w-full max-h-[400px] my-4 rounded-xl border border-gray-200 shadow-sm"></video>\n`;
+      toast.success("Đã chọn video từ máy tính!");
+    } else if (videoUrl.trim()) {
+      const url = videoUrl.trim();
+      if (url.includes("youtube.com/watch") || url.includes("youtu.be")) {
+        let videoId = "";
+        try {
+          if (url.includes("youtube.com/watch")) {
+            const urlParams = new URLSearchParams(new URL(url).search);
+            videoId = urlParams.get("v") || "";
+          } else if (url.includes("youtu.be/")) {
+            videoId = url.split("youtu.be/")[1]?.split("?")[0] || "";
+          }
+        } catch (err) {
+          console.error("Invalid URL", err);
+        }
+
+        if (videoId) {
+          videoHtml = `\n<iframe class="w-full aspect-video my-4 rounded-xl shadow-sm border border-gray-200" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>\n`;
+        } else {
+          videoHtml = `\n<iframe class="w-full aspect-video my-4 rounded-xl shadow-sm border border-gray-200" src="${url}" frameborder="0" allowfullscreen></iframe>\n`;
+        }
+      } else {
+        videoHtml = `\n<video controls src="${url}" class="w-full max-h-[400px] my-4 rounded-xl border border-gray-200 shadow-sm"></video>\n`;
+      }
+      toast.success("Đã chèn video thành công!");
+    }
+
+    setPostContent((prev) => prev + videoHtml);
+    setVideoDialogOpen(false);
+    setVideoFile(null);
+    setVideoFileName("");
+    setVideoUrl("");
+  };
+
   if (currentView === "editor") {
     return (
       <div className="min-h-screen bg-[#fafbfc] text-[#2c3e50] font-sans antialiased flex flex-col animate-fade-in">
@@ -662,7 +723,12 @@ export default function AdminPage() {
               <button type="button" className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900" title="Insert Image">
                 <ImageIcon size={15} />
               </button>
-              <button type="button" className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900" title="Insert Video">
+              <button
+                type="button"
+                onClick={() => setVideoDialogOpen(true)}
+                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900"
+                title="Insert Video"
+              >
                 <Video size={15} />
               </button>
 
@@ -769,6 +835,109 @@ export default function AdminPage() {
           </div>
 
         </main>
+
+        {/* ==========================================
+            MODAL: INSERT VIDEO POPUP
+            ========================================== */}
+        <Dialog open={videoDialogOpen} onOpenChange={(open) => {
+          setVideoDialogOpen(open);
+          if (!open) {
+            setVideoFile(null);
+            setVideoFileName("");
+            setVideoUrl("");
+          }
+        }}>
+          <DialogContent className="max-w-[480px] w-[95%] rounded-3xl p-7 border-none shadow-2xl bg-white text-[#2c3e50] outline-none overflow-hidden">
+            <DialogHeader className="flex flex-row items-center gap-2 border-b border-gray-100 pb-4 pr-6">
+              <div className="w-8 h-8 rounded-lg bg-[#E55956]/10 flex items-center justify-center flex-shrink-0">
+                <Video className="text-[#E55956] w-5 h-5" />
+              </div>
+              <DialogTitle className="text-lg font-bold text-gray-900 leading-none">
+                Chèn Video
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-6 py-4">
+              {/* Từ máy tính */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">
+                  Từ máy tính
+                </label>
+                <div
+                  onClick={handleTriggerVideoUpload}
+                  className="border-2 border-dashed border-gray-200 hover:border-[#E55956] hover:bg-[#E55956]/5 transition-all duration-300 rounded-2xl p-7 flex flex-col items-center justify-center gap-3 cursor-pointer group bg-gray-50/20"
+                >
+                  <div className="w-10 h-10 rounded-full bg-gray-100 group-hover:bg-[#E55956]/10 flex items-center justify-center transition-all duration-300">
+                    <Video className="w-5 h-5 text-gray-400 group-hover:text-[#E55956] transition-colors" />
+                  </div>
+                  <span className="text-xs font-semibold text-gray-500 group-hover:text-[#E55956] transition-colors text-center max-w-[280px]">
+                    {videoFileName ? videoFileName : "Chọn file video (MP4, MOV, AVI, ...)"}
+                  </span>
+                  <input
+                    type="file"
+                    id="video-upload-input"
+                    className="hidden"
+                    accept="video/*"
+                    onChange={handleVideoFileChange}
+                  />
+                </div>
+              </div>
+
+              {/* Separator: Hoặc */}
+              <div className="relative flex items-center justify-center">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-200"></div>
+                </div>
+                <span className="relative px-4 bg-white text-xs font-bold text-gray-400 uppercase tracking-wider">
+                  Hoặc
+                </span>
+              </div>
+
+              {/* Link Youtube / URL Video */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">
+                  Link Youtube / URL Video
+                </label>
+                <input
+                  type="text"
+                  value={videoUrl}
+                  onChange={(e) => {
+                    setVideoUrl(e.target.value);
+                    if (e.target.value) {
+                      setVideoFile(null);
+                      setVideoFileName("");
+                    }
+                  }}
+                  placeholder="https://www.youtube.com/watch?v=..."
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white shadow-sm font-medium"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3.5 pt-4 border-t border-gray-100 mt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setVideoDialogOpen(false);
+                  setVideoFile(null);
+                  setVideoFileName("");
+                  setVideoUrl("");
+                }}
+                className="flex-1 py-3 border border-gray-200 hover:bg-gray-50 hover:border-gray-300 text-gray-700 text-sm font-bold rounded-xl transition-all active:scale-[0.98]"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={handleInsertVideo}
+                className="flex-1 py-3 bg-[#E55956] hover:bg-[#cb4643] text-white text-sm font-bold rounded-xl transition-all shadow-md active:scale-[0.98]"
+              >
+                Chèn Video
+              </button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
       </div>
     );
   }
@@ -1615,6 +1784,8 @@ export default function AdminPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+
 
     </div>
   );
