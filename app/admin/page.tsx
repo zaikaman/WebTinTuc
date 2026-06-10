@@ -129,7 +129,9 @@ export default function AdminPage() {
 
   const [activeTab, setActiveTab] = useState<TabType>("dashboard");
   const [timeFilter, setTimeFilter] = useState<"today" | "week" | "month" | "year">("month");
-  const [dashboardDate, setDashboardDate] = useState("");
+  const [dashboardDay, setDashboardDay] = useState("");
+  const [dashboardMonth, setDashboardMonth] = useState("");
+  const [dashboardYear, setDashboardYear] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentView, setCurrentView] = useState<"list" | "editor">("list");
   const [postCoverImage, setPostCoverImage] = useState<string | null>(null);
@@ -1491,26 +1493,75 @@ export default function AdminPage() {
                   ))}
                 </div>
 
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                  {/* Select Ngày */}
                   <div className="relative">
-                    <Calendar size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input
-                      type="date"
-                      value={dashboardDate}
-                      onChange={(e) => setDashboardDate(e.target.value)}
-                      className="pl-10 pr-4 py-2 border border-gray-200 rounded-xl text-xs font-bold outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white text-gray-700 min-w-[160px]"
-                    />
+                    <select
+                      value={dashboardDay}
+                      onChange={(e) => setDashboardDay(e.target.value)}
+                      className="pl-3 pr-7 py-2.5 border border-gray-200 rounded-xl text-xs font-bold outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white text-gray-700 appearance-none cursor-pointer min-w-[75px]"
+                    >
+                      <option value="">Ngày</option>
+                      {Array.from({ length: 31 }, (_, i) => (
+                        <option key={i + 1} value={String(i + 1).padStart(2, "0")}>
+                          {i + 1}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                   </div>
+
+                  {/* Select Tháng */}
+                  <div className="relative">
+                    <select
+                      value={dashboardMonth}
+                      onChange={(e) => setDashboardMonth(e.target.value)}
+                      className="pl-3 pr-7 py-2.5 border border-gray-200 rounded-xl text-xs font-bold outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white text-gray-700 appearance-none cursor-pointer min-w-[90px]"
+                    >
+                      <option value="">Tháng</option>
+                      {Array.from({ length: 12 }, (_, i) => (
+                        <option key={i + 1} value={String(i + 1).padStart(2, "0")}>
+                          Tháng {i + 1}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  </div>
+
+                  {/* Select Năm */}
+                  <div className="relative">
+                    <select
+                      value={dashboardYear}
+                      onChange={(e) => setDashboardYear(e.target.value)}
+                      className="pl-3 pr-7 py-2.5 border border-gray-200 rounded-xl text-xs font-bold outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white text-gray-700 appearance-none cursor-pointer min-w-[85px]"
+                    >
+                      <option value="">Năm</option>
+                      {Array.from({ length: 151 }, (_, i) => {
+                        const year = new Date().getFullYear() + 50 - i;
+                        return (
+                          <option key={year} value={String(year)}>
+                            {year}
+                          </option>
+                        );
+                      })}
+                    </select>
+                    <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  </div>
+
                   <button
                     type="button"
                     onClick={() => {
-                      if (dashboardDate) {
-                        toast.success(`Đã áp dụng bộ lọc ngày: ${formatDateForDisplay(dashboardDate)}`);
+                      if (dashboardDay || dashboardMonth || dashboardYear) {
+                        const parts = [];
+                        if (dashboardDay) parts.push(dashboardDay);
+                        if (dashboardMonth) parts.push(dashboardMonth);
+                        if (dashboardYear) parts.push(dashboardYear);
+                        toast.success(`Đã áp dụng bộ lọc ngày: ${parts.join("/")}`);
                       } else {
-                        toast.info("Vui lòng chọn ngày để lọc!");
+                        toast.info("Vui lòng chọn ngày, tháng hoặc năm để lọc!");
                       }
                     }}
-                    className="px-5 py-2.5 bg-gray-900 hover:bg-black text-white text-xs font-bold rounded-xl transition-all shadow-sm active:scale-[0.98]"
+                    className="px-5 py-2.5 bg-gray-900 hover:bg-black active:scale-[0.98] text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center justify-center h-[38px]"
                   >
                     Lọc
                   </button>
