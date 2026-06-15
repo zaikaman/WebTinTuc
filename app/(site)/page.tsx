@@ -20,7 +20,7 @@ export default async function HomePage() {
       <div className="relative w-full md:w-[970px] md:h-[250px] overflow-hidden rounded border border-gray-200 bg-gray-50 group shadow-sm mx-auto">
         <a href="#" className="block w-full h-full">
           <img
-            src="/qc_970_250.svg"
+            src="/vietnam_airlines_ad.png"
             alt="Quảng cáo 970x250"
             className="w-full h-full object-cover"
           />

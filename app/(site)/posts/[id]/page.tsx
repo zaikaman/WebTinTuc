@@ -27,7 +27,7 @@ export default async function PostDetailPage({ params }: PageProps) {
       <div className="relative w-full md:w-[970px] md:h-[250px] overflow-hidden rounded border border-gray-200 mb-5 bg-gray-50 group shadow-sm mx-auto">
         <a href="#" className="block w-full h-full">
           <img
-            src="/qc_970_250.svg"
+            src="/vinfast_ad.png"
             alt="Quảng cáo 970x250"
             className="w-full h-full object-cover"
           />
@@ -113,7 +113,7 @@ export default async function PostDetailPage({ params }: PageProps) {
                     <div key={index} className="relative w-full overflow-hidden rounded border border-gray-200 bg-gray-50 flex justify-center group shadow-sm my-5 aspect-[650/300]">
                       <a href="#" className="block w-full h-full">
                         <img
-                          src="/qc_650_300.svg"
+                          src="/qc_650_300_premium.png"
                           alt="Quảng cáo 650x300"
                           className="w-full h-full object-cover"
                         />
@@ -241,7 +241,7 @@ export default async function PostDetailPage({ params }: PageProps) {
           <div className="relative w-full md:w-[300px] md:h-[600px] overflow-hidden rounded border border-gray-200 bg-gray-50 flex justify-center group shadow-sm mx-auto">
             <a href="#" className="block w-full h-full">
               <img
-                src="/qc_300_600.svg"
+                src="/zento_cabinet_ad.png"
                 alt="Quảng cáo 300x600"
                 className="w-full h-full object-cover"
               />
@@ -255,7 +255,7 @@ export default async function PostDetailPage({ params }: PageProps) {
           <div className="relative w-full md:w-[300px] md:h-[600px] overflow-hidden rounded border border-gray-200 bg-gray-50 flex justify-center group shadow-sm mx-auto">
             <a href="#" className="block w-full h-full">
               <img
-                src="/qc_300_600.svg"
+                src="/zento_toilet_ad.png"
                 alt="Quảng cáo 300x600"
                 className="w-full h-full object-cover"
               />
@@ -271,7 +271,7 @@ export default async function PostDetailPage({ params }: PageProps) {
       <div className="relative w-full md:w-[970px] md:h-[250px] overflow-hidden rounded border border-gray-200 mt-6 bg-gray-50 flex justify-center group shadow-sm mx-auto">
         <a href="#" className="block w-full h-full">
           <img
-            src="/qc_970_250.svg"
+            src="/vietnam_airlines_ad.png"
             alt="Quảng cáo 970x250"
             className="w-full h-full object-cover"
           />

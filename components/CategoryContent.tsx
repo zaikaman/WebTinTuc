@@ -42,12 +42,14 @@ export function CategoryContent({ category, label, featured, initialList }: Cate
   return (
     <main className="w-full px-3 md:px-0 py-4 font-sans text-xs">
       {/* Top Banner Advertisement (QC 970x250) */}
-      <div className="relative w-full md:w-[970px] md:h-[250px] overflow-hidden rounded border border-gray-200 mb-5 bg-gray-50 flex items-center justify-center shadow-sm select-none mx-auto">
-        <div className="absolute inset-0 bg-[#d9d9d9] flex items-center justify-center border border-gray-300">
-          <span className="text-black font-extrabold text-[24px] sm:text-[40px] md:text-[46px] tracking-tight">
-            QC 970&times;250
-          </span>
-        </div>
+      <div className="relative w-full md:w-[970px] md:h-[250px] overflow-hidden rounded border border-gray-200 mb-5 bg-gray-50 flex justify-center group shadow-sm mx-auto">
+        <a href="#" className="block w-full h-full">
+          <img
+            src="/vinfast_ad.png"
+            alt="Quảng cáo 970x250"
+            className="w-full h-full object-cover"
+          />
+        </a>
         <div className="absolute top-1 right-1 bg-black/40 hover:bg-black/70 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
           Quảng cáo &times;
         </div>
@@ -119,13 +121,15 @@ export function CategoryContent({ category, label, featured, initialList }: Cate
           </div>
 
           {/* Middle Banner Ad (QC 650x300) */}
-          <div className="relative w-full overflow-hidden rounded border border-gray-200 bg-gray-50 flex items-center justify-center aspect-[650/300] max-h-[300px] shadow-sm select-none">
-            <div className="absolute inset-0 bg-[#d9d9d9] flex items-center justify-center border border-gray-300">
-              <span className="text-black font-extrabold text-[24px] sm:text-[36px] md:text-[40px] tracking-tight">
-                QC 650&times;300
-              </span>
-            </div>
-            <div className="absolute top-1 right-1 bg-black/45 hover:bg-black/75 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
+          <div className="relative w-full overflow-hidden rounded border border-gray-200 bg-gray-50 flex justify-center group shadow-sm aspect-[650/300] max-h-[300px]">
+            <a href="#" className="block w-full h-full">
+              <img
+                src="/qc_650_300_premium.png"
+                alt="Quảng cáo 650x300"
+                className="w-full h-full object-cover"
+              />
+            </a>
+            <div className="absolute top-1.5 right-1.5 bg-black/45 hover:bg-black/75 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
               Quảng cáo &times;
             </div>
           </div>
@@ -201,33 +205,29 @@ export function CategoryContent({ category, label, featured, initialList }: Cate
         {/* Right Column: Sticky Sidebar Ads */}
         <aside className="w-full lg:w-[300px] flex-shrink-0 lg:sticky lg:top-4 flex flex-col gap-4">
           {/* Ad 1 (QC 300x600) */}
-          <div className="relative w-full md:w-[300px] md:h-[600px] overflow-hidden rounded border border-gray-200 bg-gray-50 flex items-center justify-center shadow-sm select-none mx-auto">
-            <div className="absolute inset-0 bg-[#d9d9d9] flex items-center justify-center border border-gray-300">
-              <span className="text-black font-extrabold text-[28px] sm:text-[34px] md:text-[36px] leading-tight text-center px-4">
-                QC
-                <br />
-                300&times;
-                <br />
-                600
-              </span>
-            </div>
-            <div className="absolute top-1 right-1 bg-black/45 hover:bg-black/75 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
+          <div className="relative w-full md:w-[300px] md:h-[600px] overflow-hidden rounded border border-gray-200 bg-gray-50 flex justify-center group shadow-sm mx-auto">
+            <a href="#" className="block w-full h-full">
+              <img
+                src="/zento_cabinet_ad.png"
+                alt="Quảng cáo 300x600"
+                className="w-full h-full object-cover"
+              />
+            </a>
+            <div className="absolute top-1.5 right-1.5 bg-black/45 hover:bg-black/75 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
               Quảng cáo &times;
             </div>
           </div>
 
           {/* Ad 2 (QC 300x600) */}
-          <div className="relative w-full md:w-[300px] md:h-[600px] overflow-hidden rounded border border-gray-200 bg-gray-50 flex items-center justify-center shadow-sm select-none mx-auto">
-            <div className="absolute inset-0 bg-[#d9d9d9] flex items-center justify-center border border-gray-300">
-              <span className="text-black font-extrabold text-[28px] sm:text-[34px] md:text-[36px] leading-tight text-center px-4">
-                QC
-                <br />
-                300&times;
-                <br />
-                600
-              </span>
-            </div>
-            <div className="absolute top-1 right-1 bg-black/45 hover:bg-black/75 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
+          <div className="relative w-full md:w-[300px] md:h-[600px] overflow-hidden rounded border border-gray-200 bg-gray-50 flex justify-center group shadow-sm mx-auto">
+            <a href="#" className="block w-full h-full">
+              <img
+                src="/ztc_bathtub_ad.png"
+                alt="Quảng cáo 300x600"
+                className="w-full h-full object-cover"
+              />
+            </a>
+            <div className="absolute top-1.5 right-1.5 bg-black/45 hover:bg-black/75 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
               Quảng cáo &times;
             </div>
           </div>
