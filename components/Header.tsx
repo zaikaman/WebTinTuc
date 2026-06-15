@@ -179,11 +179,15 @@ export function Header({ settings }: HeaderProps) {
               );
             })}
             <div className="flex items-center gap-4 px-6 py-3 border-t border-gray-200 mt-2 bg-gray-50">
-              {utilityLink && (
+              {utilityLink && utilityLink.href ? (
                 <Link href={utilityLink.href} className="text-gray-600 hover:text-[#df3232] font-bold">
                   {utilityLink.label}
                 </Link>
-              )}
+              ) : utilityLink ? (
+                <span className="text-gray-600 font-bold">
+                  {utilityLink.label}
+                </span>
+              ) : null}
               <div className="flex gap-2.5 ml-auto">
                 {settings.socialLinks.map((item) => (
                   <HeaderSocialLink
