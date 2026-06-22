@@ -47,6 +47,7 @@ export const mockSiteSettings: SiteSettings = {
           { label: "Anime/Manga", href: "/anime-manga" },
           { label: "Công nghệ", href: "/cong-nghe" },
           { label: "Phim", href: "/phim" },
+          { label: "Kiến thức", href: "/kien-thuc" },
         ],
       },
       {

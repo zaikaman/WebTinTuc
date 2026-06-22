@@ -90,10 +90,10 @@ export function FeaturedCarousel({ articles }: FeaturedCarouselProps) {
             e.preventDefault();
             prevSlide();
           }}
-          className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-white/90 bg-black/20 hover:bg-black/45 active:scale-95 text-white flex items-center justify-center backdrop-blur-[1px] transition-all duration-200 shadow-md z-20 cursor-pointer select-none"
+          className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-12 sm:h-12 rounded-full border-2 border-white/90 bg-black/20 hover:bg-black/45 active:scale-95 text-white flex items-center justify-center backdrop-blur-[1px] transition-all duration-200 shadow-md z-20 cursor-pointer select-none"
           aria-label="Previous slide"
         >
-          <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 stroke-[3]" />
+          <ChevronLeft className="w-4.5 h-4.5 sm:w-6 sm:h-6 stroke-[3]" />
         </button>
 
         {/* Circular Next Arrow Button */}
@@ -102,14 +102,14 @@ export function FeaturedCarousel({ articles }: FeaturedCarouselProps) {
             e.preventDefault();
             nextSlide();
           }}
-          className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-white/90 bg-black/20 hover:bg-black/45 active:scale-95 text-white flex items-center justify-center backdrop-blur-[1px] transition-all duration-200 shadow-md z-20 cursor-pointer select-none"
+          className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-12 sm:h-12 rounded-full border-2 border-white/90 bg-black/20 hover:bg-black/45 active:scale-95 text-white flex items-center justify-center backdrop-blur-[1px] transition-all duration-200 shadow-md z-20 cursor-pointer select-none"
           aria-label="Next slide"
         >
-          <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 stroke-[3]" />
+          <ChevronRight className="w-4.5 h-4.5 sm:w-6 sm:h-6 stroke-[3]" />
         </button>
 
         {/* Indicators Overlay at Bottom Center */}
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-20">
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 hidden sm:flex items-center gap-1.5 z-20">
           {articles.map((_, idx) => (
             <button
               key={idx}
@@ -127,9 +127,9 @@ export function FeaturedCarousel({ articles }: FeaturedCarouselProps) {
       </div>
 
       {/* Info Area Below Image */}
-      <div className="mt-3.5 mb-1 px-0.5">
+      <div className="mt-3 mb-1 px-0.5">
         {/* Category & Date Info */}
-        <div className="flex items-center gap-2 mb-2 text-[10px] sm:text-[11px] text-gray-500 font-sans font-medium">
+        <div className="hidden sm:flex items-center gap-2 mb-2 text-[10px] sm:text-[11px] text-gray-500 font-sans font-medium">
           <Link
             href={`/${categorySlug}`}
             className="text-[#df3232] hover:text-[#df3232]/80 font-bold tracking-wide transition-colors duration-150 uppercase"
@@ -148,17 +148,20 @@ export function FeaturedCarousel({ articles }: FeaturedCarouselProps) {
 
         {/* Title Link */}
         <Link href={`/posts/${currentArticle.id}`} className="group/title block">
-          <h2 className="text-gray-900 font-bold text-base sm:text-[19px] leading-snug tracking-tight group-hover/title:text-[#e24a48] transition-colors duration-200 font-sans line-clamp-2">
+          <h2 className="text-gray-900 font-bold text-[13px] sm:text-[19px] leading-snug tracking-tight group-hover/title:text-[#e24a48] transition-colors duration-200 font-sans line-clamp-none sm:line-clamp-2">
             {currentArticle.title}
           </h2>
         </Link>
 
         {/* Short description / Intro snippet */}
         {currentArticle.intro && (
-          <p className="text-gray-500 text-[12.5px] leading-relaxed mt-2 line-clamp-2 font-sans">
+          <p className="hidden sm:block text-gray-500 text-[12.5px] leading-relaxed mt-2 line-clamp-2 font-sans">
             {currentArticle.intro}
           </p>
         )}
+
+        {/* Red Bottom Divider line */}
+        <div className="h-[2px] bg-[#df3232] mt-3" />
       </div>
     </div>
   );

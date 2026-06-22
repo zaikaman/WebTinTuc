@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Clock } from "lucide-react";
 import type { Article } from "@/lib/types/news";
 import { formatCategory } from "@/lib/utils";
+import { FeaturedCarousel } from "@/components/FeaturedCarousel";
 
 interface CategoryContentProps {
   category: string;
@@ -40,19 +41,33 @@ export function CategoryContent({ category, label, featured, initialList }: Cate
   const listPart1 = visibleList.slice(0, 6);
   const listPart2 = visibleList.slice(6);
 
+  // Construct carousel articles array (up to 4 articles starting with the featured article)
+  const carouselArticles = [featured];
+  const extraArticles = initialList
+    .filter((art) => art.id !== featured.id)
+    .slice(0, 3);
+  carouselArticles.push(...extraArticles);
+
   return (
-    <main className="w-full px-3 md:px-0 py-4 font-sans text-xs">
+    <main className="w-full px-3 md:px-0 py-4 font-sans text-xs bg-white">
       {/* Top Banner Advertisement (QC 970x250) */}
       <div className="relative w-full md:w-[970px] md:h-[250px] overflow-hidden rounded border border-gray-200 mb-5 bg-gray-50 flex justify-center group shadow-sm mx-auto">
-        <a href="#" className="block w-full h-full">
-          <img
-            src="/vinfast_ad.png"
-            alt="Quảng cáo 970x250"
-            className="w-full h-full object-cover"
-          />
-        </a>
-        <div className="absolute top-1 right-1 bg-black/40 hover:bg-black/70 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
-          Quảng cáo &times;
+        {/* Mobile View */}
+        <div className="flex md:hidden w-full h-[70px] bg-[#e0e0e0] items-center justify-center text-[#1a1a1a] font-extrabold text-[18px] border border-gray-300">
+          QC
+        </div>
+        {/* Desktop View */}
+        <div className="hidden md:block w-full h-full">
+          <a href="#" className="block w-full h-full">
+            <img
+              src="/vinfast_ad.png"
+              alt="Quảng cáo 970x250"
+              className="w-full h-full object-cover"
+            />
+          </a>
+          <div className="absolute top-1 right-1 bg-black/40 hover:bg-black/70 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
+            Quảng cáo &times;
+          </div>
         </div>
       </div>
 
@@ -60,30 +75,19 @@ export function CategoryContent({ category, label, featured, initialList }: Cate
       <div className="flex flex-col lg:flex-row gap-5 items-start">
         {/* Left Column: Category Posts */}
         <div className="w-full lg:w-[650px] flex-shrink-0 flex flex-col gap-5">
-          {/* Featured Article */}
-          <div className="bg-white border border-gray-200 p-3 sm:p-4 rounded-sm shadow-sm">
-            <Link
-              href={`/posts/${featured.id}`}
-              className="group block cursor-pointer overflow-hidden rounded-sm"
-            >
-              <div className="relative aspect-[16/9] w-full overflow-hidden bg-gray-100 rounded-sm border border-gray-200">
-                <img
-                  src={featured.image}
-                  alt={featured.title}
-                  className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
-                />
-                {featured.badge && (
-                  <span className="absolute top-2.5 left-2.5 bg-[#df3232] text-white text-[9px] font-bold px-1.5 py-0.5 uppercase rounded-sm z-10">
-                    {featured.badge}
-                  </span>
-                )}
-              </div>
-              <h2 className="text-gray-900 font-bold text-sm sm:text-base md:text-lg leading-snug mt-3 hover:text-[#df3232] transition-colors">
-                {featured.title}
-              </h2>
-            </Link>
-            {/* Divider */}
-            <div className="h-[2px] bg-[#df3232] mt-3" />
+          {/* Featured Article Carousel */}
+          {carouselArticles.length > 0 && (
+            <FeaturedCarousel articles={carouselArticles} />
+          )}
+
+          {/* Double QC box on mobile immediately below Featured Carousel */}
+          <div className="grid grid-cols-2 gap-3.5 my-2.5 md:hidden">
+            <div className="bg-[#e0e0e0] h-[160px] flex items-center justify-center font-extrabold text-[24px] text-[#1a1a1a] border border-gray-300">
+              QC
+            </div>
+            <div className="bg-[#e0e0e0] h-[160px] flex items-center justify-center font-extrabold text-[24px] text-[#1a1a1a] border border-gray-300">
+              QC
+            </div>
           </div>
 
           {/* List Part 1 (First 6 items) */}
@@ -123,15 +127,22 @@ export function CategoryContent({ category, label, featured, initialList }: Cate
 
           {/* Middle Banner Ad (QC 650x300) */}
           <div className="relative w-full overflow-hidden rounded border border-gray-200 bg-gray-50 flex justify-center group shadow-sm aspect-[650/300] max-h-[300px]">
-            <a href="#" className="block w-full h-full">
-              <img
-                src="/qc_650_300_premium.png"
-                alt="Quảng cáo 650x300"
-                className="w-full h-full object-cover"
-              />
-            </a>
-            <div className="absolute top-1.5 right-1.5 bg-black/45 hover:bg-black/75 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
-              Quảng cáo &times;
+            {/* Mobile View */}
+            <div className="flex md:hidden w-full h-[100px] bg-[#e0e0e0] items-center justify-center text-[#1a1a1a] font-extrabold text-[16px] border border-gray-300">
+              QC
+            </div>
+            {/* Desktop View */}
+            <div className="hidden md:block w-full h-full">
+              <a href="#" className="block w-full h-full">
+                <img
+                  src="/qc_650_300_premium.png"
+                  alt="Quảng cáo 650x300"
+                  className="w-full h-full object-cover"
+                />
+              </a>
+              <div className="absolute top-1.5 right-1.5 bg-black/45 hover:bg-black/75 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
+                Quảng cáo &times;
+              </div>
             </div>
           </div>
 
@@ -203,8 +214,8 @@ export function CategoryContent({ category, label, featured, initialList }: Cate
           </div>
         </div>
 
-        {/* Right Column: Sticky Sidebar Ads */}
-        <aside className="w-full lg:w-[300px] flex-shrink-0 lg:sticky lg:top-4 flex flex-col gap-4">
+        {/* Right Column: Sticky Sidebar Ads - Hidden on Mobile */}
+        <aside className="hidden lg:flex w-[300px] flex-shrink-0 lg:sticky lg:top-4 flex-col gap-4">
           {/* Ad 1 (QC 300x600) */}
           <div className="relative w-full md:w-[300px] md:h-[600px] overflow-hidden rounded border border-gray-200 bg-gray-50 flex justify-center group shadow-sm mx-auto">
             <a href="#" className="block w-full h-full">

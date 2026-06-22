@@ -51,37 +51,65 @@ export function Header({ settings }: HeaderProps) {
   const utilityLink = settings.utilityLinks[0];
 
   return (
-    <header className="w-full select-none font-sans">
-      <div className="flex items-stretch">
+    <header className="w-full select-none font-sans bg-white">
+      {/* Top Header Bar */}
+      <div className="flex items-stretch h-[48px] md:h-auto">
         <Link
           href="/"
-          className="bg-[#df3232] text-white flex items-center gap-3 px-5 py-3.5 min-w-[160px] md:min-w-[220px] flex-shrink-0"
+          className="bg-[#df3232] text-white flex items-center gap-2 md:gap-3 px-3 md:px-5 py-2 md:py-3.5 min-w-[115px] md:min-w-[220px] flex-shrink-0"
         >
-          <div className="w-9 h-9 rounded-full bg-[#d9d9d9] flex-shrink-0" />
-          <div className="flex flex-col">
-            <span className="text-white font-extrabold text-sm md:text-[15px] leading-tight tracking-wider">
+          <div className="w-6 h-6 md:w-9 md:h-9 rounded-full bg-white flex-shrink-0" />
+          <div className="flex flex-col justify-center">
+            <span className="text-white font-extrabold text-[11px] md:text-[15px] leading-[1.1] tracking-wider uppercase">
               {settings.logoText}
             </span>
-            <span className="text-white font-bold text-[10px] md:text-[11px] leading-tight whitespace-nowrap tracking-wide">
+            <span className="text-white font-bold text-[8px] md:text-[11px] leading-[1.1] whitespace-nowrap tracking-wide mt-0.5">
               {settings.logoSubtitle}
             </span>
           </div>
         </Link>
 
-        <div className="flex-1 bg-[#e24a48] flex items-center justify-between px-4 md:px-6">
-          <div className="flex md:hidden items-center justify-between w-full">
-            <span className="text-white text-xs font-bold uppercase tracking-wider">
-              {settings.logoSubtitle}
-            </span>
-            <button
-              className="text-white p-1 hover:bg-[#c83939] rounded transition-colors"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              aria-label="Toggle menu"
-            >
-              {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
-            </button>
+        <div className="flex-1 bg-[#e24a48] flex items-center justify-between px-2.5 md:px-6">
+          {/* Mobile Top Bar Section */}
+          <div className="flex md:hidden items-center justify-between w-full gap-2">
+            {/* Search Pill */}
+            <div className="flex-1 flex h-[28px] items-center rounded-[14px] border border-[#d5d5d5] bg-[#f0eeee] px-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)]">
+              <Search size={12} className="mr-1.5 flex-shrink-0 text-[#4c6281]" />
+              <input
+                type="text"
+                placeholder="Tìm kiếm"
+                className="h-full w-full bg-transparent text-[10px] font-bold text-[#4c6281] outline-none placeholder:text-[#4c6281]/70"
+              />
+            </div>
+
+            {/* Contact Info (wrapped into two lines) */}
+            {utilityLink && (
+              <Link
+                href={utilityLink.href || "#"}
+                className="text-white text-[9px] font-bold leading-tight text-center whitespace-normal max-w-[55px] flex-shrink-0 hover:text-[#ffebeb] ml-1"
+              >
+                Liên hệ<br/>quảng cáo
+              </Link>
+            )}
+
+            {/* Social Links (Zalo & Email) */}
+            <div className="flex items-center gap-1.5 flex-shrink-0 ml-1">
+              {settings.socialLinks.map((item) => (
+                <a
+                  key={`mobile-${item.label}-${item.href}`}
+                  href={item.href}
+                  target={isExternalHref(item.href) ? "_blank" : undefined}
+                  rel={isExternalHref(item.href) ? "noopener noreferrer" : undefined}
+                  className="w-6 h-6 rounded-full bg-white flex items-center justify-center text-[#e24a48] hover:bg-gray-100 transition-colors flex-shrink-0 shadow-sm"
+                  aria-label={item.label}
+                >
+                  {getSocialIcon(item)}
+                </a>
+              ))}
+            </div>
           </div>
 
+          {/* Desktop Top Bar Section */}
           <div className="hidden md:grid w-full grid-cols-[minmax(260px,1fr)_auto] items-center gap-5 lg:gap-7">
             <div className="flex justify-center">
               <div className="flex h-[34px] w-full max-w-[760px] items-center rounded-[17px] border border-[#d5d5d5] bg-[#f0eeee] px-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] transition-colors focus-within:border-white focus-within:bg-white">
@@ -116,15 +144,18 @@ export function Header({ settings }: HeaderProps) {
         </div>
       </div>
 
-      <div className="hidden md:flex h-[36px] items-center text-white bg-[#404040] border-b border-[#2d2d2d]">
+      {/* Navigation Subheader (Desktop & Mobile) */}
+      <div className="flex h-[36px] items-center text-white bg-[#404040] border-b border-[#2d2d2d]">
         <Link
           href="/"
-          className="bg-[#333333] h-full flex items-center justify-center px-5 hover:bg-[#df3232] transition-colors border-r border-[#2d2d2d]"
+          className={`bg-[#333333] h-full w-[32px] md:w-auto md:px-5 flex items-center justify-center hover:bg-[#df3232] transition-colors border-r border-[#2d2d2d] flex-shrink-0 ${
+            pathname === "/" ? "text-[#df3232] bg-[#333333]" : "text-white"
+          }`}
           aria-label="Home"
         >
           <HomeIcon className="h-[21px] w-[21px] text-white" />
         </Link>
-        <nav className="flex-1 flex h-full text-[11px] lg:text-xs font-bold tracking-wider">
+        <nav className="flex-1 flex h-full text-[10px] min-[360px]:text-[11px] md:text-xs font-bold tracking-tight md:tracking-wider overflow-x-auto scrollbar-none whitespace-nowrap">
           {settings.primaryLinks.map((item) => {
             const isActive = pathname === item.href;
 
@@ -132,9 +163,9 @@ export function Header({ settings }: HeaderProps) {
               <Link
                 key={`${item.label}-${item.href}`}
                 href={item.href}
-                className={`flex-1 px-2 h-full flex items-center justify-center transition-colors border-r border-[#2d2d2d] text-center whitespace-nowrap relative ${
+                className={`flex-auto px-1.5 min-[360px]:px-2.5 md:px-2 h-full flex items-center justify-center transition-colors border-r border-[#2d2d2d] text-center whitespace-nowrap relative flex-shrink-0 ${
                   isActive
-                    ? "text-[#df3232] bg-[#333333]"
+                    ? "text-[#df3232] md:bg-[#333333]"
                     : "text-white hover:bg-[#333333] hover:text-[#ffd600]"
                 }`}
               >
@@ -146,10 +177,18 @@ export function Header({ settings }: HeaderProps) {
             );
           })}
         </nav>
+        {/* Mobile Hamburger menu trigger on the right side of the nav bar */}
+        <button
+          className="flex md:hidden h-full w-[32px] items-center justify-center bg-[#333333] border-l border-[#2d2d2d] text-white hover:bg-[#df3232] transition-colors flex-shrink-0"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          aria-label="Toggle menu"
+        >
+          {mobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
+        </button>
       </div>
 
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-gray-200 bg-[#f9f9f9] py-2 transition-all">
+        <div className="md:hidden border-b border-gray-200 bg-[#f9f9f9] py-2 transition-all">
           <div className="px-4 py-2 border-b border-gray-200">
             <div className="flex items-center bg-[#e7e5e5] border border-gray-300 rounded-[15px] px-3 py-1.5 w-full">
               <Search size={14} className="text-[#4c6281] mr-2" />

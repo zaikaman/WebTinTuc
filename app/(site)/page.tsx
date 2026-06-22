@@ -27,18 +27,25 @@ export default async function HomePage() {
   }
 
   return (
-    <main className="w-full px-3 md:px-0 py-4 font-sans text-xs flex flex-col gap-6">
+    <main className="w-full px-3 md:px-0 py-4 font-sans text-xs flex flex-col gap-5 bg-white">
       {/* Top Banner Advertisement (QC 970x250) */}
       <div className="relative w-full md:w-[970px] md:h-[250px] overflow-hidden rounded border border-gray-200 bg-gray-50 group shadow-sm mx-auto">
-        <a href="#" className="block w-full h-full">
-          <img
-            src="/vietnam_airlines_ad.png"
-            alt="Quảng cáo 970x250"
-            className="w-full h-full object-cover"
-          />
-        </a>
-        <div className="absolute top-1 right-1 bg-black/40 hover:bg-black/70 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
-          Quảng cáo &times;
+        {/* Mobile View */}
+        <div className="flex md:hidden w-full h-[70px] bg-[#e0e0e0] items-center justify-center text-[#1a1a1a] font-extrabold text-[18px] border border-gray-300">
+          QC
+        </div>
+        {/* Desktop View */}
+        <div className="hidden md:block w-full h-full">
+          <a href="#" className="block w-full h-full">
+            <img
+              src="/vietnam_airlines_ad.png"
+              alt="Quảng cáo 970x250"
+              className="w-full h-full object-cover"
+            />
+          </a>
+          <div className="absolute top-1 right-1 bg-black/40 hover:bg-black/70 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
+            Quảng cáo &times;
+          </div>
         </div>
       </div>
 
@@ -51,6 +58,16 @@ export default async function HomePage() {
           {carouselArticles.length > 0 && (
             <FeaturedCarousel articles={carouselArticles} />
           )}
+
+          {/* Double QC box on mobile immediately below Featured Carousel */}
+          <div className="grid grid-cols-2 gap-3.5 my-2.5 md:hidden">
+            <div className="bg-[#e0e0e0] h-[160px] flex items-center justify-center font-extrabold text-[24px] text-[#1a1a1a] border border-gray-300">
+              QC
+            </div>
+            <div className="bg-[#e0e0e0] h-[160px] flex items-center justify-center font-extrabold text-[24px] text-[#1a1a1a] border border-gray-300">
+              QC
+            </div>
+          </div>
 
           {/* "MỚI NHẤT" Category Header */}
           <div className="flex items-center gap-2 border-b-2 border-[#e24a48] pb-1 mt-2 mb-1">
@@ -122,16 +139,23 @@ export default async function HomePage() {
 
               {/* Advertisement Banner (QC 650x300) between groups */}
               {groupIndex < articleGroups.length - 1 && (
-                <div className="relative w-full aspect-[650/300] overflow-hidden rounded-sm border border-gray-200 bg-gray-50 flex justify-center group shadow-sm">
-                  <a href="#" className="block w-full h-full">
-                    <img
-                      src="/qc_650_300_premium.png"
-                      alt={`Quảng cáo ${groupIndex + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                  </a>
-                  <div className="absolute top-1 right-1 bg-black/45 hover:bg-black/75 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded-sm select-none z-10 transition-colors">
-                    Quảng cáo &times;
+                <div className="relative w-full overflow-hidden rounded-sm border border-gray-200 bg-gray-50 flex justify-center group shadow-sm aspect-[650/300]">
+                  {/* Mobile View */}
+                  <div className="flex md:hidden w-full h-[100px] bg-[#e0e0e0] items-center justify-center text-[#1a1a1a] font-extrabold text-[16px] border border-gray-300">
+                    QC
+                  </div>
+                  {/* Desktop View */}
+                  <div className="hidden md:block w-full h-full">
+                    <a href="#" className="block w-full h-full">
+                      <img
+                        src="/qc_650_300_premium.png"
+                        alt={`Quảng cáo ${groupIndex + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </a>
+                    <div className="absolute top-1 right-1 bg-black/45 hover:bg-black/75 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded-sm select-none z-10 transition-colors">
+                      Quảng cáo &times;
+                    </div>
                   </div>
                 </div>
               )}
@@ -140,8 +164,8 @@ export default async function HomePage() {
 
         </div>
 
-        {/* Right Column: Sidebar (contains 300x600 Ads) */}
-        <div className="w-full lg:w-[300px] flex-shrink-0 space-y-4 lg:sticky lg:top-4">
+        {/* Right Column: Sidebar (contains 300x600 Ads) - Hidden on Mobile */}
+        <div className="hidden lg:block w-[300px] flex-shrink-0 space-y-4 lg:sticky lg:top-4">
           {/* Ad 1: Zento Premium Cabinet */}
           <div className="relative w-full md:w-[300px] md:h-[600px] overflow-hidden rounded border border-gray-200 bg-gray-50 flex justify-center group shadow-sm mx-auto">
             <a href="#" className="block w-full h-full">
@@ -188,15 +212,22 @@ export default async function HomePage() {
 
       {/* Bottom Full-Width Ad (970x250) */}
       <div className="relative w-full md:w-[970px] md:h-[250px] overflow-hidden rounded border border-gray-200 bg-gray-50 flex justify-center group shadow-sm mx-auto mt-4">
-        <a href="#" className="block w-full h-full">
-          <img
-            src="/vietnam_airlines_ad.png"
-            alt="Quảng cáo 970x250"
-            className="w-full h-full object-cover"
-          />
-        </a>
-        <div className="absolute top-1.5 right-1.5 bg-black/45 hover:bg-black/75 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
-          Quảng cáo &times;
+        {/* Mobile View */}
+        <div className="flex md:hidden w-full h-[70px] bg-[#e0e0e0] items-center justify-center text-[#1a1a1a] font-extrabold text-[18px] border border-gray-300">
+          QC
+        </div>
+        {/* Desktop View */}
+        <div className="hidden md:block w-full h-full">
+          <a href="#" className="block w-full h-full">
+            <img
+              src="/vietnam_airlines_ad.png"
+              alt="Quảng cáo 970x250"
+              className="w-full h-full object-cover"
+            />
+          </a>
+          <div className="absolute top-1.5 right-1.5 bg-black/45 hover:bg-black/75 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
+            Quảng cáo &times;
+          </div>
         </div>
       </div>
     </main>

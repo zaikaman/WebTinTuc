@@ -26,15 +26,22 @@ export default async function PostDetailPage({ params }: PageProps) {
     <main className="w-full px-3 md:px-0 py-4 font-sans text-xs">
       {/* Top Banner Advertisement (QC 970x250) */}
       <div className="relative w-full md:w-[970px] md:h-[250px] overflow-hidden rounded border border-gray-200 mb-5 bg-gray-50 group shadow-sm mx-auto">
-        <a href="#" className="block w-full h-full">
-          <img
-            src="/vinfast_ad.png"
-            alt="Quảng cáo 970x250"
-            className="w-full h-full object-cover"
-          />
-        </a>
-        <div className="absolute top-1 right-1 bg-black/40 hover:bg-black/70 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
-          Quảng cáo &times;
+        {/* Mobile View */}
+        <div className="flex md:hidden w-full h-[70px] bg-[#e0e0e0] items-center justify-center text-[#1a1a1a] font-extrabold text-[18px] border border-gray-300">
+          QC
+        </div>
+        {/* Desktop View */}
+        <div className="hidden md:block w-full h-full">
+          <a href="#" className="block w-full h-full">
+            <img
+              src="/vinfast_ad.png"
+              alt="Quảng cáo 970x250"
+              className="w-full h-full object-cover"
+            />
+          </a>
+          <div className="absolute top-1 right-1 bg-black/40 hover:bg-black/70 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
+            Quảng cáo &times;
+          </div>
         </div>
       </div>
 
@@ -112,15 +119,22 @@ export default async function PostDetailPage({ params }: PageProps) {
                 } else if (block.type === "ad") {
                   return (
                     <div key={index} className="relative w-full overflow-hidden rounded border border-gray-200 bg-gray-50 flex justify-center group shadow-sm my-5 aspect-[650/300]">
-                      <a href="#" className="block w-full h-full">
-                        <img
-                          src="/qc_650_300_premium.png"
-                          alt="Quảng cáo 650x300"
-                          className="w-full h-full object-cover"
-                        />
-                      </a>
-                      <div className="absolute top-1 right-1 bg-black/45 hover:bg-black/75 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
-                        Quảng cáo &times;
+                      {/* Mobile View */}
+                      <div className="flex md:hidden w-full h-[100px] bg-[#e0e0e0] items-center justify-center text-[#1a1a1a] font-extrabold text-[16px] border border-gray-300">
+                        QC
+                      </div>
+                      {/* Desktop View */}
+                      <div className="hidden md:block w-full h-full">
+                        <a href="#" className="block w-full h-full">
+                          <img
+                            src="/qc_650_300_premium.png"
+                            alt="Quảng cáo 650x300"
+                            className="w-full h-full object-cover"
+                          />
+                        </a>
+                        <div className="absolute top-1 right-1 bg-black/45 hover:bg-black/75 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
+                          Quảng cáo &times;
+                        </div>
                       </div>
                     </div>
                   );
@@ -236,8 +250,8 @@ export default async function PostDetailPage({ params }: PageProps) {
           </article>
         </div>
 
-        {/* Right Column: Sidebar */}
-        <aside className="w-full lg:w-[300px] flex-shrink-0 lg:sticky lg:top-4 space-y-4">
+        {/* Right Column: Sidebar - Hidden on Mobile */}
+        <aside className="hidden lg:block w-[300px] flex-shrink-0 lg:sticky lg:top-4 space-y-4">
           {/* Ad 1: QC 300x600 */}
           <div className="relative w-full md:w-[300px] md:h-[600px] overflow-hidden rounded border border-gray-200 bg-gray-50 flex justify-center group shadow-sm mx-auto">
             <a href="#" className="block w-full h-full">
@@ -270,15 +284,22 @@ export default async function PostDetailPage({ params }: PageProps) {
 
       {/* Bottom QC 970x250 Ad */}
       <div className="relative w-full md:w-[970px] md:h-[250px] overflow-hidden rounded border border-gray-200 mt-6 bg-gray-50 flex justify-center group shadow-sm mx-auto">
-        <a href="#" className="block w-full h-full">
-          <img
-            src="/vietnam_airlines_ad.png"
-            alt="Quảng cáo 970x250"
-            className="w-full h-full object-cover"
-          />
-        </a>
-        <div className="absolute top-1 right-1 bg-black/45 hover:bg-black/75 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
-          Quảng cáo &times;
+        {/* Mobile View */}
+        <div className="flex md:hidden w-full h-[70px] bg-[#e0e0e0] items-center justify-center text-[#1a1a1a] font-extrabold text-[18px] border border-gray-300">
+          QC
+        </div>
+        {/* Desktop View */}
+        <div className="hidden md:block w-full h-full">
+          <a href="#" className="block w-full h-full">
+            <img
+              src="/vietnam_airlines_ad.png"
+              alt="Quảng cáo 970x250"
+              className="w-full h-full object-cover"
+            />
+          </a>
+          <div className="absolute top-1 right-1 bg-black/45 hover:bg-black/75 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
+            Quảng cáo &times;
+          </div>
         </div>
       </div>
     </main>
