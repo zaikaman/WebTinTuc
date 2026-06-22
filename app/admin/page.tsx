@@ -896,6 +896,68 @@ export default function AdminPage() {
     }
   };
 
+  const handleMediaDirectUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    Array.from(files).forEach((file) => {
+      const isVideo = file.type.startsWith("video/");
+      const isImage = file.type.startsWith("image/");
+      
+      if (!isImage && !isVideo) {
+        toast.error(`File "${file.name}" không đúng định dạng hình ảnh hoặc video!`);
+        return;
+      }
+
+      let sizeStr = "";
+      if (file.size < 1024 * 1024) {
+        sizeStr = `${(file.size / 1024).toFixed(0)} KB`;
+      } else {
+        sizeStr = `${(file.size / (1024 * 1024)).toFixed(1)} MB`;
+      }
+
+      const objectUrl = URL.createObjectURL(file);
+      const titleWithoutExt = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+
+      const newItem: MediaItem = {
+        id: Date.now() + Math.random(),
+        title: titleWithoutExt,
+        type: isVideo ? "video" : "image",
+        url: objectUrl,
+        size: sizeStr,
+        createdAt: new Date().toISOString().split("T")[0]
+      };
+
+      setMediaItems(prev => [newItem, ...prev]);
+      toast.success(`Đã thêm thành công media: ${file.name}`);
+
+      if (isImage) {
+        const img = new Image();
+        img.onload = () => {
+          const dims = `${img.width}x${img.height}`;
+          setMediaItems((prev) =>
+            prev.map((m) => (m.id === newItem.id ? { ...m, dimensions: dims } : m))
+          );
+        };
+        img.src = objectUrl;
+      } else if (isVideo) {
+        const video = document.createElement("video");
+        video.preload = "metadata";
+        video.onloadedmetadata = () => {
+          const minutes = Math.floor(video.duration / 60);
+          const seconds = Math.floor(video.duration % 60);
+          const durationStr = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+          setMediaItems((prev) =>
+            prev.map((m) => (m.id === newItem.id ? { ...m, duration: durationStr } : m))
+          );
+        };
+        video.src = objectUrl;
+      }
+    });
+
+    e.target.value = "";
+  };
+
   const handleInsertVideo = () => {
     if (!videoFile && !videoUrl.trim()) {
       toast.error("Vui lòng chọn file video hoặc nhập link video!");
@@ -2194,23 +2256,21 @@ export default function AdminPage() {
                   <button
                     type="button"
                     onClick={() => {
-                      setMediaDialogMode("add");
-                      setMediaEditId(null);
-                      setMediaForm({
-                        title: "",
-                        type: "image",
-                        url: "",
-                        size: "150 KB",
-                        dimensions: "1280x720",
-                        duration: ""
-                      });
-                      setMediaDialogOpen(true);
+                      document.getElementById("media-direct-upload")?.click();
                     }}
                     className="flex items-center gap-1.5 px-4.5 py-2.5 bg-[#E55956] hover:bg-[#cb4643] text-white text-xs font-bold rounded-xl shadow-md transition-all flex-shrink-0"
                   >
                     <Plus size={14} />
                     <span>Thêm Media</span>
                   </button>
+                  <input
+                    type="file"
+                    id="media-direct-upload"
+                    className="hidden"
+                    multiple
+                    accept="image/*,video/*"
+                    onChange={handleMediaDirectUpload}
+                  />
                 </div>
               </div>
 
@@ -2252,7 +2312,8 @@ export default function AdminPage() {
                             <button
                               type="button"
                               onClick={() => {
-                                navigator.clipboard.writeText(window.location.origin + item.url);
+                                const copyUrl = item.url.startsWith("blob:") || item.url.startsWith("data:") || item.url.startsWith("http") ? item.url : (window.location.origin + item.url);
+                                navigator.clipboard.writeText(copyUrl);
                                 toast.success("Đã sao chép link media vào bộ nhớ tạm!");
                               }}
                               className="w-8.5 h-8.5 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center backdrop-blur-md border border-white/20 transition-all active:scale-95"
@@ -3356,7 +3417,8 @@ export default function AdminPage() {
               type="button"
               onClick={() => {
                 if (mediaPreviewItem) {
-                  navigator.clipboard.writeText(window.location.origin + mediaPreviewItem.url);
+                  const copyUrl = mediaPreviewItem.url.startsWith("blob:") || mediaPreviewItem.url.startsWith("data:") || mediaPreviewItem.url.startsWith("http") ? mediaPreviewItem.url : (window.location.origin + mediaPreviewItem.url);
+                  navigator.clipboard.writeText(copyUrl);
                   toast.success("Đã sao chép link media vào bộ nhớ tạm!");
                 }
               }}
