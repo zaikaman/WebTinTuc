@@ -2,9 +2,20 @@ import Link from "next/link";
 import { getCategorySlug, getHomeFeed } from "@/lib/api/news";
 import { Clock } from "lucide-react";
 import { formatCategory } from "@/lib/utils";
+import { FeaturedCarousel } from "@/components/FeaturedCarousel";
 
 export default async function HomePage() {
   const { featuredArticle, latestArticles } = await getHomeFeed();
+
+  // Get exactly 4 articles for the carousel
+  const carouselArticles = [];
+  if (featuredArticle) {
+    carouselArticles.push(featuredArticle);
+  }
+  const extraArticles = latestArticles
+    .filter((art) => art.id !== featuredArticle?.id)
+    .slice(0, 4 - carouselArticles.length);
+  carouselArticles.push(...extraArticles);
 
   // Slice to exactly 6 articles just in case
   const articlesToDisplay = latestArticles.slice(0, 6);
@@ -36,23 +47,9 @@ export default async function HomePage() {
         {/* Left Column: Featured Article, Header & List with 650x300 Ads */}
         <div className="w-full lg:w-[650px] flex-shrink-0 flex flex-col gap-4">
           
-          {/* Main Featured Article at the Top */}
-          {featuredArticle && (
-            <Link
-              href={`/posts/${featuredArticle.id}`}
-              className="group block cursor-pointer bg-white border border-gray-200 rounded-sm overflow-hidden p-3.5 shadow-sm hover:shadow-md transition-shadow"
-            >
-              <div className="w-full aspect-[16/9] overflow-hidden bg-gray-100 rounded-sm border border-gray-200">
-                <img
-                  src={featuredArticle.image}
-                  alt={featuredArticle.title}
-                  className="w-full h-full object-cover group-hover:scale-[1.01] transition-transform duration-500"
-                />
-              </div>
-              <h2 className="text-gray-900 font-bold text-base sm:text-[19px] leading-snug tracking-tight mt-3 mb-2 font-sans group-hover:text-[#e24a48] transition-colors">
-                {featuredArticle.title}
-              </h2>
-            </Link>
+          {/* Featured Article Carousel at the Top */}
+          {carouselArticles.length > 0 && (
+            <FeaturedCarousel articles={carouselArticles} />
           )}
 
           {/* "MỚI NHẤT" Category Header */}
