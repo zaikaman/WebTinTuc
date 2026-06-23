@@ -165,11 +165,63 @@ export const mockArticles: Article[] = [
   // Homepage Featured articles
   {
     id: "featured-1",
-    title: "Vừa ra mắt, tựa game Soulslike mới trên Steam đã nhận rating 97% tích cực, phong cách chơi cực sáng tạo",
+    title: "Tựa game kinh dị anime toàn gái xinh còn chưa ra mắt đã gây sốt, hơn 20.000 wishlist trên Steam, đã cho chơi thử miễn phí",
     category: "Game Steam",
     time: "2 giờ trước",
-    image: "/soulslike_game.png",
-    badge: "Game Steam"
+    image: "/yandere_virus_cover.png",
+    badge: "Game Steam",
+    intro: "Lựa chọn của khá nhiều game thủ ưa thích các trò chơi anime là đây. Dù còn gần hai tháng nữa mới chính thức phát hành, Yandere Virus đã trở thành một trong những tựa game indie được chú ý nhất trên Steam. Sở hữu phong cách anime bắt mắt với dàn nhân vật nữ xinh đẹp cùng lối chơi kinh dị sinh tồn độc đáo, trò chơi hiện đã vượt mốc 20.000 lượt wishlist và vừa mở cửa bản demo miễn phí cho người chơi trải nghiệm.",
+    content: [
+      {
+        type: "paragraph",
+        text: "Được phát triển bởi studio Moka Sphere, Yandere Virus là một tựa game kinh dị co-op trực tuyến mang nhiều nét tương đồng với Dead by Daylight."
+      },
+      {
+        type: "paragraph",
+        text: "Tuy nhiên, thay vì chạy trốn khỏi những tên sát nhân đeo mặt nạ hay quái vật ghê rợn, người chơi sẽ phải đối mặt với một đối thủ đặc biệt hơn nhiều: một cô nàng anime mang tính cách yandere bị nhiễm virus bí ẩn. Trong mỗi trận đấu, bốn người chơi sẽ cùng tham gia vào một khu vực đầy rẫy nguy hiểm. Một người ngẫu nhiên bị lây nhiễm Yandere Virus và biến thành kẻ săn đuổi, trong khi ba người còn lại phải hợp tác để tìm cách sống sót."
+      },
+      {
+        type: "image",
+        src: "/yandere_virus_cover.png",
+        caption: "Tựa game kinh dị anime toàn gái xinh còn chưa ra mắt đã gây sốt, hơn 20.000 wishlist trên Steam, đã cho chơi thử miễn phí - Ảnh 2."
+      },
+      {
+        type: "paragraph",
+        text: "Điểm hấp dẫn của trò chơi nằm ở sự đối lập thú vị giữa tạo hình nhân vật dễ thương và bầu không khí căng thẳng xuyên suốt quá trình chơi. Cô gái anime tưởng chừng vô hại có thể bất ngờ trở thành cơn ác mộng thực sự khi liên tục truy đuổi đồng đội khắp bản đồ. Chỉ cần một sai lầm nhỏ, người chơi có thể nhanh chóng bị hạ gục và phải quay trở lại điểm hồi sinh. Không chỉ phải né tránh waifu sát thủ, người chơi còn phải đối phó với những sinh vật đột biến xuất hiện trong khu vực nghĩa trang. Điều này khiến mỗi trận đấu luôn tiềm ẩn nguy cơ bị tấn công từ nhiều hướng khác nhau."
+      },
+      {
+        type: "image",
+        src: "/yandere_virus_gameplay.png",
+        caption: "Tựa game kinh dị anime toàn gái xinh còn chưa ra mắt đã gây sốt, hơn 20.000 wishlist trên Steam, đã cho chơi thử miễn phí - Ảnh 3."
+      },
+      {
+        type: "image",
+        src: "/yandere_virus_graveyard.png",
+        caption: "Tựa game kinh dị anime toàn gái xinh còn chưa ra mắt đã gây sốt, hơn 20.000 wishlist trên Steam, đã cho chơi thử miễn phí - Ảnh 4."
+      },
+      {
+        type: "paragraph",
+        text: "Để giành chiến thắng, nhóm người sống sót cần tìm kiếm các vật phẩm đặc biệt mang tên Platonic Pumpkins được chôn giấu khắp bản đồ. Sau khi thu thập đủ số lượng cần thiết, họ phải mang chúng đến một chiếc vạc để điều chế thuốc giải. Khi hoàn thành, loại thuốc này có thể được sử dụng để chữa trị cho người đồng đội bị nhiễm virus, qua đó chấm dứt cuộc truy đuổi và giúp cả đội chiến thắng."
+      },
+      {
+        type: "paragraph",
+        text: "Sự kết hợp giữa yếu tố anime, kinh dị, sinh tồn và đối kháng nhiều người chơi đã giúp Yandere Virus nhanh chóng thu hút sự chú ý trên Steam. Chỉ trong thời gian ngắn, trò chơi đã cán mốc hơn 20.000 lượt Wishlist dù chưa phát hành chính thức. Nhiều game thủ nhận xét đây là một ý tưởng khá mới lạ khi biến hình tượng yandere waifu vốn quen thuộc trong văn hóa anime trở thành nhân vật phản diện chính."
+      },
+      {
+        type: "image",
+        src: "/yandere_virus_gameplay.png",
+        caption: "Tựa game kinh dị anime toàn gái xinh còn chưa ra mắt đã gây sốt, hơn 20.000 wishlist trên Steam, đã cho chơi thử miễn phí - Ảnh 5."
+      },
+      {
+        type: "image",
+        src: "/yandere_virus_cover.png",
+        caption: "Tựa game kinh dị anime toàn gái xinh còn chưa ra mắt đã gây sốt, hơn 20.000 wishlist trên Steam, đã cho chơi thử miễn phí - Ảnh 6."
+      },
+      {
+        type: "paragraph",
+        text: "Theo kế hoạch, Yandere Virus sẽ ra mắt vào ngày 19/8/2026. Trong lúc chờ đợi, người chơi đã có thể tải về bản demo miễn phí trên Steam để trải nghiệm trước. Với sức hút hiện tại cùng lượng Wishlist không ngừng tăng lên, tựa game này đang được kỳ vọng sẽ trở thành một trong những hiện tượng indie đáng chú ý của năm nay."
+      }
+    ]
   },
   {
     id: "featured-2",
@@ -288,7 +340,7 @@ export function getOrGenerateArticle(id: string): Article | undefined {
   const article = mockArticles.find(a => a.id === id);
   if (!article) return undefined;
 
-  // If the article already has content (like the Hanoi Heatwave article), return it as is.
+  // If the article already has content (like the Hanoi Heatwave article or the Yandere Virus article), return it as is.
   if (article.content && article.content.length > 0) {
     return article;
   }
@@ -303,9 +355,12 @@ export function getOrGenerateArticle(id: string): Article | undefined {
   if (category.includes("ANIME") || category.includes("MANGA")) {
     intro = `Mùa phim mới đang chứng kiến sự trỗi dậy của hàng loạt siêu phẩm ${article.category.toLowerCase()} đình đám. Dưới đây là ghi nhận chi tiết về phản ứng của người hâm mộ cùng những đánh giá chuyên môn mới nhất về tác phẩm đang gây bão này.`;
     paragraphs = [
-      "Theo thông tin mới nhận, cốt truyện của phần phim/truyện này đang đạt đến cao trào với sự xuất hiện của những nhân vật cực kỳ ấn tượng. Các diễn đàn thảo luận lớn liên tục tràn ngập các bài phân tích chi tiết về từng khung hình và lời thoại.",
-      "Đội ngũ sản xuất cho biết họ đã dành ra rất nhiều tháng để trau chuốt phần hình ảnh và âm thanh nhằm đem lại trải nghiệm tốt nhất. Điều này lý giải tại sao lượng đĩa bán ra cũng như lượt xem trực tuyến liên tục phá kỷ lục.",
-      "Với những tín hiệu tích cực hiện tại, dự án chắc chắn sẽ tiếp tục thống trị các bảng xếp hạng trong thời gian tới. Người hâm mộ hiện đang rất ngóng chờ những hé lộ tiếp theo từ tác giả."
+      "Sự bùng nổ của ngành công nghiệp anime và manga trong những năm gần đây đã tạo ra một làn sóng văn hóa mạnh mẽ trên toàn cầu. Những bộ truyện/phim mới liên tục được giới thiệu với công chúng và nhanh chóng thu hút hàng triệu lượt xem chỉ sau vài giờ phát hành. Điều này chứng minh sức hút không hề nhỏ từ các tác phẩm có nguồn gốc từ Nhật Bản này.",
+      "Trong tác phẩm mới nhất này, đội ngũ sản xuất và tác giả đã khéo léo lồng ghép nhiều tình tiết thắt nút mở nút đầy kịch tính, kết hợp cùng phong cách nghệ thuật độc đáo chưa từng thấy ở các dự án trước. Các tạo hình nhân vật được trau chuốt tỉ mỉ đến từng chi tiết nhỏ nhất như nét mặt, trang phục cho tới biểu cảm nội tâm phức tạp, mang lại cảm giác vô cùng chân thực cho người theo dõi.",
+      "Bên cạnh cốt truyện chính, các chi tiết phụ và nhạc phim cũng được đầu tư bài bản, tạo nên một tổng thể nghệ thuật hoàn chỉnh và giàu cảm xúc. Nhiều người hâm mộ sau khi trải nghiệm tập/chương đầu tiên đã không tiếc lời khen ngợi trên các nền tảng mạng xã hội lớn như Reddit, Twitter và các group cộng đồng Việt Nam. Lượng thảo luận sôi nổi xoay quanh các giả thuyết về diễn biến tiếp theo liên tục lọt top thịnh hành.",
+      "Đặc biệt, sự kết hợp giữa các yếu tố hành động mãn nhãn và những thông điệp nhân văn sâu sắc đã chạm đến trái tim của đông đảo khán giả ở nhiều độ tuổi khác nhau. Giới chuyên môn cũng đánh giá cao khả năng khai thác tâm lý nhân vật và sự phát triển mạch logic của câu chuyện. Đây được coi là một bước tiến mới giúp tác phẩm khẳng định vị thế vững chắc của mình trên thị trường quốc tế.",
+      "Theo chia sẻ từ đại diện nhà sản xuất, dự án sẽ tiếp tục công chiếu các phần tiếp theo theo đúng lộ trình đã đề ra, kèm theo nhiều nội dung ngoại truyện hấp dẫn dành riêng cho những fan cứng sở hữu ấn phẩm giới hạn. Các hoạt động giao lưu, sự kiện cosplay và triển lãm tranh vẽ gốc cũng đang được lên kế hoạch tổ chức rộng rãi tại nhiều thành phố lớn để tri ân sự ủng hộ của cộng đồng.",
+      "Nhìn chung, với những thành tích bước đầu cực kỳ ấn tượng, tác phẩm này chắc chắn sẽ còn tiếp tục làm mưa làm gió trên các bảng xếp hạng uy tín trong thời gian dài. Người hâm mộ hoàn toàn có quyền kỳ vọng vào những cột mốc doanh thu mới cũng như những cú bứt phá bất ngờ tiếp theo trong hành trình chinh phục khán giả toàn cầu."
     ];
     images = [
       {
@@ -315,14 +370,21 @@ export function getOrGenerateArticle(id: string): Article | undefined {
       {
         src: "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?q=80&w=600&auto=format&fit=crop",
         caption: "Cảnh phim ấn tượng với hiệu ứng ánh sáng và chuyển động mượt mà"
+      },
+      {
+        src: "https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=600&auto=format&fit=crop",
+        caption: "Visual chính thức cực đẹp quảng bá cho phần tiếp theo của loạt phim"
       }
     ];
   } else if (category.includes("CÔNG NGHỆ") || category.includes("GEAR")) {
     intro = `Thị trường thiết bị và giải pháp công nghệ vừa chứng kiến một bước nhảy vọt quan trọng. Sự xuất hiện của thông tin mới này hứa hẹn sẽ định hình lại xu hướng lựa chọn của người tiêu dùng trong thời gian tới.`;
     paragraphs = [
-      "Nhiều chuyên gia công nghệ nhận định rằng những nâng cấp trong đợt ra mắt này giải quyết triệt để các vấn đề hiệu năng của thế hệ tiền nhiệm. Các thử nghiệm benchmark thực tế cho kết quả vượt ngoài kỳ vọng ban đầu của đội ngũ phát triển.",
-      "Về mặt thiết kế và chất liệu, sản phẩm mang lại cảm giác cực kỳ sang trọng và độ bền vượt trội. Mức giá bán dự kiến cũng được đánh giá là vô cùng cạnh tranh so với các đối thủ cùng phân khúc.",
-      "Người dùng đang bày tỏ sự hào hứng lớn và đã bắt đầu đặt hàng trước tại nhiều hệ thống bán lẻ lớn. Chúng tôi sẽ tiếp tục thực hiện các bài đánh giá chi tiết trải nghiệm sử dụng thực tế trong vài ngày tới."
+      "Sự phát triển vũ bão của công nghệ bán dẫn và trí tuệ nhân tạo (AI) đã liên tục thúc đẩy các nhà sản xuất lớn tung ra các dòng sản phẩm mới với hiệu năng vượt trội. Người tiêu dùng ngày nay không chỉ đòi hỏi một thiết bị hoạt động ổn định mà còn tìm kiếm những tính năng thông minh vượt thời gian và thiết kế mang tính tương lai.",
+      "Sản phẩm thế hệ mới này được trang bị hàng loạt công nghệ tiên tiến nhất hiện nay, mang lại khả năng xử lý đa nhiệm mượt mà và tốc độ vượt trội so với các thế hệ tiền nhiệm. Các bài test hiệu năng thực tế (benchmark) cho thấy sự gia tăng rõ rệt về hiệu suất làm việc cũng như khả năng tối ưu hóa điện năng tiêu thụ, giảm thiểu đáng kể lượng nhiệt tỏa ra trong quá trình sử dụng liên tục.",
+      "Ngoài ra, ngôn ngữ thiết kế của sản phẩm cũng có những thay đổi mang tính đột phá, sử dụng các vật liệu cao cấp thân thiện với môi trường nhưng vẫn đảm bảo độ bền bỉ và tính thẩm mỹ cao. Trải nghiệm cầm nắm và tương tác vật lý được cải tiến tối đa, giúp người dùng cảm thấy thoải mái và tự nhiên nhất dù làm việc hay giải trí trong nhiều giờ liền.",
+      "Sự xuất hiện của thiết bị này nhanh chóng thu hút sự chú ý đặc biệt từ giới mộ điệu công nghệ và các reviewer danh tiếng trên thế giới. Đa số ý kiến đều nhận định rằng đây sẽ là tiêu chuẩn mới định hình xu hướng phát triển của thị trường trong giai đoạn tiếp theo. Khách hàng quan tâm đã bắt đầu đăng ký nhận thông tin và đặt trước tại các đại lý phân phối chính hãng để sớm được trải nghiệm siêu phẩm này.",
+      "Nhà sản xuất cũng cam kết sẽ cung cấp các bản cập nhật phần mềm lâu dài, đảm bảo tính bảo mật tối đa và bổ sung thêm nhiều tính năng mới theo phản hồi của người dùng. Hệ sinh thái đi kèm cũng được mở rộng để tăng tính liên kết giữa các thiết bị, giúp tối ưu hóa hiệu suất làm việc của người dùng trong kỷ nguyên số hóa toàn diện.",
+      "Tóm lại, đây là một bước đi chiến lược và đầy tham vọng của hãng nhằm củng cố vị thế dẫn đầu trong phân khúc cao cấp. Với những gì đã thể hiện, sản phẩm hứa hẹn sẽ tạo nên một cơn sốt mua sắm lớn và là sự lựa chọn không thể bỏ qua đối với những tín đồ đam mê công nghệ đỉnh cao."
     ];
     images = [
       {
@@ -332,14 +394,21 @@ export function getOrGenerateArticle(id: string): Article | undefined {
       {
         src: "https://images.unsplash.com/photo-1587829741301-dc798b83add3?q=80&w=600&auto=format&fit=crop",
         caption: "Thiết kế hiện đại, tinh gọn phù hợp với xu hướng tối giản hiện nay"
+      },
+      {
+        src: "https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?q=80&w=600&auto=format&fit=crop",
+        caption: "Chi tiết màn hình sắc nét hiển thị dải màu rộng chân thực của thiết bị mới"
       }
     ];
   } else if (category.includes("GAME") || category.includes("GTA") || category.includes("LIÊN MINH") || category.includes("MSI")) {
     intro = `Cộng đồng game thủ đang xôn xao trước thông tin cực hot liên quan trực tiếp đến dự án game đình đám này. Đây được coi là sự kiện đáng chú ý nhất trong tuần đối với những ai đam mê trò chơi điện tử.`;
     paragraphs = [
-      "Ngay sau khi những hình ảnh đầu tiên hoặc bản thử nghiệm được công bố, lượng người truy cập máy chủ đã tăng vọt ngoài tầm kiểm soát. Nhà phát hành đã phải ngay lập tức tiến hành nâng cấp hạ tầng để đáp ứng nhu cầu khổng lồ.",
-      "Lối chơi sáng tạo cùng hệ thống đồ họa tối tân chính là điểm sáng giúp tựa game ghi điểm tuyệt đối trong mắt giới phê bình. Bên cạnh đó, các chế độ chơi phối hợp đồng đội cũng mang lại những trải nghiệm mới mẻ chưa từng có.",
-      "Các giải đấu chuyên nghiệp dự kiến cũng sẽ sớm đưa nội dung này vào thi đấu chính thức. Hãy cùng chờ đợi xem các tuyển thủ hàng đầu sẽ khai thác những chiến thuật gì từ bản cập nhật mới này."
+      "Thị trường trò chơi điện tử đang trải qua thời kỳ hoàng kim với sự xuất hiện của hàng loạt bom tấn đồ họa đỉnh cao cùng các giải đấu Esports chuyên nghiệp thu hút hàng triệu đô la giải thưởng. Mỗi bản cập nhật hay dự án game mới ra mắt đều trở thành đề tài bàn tán sôi nổi của hàng triệu game thủ trên toàn thế giới.",
+      "Lối chơi sáng tạo kết hợp giữa các yếu tố hành động nhịp độ nhanh và tư duy chiến thuật sâu sắc chính là điểm cộng lớn nhất giúp tựa game nhanh chóng chiếm trọn cảm tình của người chơi. Đồ họa thế hệ mới được tối ưu hóa cực tốt, tái hiện chân thực từng chi tiết nhỏ từ môi trường xung quanh, hiệu ứng ánh sáng cho tới các chuyển động vật lý phức tạp của nhân vật.",
+      "Hệ thống kết nối trực tuyến và ghép trận cũng được nâng cấp đáng kể, đảm bảo trải nghiệm chơi game mượt mà, hạn chế tối đa tình trạng giật lag hay mất kết nối giữa chừng. Cộng đồng người chơi đã nhanh chóng thành lập các hội nhóm, diễn đàn chia sẻ kinh nghiệm, mẹo chơi game và tổ chức các giải đấu phong trào quy mô nhỏ để cọ xát kỹ năng.",
+      "Các nhà phê bình game uy tín cũng dành nhiều lời khen ngợi cho sự cân bằng trong trò chơi cũng như cách nhà phát triển lắng nghe ý kiến đóng góp từ phía cộng đồng để điều chỉnh kịp thời. Lượng người chơi hoạt động hàng ngày liên tục phá kỷ lục cũ, đưa tựa game này lọt vào top những trò chơi có doanh thu cao nhất trên các nền tảng phân phối trực tuyến lớn như Steam hay Epic Games.",
+      "Bên cạnh đó, lộ trình phát triển trong tương lai của trò chơi cũng vô cùng hứa hẹn với nhiều bản mở rộng (DLC) miễn phí, bản đồ mới và hệ thống nhân vật phong phú sắp được ra mắt. Ban tổ chức các giải đấu chuyên nghiệp cũng đang cân nhắc đưa tựa game này vào danh mục thi đấu chính thức tại các ngày hội Esports tầm cỡ quốc tế sắp tới.",
+      "Với nền tảng vững chắc và sự ủng hộ nhiệt tình từ cộng đồng, tựa game này được dự đoán sẽ tiếp tục thống trị làng game thế giới trong nhiều năm tới. Đây chắc chắn là một trải nghiệm giải trí tuyệt vời mà bất kỳ game thủ nào cũng nên thử qua ít nhất một lần để cảm nhận sự khác biệt."
     ];
     images = [
       {
@@ -349,14 +418,69 @@ export function getOrGenerateArticle(id: string): Article | undefined {
       {
         src: "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=600&auto=format&fit=crop",
         caption: "Giải đấu Esports chuyên nghiệp thu hút hàng vạn khán giả theo dõi trực tiếp"
+      },
+      {
+        src: "https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=600&auto=format&fit=crop",
+        caption: "Hình ảnh phác họa thiết kế màn chơi đầy thử thách của bản cập nhật"
+      }
+    ];
+  } else if (category.includes("PHIM") || category.includes("FILM")) {
+    intro = `Nghệ thuật thứ bảy luôn là món ăn tinh thần không thể thiếu đối với khán giả toàn cầu, đặc biệt là trong mùa phim bom tấn với sự đổ bộ của các dự án điện ảnh được đầu tư hàng trăm triệu USD.`;
+    paragraphs = [
+      "Nghệ thuật thứ bảy luôn là món ăn tinh thần không thể thiếu đối với khán giả toàn cầu, đặc biệt là trong mùa phim bom tấn với sự đổ bộ của các dự án điện ảnh được đầu tư hàng trăm triệu USD. Cuộc đua phòng vé giữa các hãng phim lớn đang diễn ra vô cùng khốc liệt với những kỷ lục liên tục bị xô đổ.",
+      "Bộ phim mới này gây ấn tượng mạnh nhờ cốt truyện chặt chẽ, đầy rẫy những cú bẻ lái (twist) bất ngờ khiến người xem không thể rời mắt khỏi màn hình dù chỉ một giây. Sự kết hợp tài tình giữa các hiệu ứng kỹ xảo hình ảnh (VFX) đỉnh cao và âm thanh sống động đã mang đến một bữa tiệc giác quan thực sự, làm tăng thêm tính chân thực và sự hoành tráng của từng cảnh quay.",
+      "Dàn diễn viên tên tuổi với khả năng diễn xuất đỉnh cao đã lột tả xuất sắc tâm lý phức tạp của từng nhân vật, từ những giằng xé nội tâm cho tới những pha hành động nghẹt thở. Nhiều khán giả sau khi bước ra khỏi rạp chiếu phim đã chia sẻ sự xúc động sâu sắc và đánh giá đây là một trong những tác phẩm điện ảnh đáng xem nhất trong năm.",
+      "Giới phê bình nghệ thuật cũng dành cho tác phẩm nhiều điểm số tối đa cùng những nhận xét tích cực về thông điệp nhân văn sâu sắc mà đạo diễn muốn gửi gắm qua bộ phim. Tác phẩm không chỉ mang tính giải trí thuần túy mà còn gợi mở nhiều suy ngẫm về cuộc sống, tình yêu và những giá trị nhân sinh tốt đẹp trong xã hội hiện đại.",
+      "Hiện tại, lượng vé đặt trước tại các cụm rạp lớn liên tục cháy hàng, đặc biệt là ở các định dạng chiếu cao cấp như IMAX hay 3D. Nhà phát hành phim cũng đang lên kế hoạch đưa bộ phim tham gia tranh giải tại các liên hoan phim quốc tế danh giá, hứa hẹn sẽ mang về nhiều giải thưởng quan trọng cho đoàn làm phim.",
+      "Nhìn chung, bộ phim đã chứng minh được sức hút mãnh liệt của mình bằng cả doanh thu phòng vé ấn tượng lẫn sự công nhận của khán giả và giới chuyên môn. Đây chắc chắn là tác phẩm điện ảnh xuất sắc mà bạn nên cùng gia đình và bạn bè thưởng thức tại rạp để có được trải nghiệm trọn vẹn nhất."
+    ];
+    images = [
+      {
+        src: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=600&auto=format&fit=crop",
+        caption: "Bên trong phòng chiếu phim hiện đại chật kín khán giả ngày đầu công chiếu"
+      },
+      {
+        src: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=600&auto=format&fit=crop",
+        caption: "Một cảnh quay hành động hoành tráng được ghi lại từ hậu trường sản xuất"
+      },
+      {
+        src: "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?q=80&w=600&auto=format&fit=crop",
+        caption: "Đạo diễn và ekip đang thảo luận kỹ lưỡng trước khi bấm máy cảnh quay quan trọng"
+      }
+    ];
+  } else if (category.includes("KIẾN THỨC") || category.includes("KHOA HỌC")) {
+    intro = `Thế giới xung quanh chúng ta ẩn chứa vô vàn những điều kỳ diệu và bí ẩn đang chờ đợi con người khám phá. Dưới đây là những ghi nhận khoa học mới nhất về chủ đề này.`;
+    paragraphs = [
+      "Thế giới xung quanh chúng ta ẩn chứa vô vàn những điều kỳ diệu và bí ẩn đang chờ đợi con người khám phá. Từ những hạt bụi siêu nhỏ trong thế giới vi mô đến những thiên hà xa xôi ngoài vũ trụ bao la, khoa học luôn là chiếc chìa khóa giúp chúng ta hiểu rõ hơn về nguồn gốc và quy luật vận hành của vạn vật.",
+      "Các nghiên cứu khoa học mới nhất đã công bố những phát hiện chấn động, làm thay đổi nhiều quan điểm truyền thống và mở ra những hướng đi mới trong việc nghiên cứu tự nhiên. Những số liệu thực nghiệm được thu thập từ các thiết bị đo lường tối tân đã chứng minh tính đúng đắn của các lý thuyết giả định, mang lại những luận cứ khoa học vô cùng thuyết phục.",
+      "Bên cạnh đó, việc ứng dụng các thành tựu khoa học kỹ thuật vào đời sống thực tế cũng đang mang lại những thay đổi tích cực, giúp nâng cao chất lượng cuộc sống và giải quyết nhiều vấn đề toàn cầu như biến đổi khí hậu hay dịch bệnh. Cộng đồng khoa học quốc tế liên tục tổ chức các hội thảo, diễn đàn để chia sẻ kiến thức và thúc đẩy sự hợp tác nghiên cứu đa quốc gia.",
+      "Nhiều chuyên gia giáo dục nhận định rằng việc phổ biến kiến thức khoa học một cách dễ hiểu và sinh động đến công chúng là vô cùng quan trọng, giúp khơi dậy niềm đam mê khám phá của thế hệ trẻ. Những câu chuyện khoa học kỳ thú đằng sau các phát minh vĩ đại luôn có một sức hút đặc biệt đối với những ai tò mò và ham học hỏi.",
+      "Trong tương lai gần, các dự án nghiên cứu tiếp theo sẽ tập trung vào việc giải mã những bí ẩn lớn chưa có lời đáp của nhân loại, với sự hỗ trợ của siêu máy tính và các công nghệ phân tích dữ liệu lớn. Người dân trên khắp thế giới đang rất ngóng chờ những bước tiến mới này để xem khoa học sẽ đưa chúng ta đi xa đến đâu trong hành trình chinh phục tri thức.",
+      "Tóm lại, tri thức khoa học là vô hạn và mỗi phát hiện mới đều là một viên gạch góp phần xây dựng nên bức tranh toàn cảnh về vũ trụ và sự sống. Việc không ngừng học hỏi và khám phá thế giới xung quanh không chỉ giúp chúng ta thông thái hơn mà còn nuôi dưỡng tâm hồn yêu thiên nhiên và cuộc sống."
+    ];
+    images = [
+      {
+        src: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=600&auto=format&fit=crop",
+        caption: "Hình ảnh mô phỏng vũ trụ bao la với hàng tỷ thiên hà xa xôi"
+      },
+      {
+        src: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?q=80&w=600&auto=format&fit=crop",
+        caption: "Phòng nghiên cứu sinh học hiện đại với các trang thiết bị tối tân hàng đầu"
+      },
+      {
+        src: "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?q=80&w=600&auto=format&fit=crop",
+        caption: "Mô hình cấu trúc phân tử sinh học phức tạp được hiển thị dưới dạng 3D"
       }
     ];
   } else {
     // General fallback
     paragraphs = [
-      "Theo các nguồn tin uy tín, sự kiện này đang thu hút sự chú ý cực kỳ lớn của dư luận với hàng triệu lượt tương tác trên mạng xã hội. Nhiều người bày tỏ sự đồng tình và chia sẻ những câu chuyện tương tự liên quan.",
-      "Cơ quan chức năng và các đơn vị liên quan cũng đã nhanh chóng vào cuộc để xác minh và đưa ra những khuyến cáo kịp thời đến người dân. Mọi diễn biến mới nhất sẽ được cập nhật liên tục để quý độc giả tiện theo dõi.",
-      "Hy vọng rằng vấn đề sẽ sớm được giải quyết ổn thỏa, đem lại sự an tâm cho cộng đồng. Dưới đây là những tổng hợp và ghi nhận thực tế từ phóng viên của chúng tôi tại hiện trường."
+      "Trong bối cảnh xã hội hiện đại với sự bùng nổ của thông tin, các sự kiện thời sự trong nước và quốc tế diễn ra liên tục từng giờ, đòi hỏi người dân phải luôn cập nhật thông tin nhanh chóng và chính xác. Những tin tức nóng hổi về kinh tế, xã hội và đời sống luôn nhận được sự quan tâm đặc biệt từ đông đảo độc giả.",
+      "Theo ghi nhận thực tế của nhóm phóng viên tại hiện trường, sự việc đang thu hút sự chú ý cực kỳ lớn của dư luận xã hội với hàng triệu lượt chia sẻ và bình luận trên các nền tảng trực tuyến. Các cơ quan chức năng và đơn vị có liên quan đã nhanh chóng vào cuộc chỉ đạo, tiến hành các biện pháp nghiệp vụ cần thiết để xử lý tình huống ổn thỏa và đảm bảo an ninh trật tự.",
+      "Nhiều chuyên gia trong ngành cũng đã đưa ra những phân tích đa chiều và khuyến cáo thiết thực giúp người dân hiểu rõ bản chất của sự việc, tránh bị ảnh hưởng bởi những thông tin sai lệch hoặc tin đồn thất thiệt lan truyền trên mạng. Sự đồng thuận và ý thức trách nhiệm của mỗi cá nhân trong cộng đồng đóng vai trò then chốt trong việc giải quyết triệt để vấn đề.",
+      "Bên cạnh đó, các hoạt động hỗ trợ, khắc phục hậu quả và ổn định đời sống của người dân bị ảnh hưởng cũng đang được triển khai tích cực với sự tham gia của nhiều tổ chức đoàn thể xã hội. Tinh thần tương thân tương ái, tương trợ lẫn nhau trong những lúc khó khăn một lần nữa được khơi dậy mạnh mẽ, làm ấm lòng người dân cả nước.",
+      "Các thông tin chính thức từ cơ quan quản lý nhà nước sẽ được cập nhật liên tục để người dân tiện theo dõi và chủ động thực hiện theo đúng các hướng dẫn đã ban hành. Dự báo tình hình sẽ sớm ổn định trở lại trong vài ngày tới nhờ sự vào cuộc quyết liệt của toàn hệ thống chính trị và sự đồng lòng của người dân.",
+      "Nhìn chung, sự việc lần này là một bài học sâu sắc về công tác quản lý và ứng phó với các tình huống phát sinh trong đời sống xã hội. Việc cung cấp thông tin kịp thời, minh bạch và sự phối hợp nhịp nhàng giữa các bên chính là chìa khóa để giải quyết mọi thách thức, hướng tới xây dựng một xã hội an toàn, văn minh."
     ];
     images = [
       {
@@ -366,6 +490,10 @@ export function getOrGenerateArticle(id: string): Article | undefined {
       {
         src: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?q=80&w=600&auto=format&fit=crop",
         caption: "Sự kiện thu hút đông đảo sự quan tâm của nhiều thành phần trong xã hội"
+      },
+      {
+        src: "https://images.unsplash.com/photo-1513829096999-4978602294fc?q=80&w=600&auto=format&fit=crop",
+        caption: "Phóng viên ghi nhận tình hình thực tế và phỏng vấn người dân tại hiện trường"
       }
     ];
   }
@@ -375,11 +503,15 @@ export function getOrGenerateArticle(id: string): Article | undefined {
     intro,
     content: [
       { type: "paragraph", text: paragraphs[0] },
-      { type: "image", src: images[0].src, caption: images[0].caption },
       { type: "paragraph", text: paragraphs[1] },
+      { type: "image", src: images[0].src, caption: images[0].caption },
+      { type: "paragraph", text: paragraphs[2] },
+      { type: "paragraph", text: paragraphs[3] },
       { type: "ad" }, // inline ad QC 650x300
       { type: "image", src: images[1].src, caption: images[1].caption },
-      { type: "paragraph", text: paragraphs[2] }
+      { type: "paragraph", text: paragraphs[4] },
+      { type: "image", src: images[2]?.src || images[0].src, caption: images[2]?.caption || images[0].caption },
+      { type: "paragraph", text: paragraphs[5] }
     ]
   };
 }

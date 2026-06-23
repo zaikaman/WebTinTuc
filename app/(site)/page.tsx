@@ -52,13 +52,13 @@ export default async function HomePage() {
             <FeaturedCarousel articles={carouselArticles} />
           )}
 
-          {/* Double QC box on mobile immediately below Featured Carousel */}
-          <div className="grid grid-cols-2 gap-3.5 my-2.5 md:hidden">
-            <div className="relative overflow-hidden rounded border border-gray-200 bg-gray-50 shadow-xs aspect-[300/600]">
+          {/* Swipable QC container on mobile immediately below Featured Carousel */}
+          <div className="flex gap-3.5 my-2.5 md:hidden overflow-x-auto scrollbar-none snap-x snap-mandatory">
+            <div className="w-[46%] min-w-[140px] flex-shrink-0 snap-start relative overflow-hidden rounded border border-gray-200 bg-gray-50 shadow-xs aspect-[300/600]">
               <a href="#" className="block w-full h-full">
                 <img
                   src="/zento_cabinet_ad.png"
-                  alt="Quảng cáo"
+                  alt="Quảng cáo 1"
                   className="w-full h-full object-cover"
                 />
               </a>
@@ -66,11 +66,23 @@ export default async function HomePage() {
                 QC &times;
               </div>
             </div>
-            <div className="relative overflow-hidden rounded border border-gray-200 bg-gray-50 shadow-xs aspect-[300/600]">
+            <div className="w-[46%] min-w-[140px] flex-shrink-0 snap-start relative overflow-hidden rounded border border-gray-200 bg-gray-50 shadow-xs aspect-[300/600]">
               <a href="#" className="block w-full h-full">
                 <img
                   src="/ztc_bathtub_ad.png"
-                  alt="Quảng cáo"
+                  alt="Quảng cáo 2"
+                  className="w-full h-full object-cover"
+                />
+              </a>
+              <div className="absolute top-1 right-1 bg-black/45 text-white/90 text-[8px] px-1 py-0.5 rounded-sm select-none z-10">
+                QC &times;
+              </div>
+            </div>
+            <div className="w-[46%] min-w-[140px] flex-shrink-0 snap-start relative overflow-hidden rounded border border-gray-200 bg-gray-50 shadow-xs aspect-[300/600]">
+              <a href="#" className="block w-full h-full">
+                <img
+                  src="/zento_toilet_ad.png"
+                  alt="Quảng cáo 3"
                   className="w-full h-full object-cover"
                 />
               </a>
