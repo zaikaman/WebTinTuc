@@ -29,10 +29,11 @@ export default async function HomePage() {
   return (
     <main className="w-full px-3 md:px-0 py-4 font-sans text-xs flex flex-col gap-5 bg-white">
       {/* Top Banner Advertisement (QC 970x250) */}
-      <div className="relative w-full md:w-[970px] md:h-[250px] overflow-hidden rounded border border-gray-200 bg-gray-50 group shadow-sm mx-auto">
+      <div className="relative w-full md:w-[970px] md:h-[250px] overflow-hidden rounded-lg md:rounded border border-gray-200 bg-gray-50 group shadow-sm mx-auto">
         {/* Mobile View */}
-        <div className="flex md:hidden w-full h-[70px] bg-[#e0e0e0] items-center justify-center text-[#1a1a1a] font-extrabold text-[18px] border border-gray-300">
-          QC
+        <div className="flex md:hidden w-full h-[80px] rounded-lg bg-gradient-to-br from-[#f8f9fa] to-[#e9ecef] border border-dashed border-gray-300 flex-col items-center justify-center gap-1.5 p-3 text-center shadow-inner">
+          <span className="text-[9px] font-extrabold tracking-widest text-gray-400 uppercase bg-gray-200/50 px-2 py-0.5 rounded-sm">QUẢNG CÁO</span>
+          <span className="text-[10.5px] font-bold text-gray-600">Vietnam Airlines - Đồng hành cùng mọi chuyến đi</span>
         </div>
         {/* Desktop View */}
         <div className="hidden md:block w-full h-full">
@@ -61,11 +62,15 @@ export default async function HomePage() {
 
           {/* Double QC box on mobile immediately below Featured Carousel */}
           <div className="grid grid-cols-2 gap-3.5 my-2.5 md:hidden">
-            <div className="bg-[#e0e0e0] h-[160px] flex items-center justify-center font-extrabold text-[24px] text-[#1a1a1a] border border-gray-300">
-              QC
+            <div className="rounded-lg bg-gradient-to-br from-[#fff5f5] to-[#ffe3e3] border border-dashed border-[#ffb3b3] h-[130px] flex flex-col items-center justify-center gap-1 p-2 text-center shadow-xs">
+              <span className="text-[8px] font-extrabold tracking-widest text-[#ff8787] uppercase bg-[#fff0f0] px-1.5 py-0.5 rounded-sm">QUẢNG CÁO</span>
+              <span className="text-[10px] font-extrabold text-gray-800 leading-tight">Đặt banner quảng cáo tại đây</span>
+              <span className="text-[8.5px] text-gray-500 font-medium">Liên hệ chúng tôi ngay</span>
             </div>
-            <div className="bg-[#e0e0e0] h-[160px] flex items-center justify-center font-extrabold text-[24px] text-[#1a1a1a] border border-gray-300">
-              QC
+            <div className="rounded-lg bg-gradient-to-br from-[#f3f0ff] to-[#e5dbff] border border-dashed border-[#d0bfff] h-[130px] flex flex-col items-center justify-center gap-1 p-2 text-center shadow-xs">
+              <span className="text-[8px] font-extrabold tracking-widest text-[#9775fa] uppercase bg-[#f3f0ff] px-1.5 py-0.5 rounded-sm">QUẢNG CÁO</span>
+              <span className="text-[10px] font-extrabold text-gray-800 leading-tight">Tuyển dụng Game Developers</span>
+              <span className="text-[8.5px] text-[#5f3dc4] font-bold">Apply Now</span>
             </div>
           </div>
 
@@ -80,19 +85,19 @@ export default async function HomePage() {
           {/* List of Articles in groups of 3 with ads in between */}
           {articleGroups.map((group, groupIndex) => (
             <div key={`group-${groupIndex}`} className="contents">
-              <div className="flex flex-col bg-white border border-gray-200 rounded-sm p-4 shadow-sm divide-y divide-gray-200">
+              <div className="flex flex-col bg-white md:border md:border-gray-200 md:rounded-sm p-0 md:p-4 md:shadow-sm divide-y divide-gray-200">
                 {group.map((article, index) => {
                   const categorySlug = getCategorySlug(article.category);
                   const displayIntro = article.intro || `Bản tin mới nhất về ${article.category.toLowerCase()} - Cập nhật nhanh các thông tin xoay quanh chủ đề "${article.title}" đang thu hút sự chú ý của độc giả.`;
                   return (
                     <div
                       key={`${article.id}-${index}`}
-                      className="group flex gap-4 py-5 first:pt-2 last:pb-2 transition-colors hover:bg-gray-50/30"
+                      className="group flex gap-4 py-4 sm:py-5 first:pt-0 md:first:pt-2 last:pb-0 md:last:pb-2 transition-colors hover:bg-gray-50/30"
                     >
                       {/* Thumbnail Left */}
                       <Link
                         href={`/posts/${article.id}`}
-                        className="relative w-[130px] h-[82px] sm:w-[220px] sm:h-[138px] flex-shrink-0 overflow-hidden border border-gray-200 bg-gray-50 rounded-sm block"
+                        className="relative w-[130px] h-[82px] sm:w-[220px] sm:h-[138px] flex-shrink-0 overflow-hidden border border-gray-200 bg-gray-50 rounded-md md:rounded-sm block"
                       >
                         <img
                           src={article.image || "/placeholder.svg"}
@@ -105,7 +110,7 @@ export default async function HomePage() {
                       <div className="flex flex-col justify-between py-0.5 flex-1 min-h-[82px] sm:min-h-[138px]">
                         <div>
                           <Link href={`/posts/${article.id}`} className="block">
-                            <h3 className="text-gray-900 font-bold text-xs sm:text-[16px] leading-snug tracking-tight group-hover:text-[#e24a48] transition-colors line-clamp-2 font-sans">
+                            <h3 className="text-gray-900 font-bold text-[14px] sm:text-[16px] leading-snug tracking-tight group-hover:text-[#e24a48] transition-colors line-clamp-2 font-sans">
                               {article.title}
                             </h3>
                           </Link>
@@ -139,10 +144,12 @@ export default async function HomePage() {
 
               {/* Advertisement Banner (QC 650x300) between groups */}
               {groupIndex < articleGroups.length - 1 && (
-                <div className="relative w-full overflow-hidden rounded-sm border border-gray-200 bg-gray-50 flex justify-center group shadow-sm aspect-[650/300]">
+                <div className="relative w-full overflow-hidden rounded-lg md:rounded-sm border border-gray-200 bg-gray-50 flex justify-center group shadow-sm aspect-[650/300] md:aspect-auto">
                   {/* Mobile View */}
-                  <div className="flex md:hidden w-full h-[100px] bg-[#e0e0e0] items-center justify-center text-[#1a1a1a] font-extrabold text-[16px] border border-gray-300">
-                    QC
+                  <div className="flex md:hidden w-full h-[90px] rounded-lg bg-gradient-to-br from-[#ebfbee] to-[#d3f9d8] border border-dashed border-[#b2f2bb] flex-col items-center justify-center gap-1.5 p-3 text-center shadow-inner">
+                    <span className="text-[9px] font-extrabold tracking-widest text-[#40c057] uppercase bg-[#ebfbee] px-2 py-0.5 rounded-sm">QUẢNG CÁO</span>
+                    <span className="text-[11px] font-bold text-gray-800">Cửa Hàng Thiết Bị Vệ Sinh Zento Premium</span>
+                    <span className="text-[9px] text-[#2b8a3e] font-semibold">Giảm giá 30% toàn bộ sản phẩm trong tháng</span>
                   </div>
                   {/* Desktop View */}
                   <div className="hidden md:block w-full h-full">
@@ -211,10 +218,11 @@ export default async function HomePage() {
       </div>
 
       {/* Bottom Full-Width Ad (970x250) */}
-      <div className="relative w-full md:w-[970px] md:h-[250px] overflow-hidden rounded border border-gray-200 bg-gray-50 flex justify-center group shadow-sm mx-auto mt-4">
+      <div className="relative w-full md:w-[970px] md:h-[250px] overflow-hidden rounded-lg md:rounded border border-gray-200 bg-gray-50 flex justify-center group shadow-sm mx-auto mt-4">
         {/* Mobile View */}
-        <div className="flex md:hidden w-full h-[70px] bg-[#e0e0e0] items-center justify-center text-[#1a1a1a] font-extrabold text-[18px] border border-gray-300">
-          QC
+        <div className="flex md:hidden w-full h-[80px] rounded-lg bg-gradient-to-br from-[#fff9db] to-[#fff3bf] border border-dashed border-[#ffe066] flex-col items-center justify-center gap-1.5 p-3 text-center shadow-inner">
+          <span className="text-[9px] font-extrabold tracking-widest text-[#f59f00] uppercase bg-[#fff9db] px-2 py-0.5 rounded-sm">QUẢNG CÁO</span>
+          <span className="text-[10.5px] font-bold text-gray-700">Vietnam Airlines - Sải cánh vươn cao cùng thế giới</span>
         </div>
         {/* Desktop View */}
         <div className="hidden md:block w-full h-full">

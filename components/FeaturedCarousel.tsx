@@ -109,7 +109,7 @@ export function FeaturedCarousel({ articles }: FeaturedCarouselProps) {
         </button>
 
         {/* Indicators Overlay at Bottom Center */}
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 hidden sm:flex items-center gap-1.5 z-20">
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-20">
           {articles.map((_, idx) => (
             <button
               key={idx}
@@ -129,7 +129,7 @@ export function FeaturedCarousel({ articles }: FeaturedCarouselProps) {
       {/* Info Area Below Image */}
       <div className="mt-3 mb-1 px-0.5">
         {/* Category & Date Info */}
-        <div className="hidden sm:flex items-center gap-2 mb-2 text-[10px] sm:text-[11px] text-gray-500 font-sans font-medium">
+        <div className="flex items-center gap-2 mb-2 text-[10px] sm:text-[11px] text-gray-500 font-sans font-medium">
           <Link
             href={`/${categorySlug}`}
             className="text-[#df3232] hover:text-[#df3232]/80 font-bold tracking-wide transition-colors duration-150 uppercase"
@@ -148,7 +148,7 @@ export function FeaturedCarousel({ articles }: FeaturedCarouselProps) {
 
         {/* Title Link */}
         <Link href={`/posts/${currentArticle.id}`} className="group/title block">
-          <h2 className="text-gray-900 font-bold text-[13px] sm:text-[19px] leading-snug tracking-tight group-hover/title:text-[#e24a48] transition-colors duration-200 font-sans line-clamp-none sm:line-clamp-2">
+          <h2 className="text-gray-900 font-bold text-[15px] sm:text-[19px] leading-snug tracking-tight group-hover/title:text-[#e24a48] transition-colors duration-200 font-sans line-clamp-none sm:line-clamp-2">
             {currentArticle.title}
           </h2>
         </Link>

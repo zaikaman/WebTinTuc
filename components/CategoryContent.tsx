@@ -51,10 +51,11 @@ export function CategoryContent({ category, label, featured, initialList }: Cate
   return (
     <main className="w-full px-3 md:px-0 py-4 font-sans text-xs bg-white">
       {/* Top Banner Advertisement (QC 970x250) */}
-      <div className="relative w-full md:w-[970px] md:h-[250px] overflow-hidden rounded border border-gray-200 mb-5 bg-gray-50 flex justify-center group shadow-sm mx-auto">
+      <div className="relative w-full md:w-[970px] md:h-[250px] overflow-hidden rounded-lg md:rounded border border-gray-200 mb-5 bg-gray-50 flex justify-center group shadow-sm mx-auto">
         {/* Mobile View */}
-        <div className="flex md:hidden w-full h-[70px] bg-[#e0e0e0] items-center justify-center text-[#1a1a1a] font-extrabold text-[18px] border border-gray-300">
-          QC
+        <div className="flex md:hidden w-full h-[80px] rounded-lg bg-gradient-to-br from-[#f8f9fa] to-[#e9ecef] border border-dashed border-gray-300 flex-col items-center justify-center gap-1.5 p-3 text-center shadow-inner">
+          <span className="text-[9px] font-extrabold tracking-widest text-gray-400 uppercase bg-gray-200/50 px-2 py-0.5 rounded-sm">QUẢNG CÁO</span>
+          <span className="text-[10.5px] font-bold text-gray-600">Vietnam Airlines - Đồng hành cùng mọi chuyến đi</span>
         </div>
         {/* Desktop View */}
         <div className="hidden md:block w-full h-full">
@@ -82,23 +83,27 @@ export function CategoryContent({ category, label, featured, initialList }: Cate
 
           {/* Double QC box on mobile immediately below Featured Carousel */}
           <div className="grid grid-cols-2 gap-3.5 my-2.5 md:hidden">
-            <div className="bg-[#e0e0e0] h-[160px] flex items-center justify-center font-extrabold text-[24px] text-[#1a1a1a] border border-gray-300">
-              QC
+            <div className="rounded-lg bg-gradient-to-br from-[#fff5f5] to-[#ffe3e3] border border-dashed border-[#ffb3b3] h-[130px] flex flex-col items-center justify-center gap-1 p-2 text-center shadow-xs">
+              <span className="text-[8px] font-extrabold tracking-widest text-[#ff8787] uppercase bg-[#fff0f0] px-1.5 py-0.5 rounded-sm">QUẢNG CÁO</span>
+              <span className="text-[10px] font-extrabold text-gray-800 leading-tight">Đặt banner quảng cáo tại đây</span>
+              <span className="text-[8.5px] text-gray-500 font-medium">Liên hệ chúng tôi ngay</span>
             </div>
-            <div className="bg-[#e0e0e0] h-[160px] flex items-center justify-center font-extrabold text-[24px] text-[#1a1a1a] border border-gray-300">
-              QC
+            <div className="rounded-lg bg-gradient-to-br from-[#f3f0ff] to-[#e5dbff] border border-dashed border-[#d0bfff] h-[130px] flex flex-col items-center justify-center gap-1 p-2 text-center shadow-xs">
+              <span className="text-[8px] font-extrabold tracking-widest text-[#9775fa] uppercase bg-[#f3f0ff] px-1.5 py-0.5 rounded-sm">QUẢNG CÁO</span>
+              <span className="text-[10px] font-extrabold text-gray-800 leading-tight">Tuyển dụng Game Developers</span>
+              <span className="text-[8.5px] text-[#5f3dc4] font-bold">Apply Now</span>
             </div>
           </div>
 
           {/* List Part 1 (First 6 items) */}
-          <div className="bg-white border border-gray-200 p-3 sm:p-4 rounded-sm shadow-sm flex flex-col gap-4">
+          <div className="bg-white md:border md:border-gray-200 p-0 md:p-4 rounded-sm md:shadow-sm flex flex-col gap-4">
             {listPart1.map((item) => (
               <Link
                 key={item.id}
                 href={`/posts/${item.id}`}
                 className="group flex gap-3.5 cursor-pointer pb-4 border-b border-gray-100 last:border-b-0 last:pb-0 transition-colors"
               >
-                <div className="w-[110px] h-[75px] sm:w-[130px] sm:h-[88px] flex-shrink-0 overflow-hidden border border-gray-200 bg-gray-50 rounded-sm">
+                <div className="w-[110px] h-[75px] sm:w-[130px] sm:h-[88px] flex-shrink-0 overflow-hidden border border-gray-200 bg-gray-50 rounded-md md:rounded-sm">
                   <img
                     src={item.image}
                     alt={item.title}
@@ -106,7 +111,7 @@ export function CategoryContent({ category, label, featured, initialList }: Cate
                   />
                 </div>
                 <div className="flex flex-col justify-between py-0.5 flex-1">
-                  <h3 className="text-gray-800 font-bold text-xs sm:text-[13px] leading-snug group-hover:text-[#df3232] transition-colors line-clamp-2 sm:line-clamp-3">
+                  <h3 className="text-gray-800 font-bold text-[13.5px] sm:text-[13px] leading-snug group-hover:text-[#df3232] transition-colors line-clamp-2 sm:line-clamp-3">
                     {item.title}
                   </h3>
                   <div className="flex items-center gap-1.5 text-gray-400 font-semibold text-[10px] mt-1">
@@ -126,10 +131,12 @@ export function CategoryContent({ category, label, featured, initialList }: Cate
           </div>
 
           {/* Middle Banner Ad (QC 650x300) */}
-          <div className="relative w-full overflow-hidden rounded border border-gray-200 bg-gray-50 flex justify-center group shadow-sm aspect-[650/300] max-h-[300px]">
+          <div className="relative w-full overflow-hidden rounded-lg md:rounded border border-gray-200 bg-gray-50 flex justify-center group shadow-sm aspect-[650/300] max-h-[300px] md:aspect-auto md:max-h-none">
             {/* Mobile View */}
-            <div className="flex md:hidden w-full h-[100px] bg-[#e0e0e0] items-center justify-center text-[#1a1a1a] font-extrabold text-[16px] border border-gray-300">
-              QC
+            <div className="flex md:hidden w-full h-[90px] rounded-lg bg-gradient-to-br from-[#ebfbee] to-[#d3f9d8] border border-dashed border-[#b2f2bb] flex-col items-center justify-center gap-1.5 p-3 text-center shadow-inner">
+              <span className="text-[9px] font-extrabold tracking-widest text-[#40c057] uppercase bg-[#ebfbee] px-2 py-0.5 rounded-sm">QUẢNG CÁO</span>
+              <span className="text-[11px] font-bold text-gray-800">Cửa Hàng Thiết Bị Vệ Sinh Zento Premium</span>
+              <span className="text-[9px] text-[#2b8a3e] font-semibold">Giảm giá 30% toàn bộ sản phẩm trong tháng</span>
             </div>
             {/* Desktop View */}
             <div className="hidden md:block w-full h-full">
@@ -147,14 +154,14 @@ export function CategoryContent({ category, label, featured, initialList }: Cate
           </div>
 
           {/* List Part 2 (Next 6 items + Load More items) */}
-          <div className="bg-white border border-gray-200 p-3 sm:p-4 rounded-sm shadow-sm flex flex-col gap-4">
+          <div className="bg-white md:border md:border-gray-200 p-0 md:p-4 rounded-sm md:shadow-sm flex flex-col gap-4">
             {listPart2.map((item) => (
               <Link
                 key={item.id}
                 href={`/posts/${item.id}`}
                 className="group flex gap-3.5 cursor-pointer pb-4 border-b border-gray-100 last:border-b-0 last:pb-0 transition-colors"
               >
-                <div className="w-[110px] h-[75px] sm:w-[130px] sm:h-[88px] flex-shrink-0 overflow-hidden border border-gray-200 bg-gray-50 rounded-sm">
+                <div className="w-[110px] h-[75px] sm:w-[130px] sm:h-[88px] flex-shrink-0 overflow-hidden border border-gray-200 bg-gray-50 rounded-md md:rounded-sm">
                   <img
                     src={item.image}
                     alt={item.title}
@@ -162,7 +169,7 @@ export function CategoryContent({ category, label, featured, initialList }: Cate
                   />
                 </div>
                 <div className="flex flex-col justify-between py-0.5 flex-1">
-                  <h3 className="text-gray-800 font-bold text-xs sm:text-[13px] leading-snug group-hover:text-[#df3232] transition-colors line-clamp-2 sm:line-clamp-3">
+                  <h3 className="text-gray-800 font-bold text-[13.5px] sm:text-[13px] leading-snug group-hover:text-[#df3232] transition-colors line-clamp-2 sm:line-clamp-3">
                     {item.title}
                   </h3>
                   <div className="flex items-center gap-1.5 text-gray-400 font-semibold text-[10px] mt-1">

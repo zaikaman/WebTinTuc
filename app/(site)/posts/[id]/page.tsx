@@ -25,10 +25,11 @@ export default async function PostDetailPage({ params }: PageProps) {
   return (
     <main className="w-full px-3 md:px-0 py-4 font-sans text-xs">
       {/* Top Banner Advertisement (QC 970x250) */}
-      <div className="relative w-full md:w-[970px] md:h-[250px] overflow-hidden rounded border border-gray-200 mb-5 bg-gray-50 group shadow-sm mx-auto">
+      <div className="relative w-full md:w-[970px] md:h-[250px] overflow-hidden rounded-lg md:rounded border border-gray-200 mb-5 bg-gray-50 flex justify-center group shadow-sm mx-auto">
         {/* Mobile View */}
-        <div className="flex md:hidden w-full h-[70px] bg-[#e0e0e0] items-center justify-center text-[#1a1a1a] font-extrabold text-[18px] border border-gray-300">
-          QC
+        <div className="flex md:hidden w-full h-[80px] rounded-lg bg-gradient-to-br from-[#f8f9fa] to-[#e9ecef] border border-dashed border-gray-300 flex-col items-center justify-center gap-1.5 p-3 text-center shadow-inner">
+          <span className="text-[9px] font-extrabold tracking-widest text-gray-400 uppercase bg-gray-200/50 px-2 py-0.5 rounded-sm">QUẢNG CÁO</span>
+          <span className="text-[10.5px] font-bold text-gray-600">Vietnam Airlines - Đồng hành cùng mọi chuyến đi</span>
         </div>
         {/* Desktop View */}
         <div className="hidden md:block w-full h-full">
@@ -49,7 +50,7 @@ export default async function PostDetailPage({ params }: PageProps) {
       <div className="flex flex-col lg:flex-row gap-5 items-start">
         {/* Left Column: Post Content */}
         <div className="w-full lg:w-[650px] flex-shrink-0 flex flex-col gap-5">
-          <article className="w-full bg-white border border-gray-200 p-4 sm:p-5 rounded-sm shadow-sm">
+          <article className="w-full bg-white md:border md:border-gray-200 p-0 md:p-5 rounded-sm md:shadow-sm">
             {/* Metadata: Category & Date Time */}
             <div className="flex items-center gap-1.5 text-gray-500 font-semibold mb-2">
               <Link
@@ -101,7 +102,7 @@ export default async function PostDetailPage({ params }: PageProps) {
                 } else if (block.type === "image") {
                   return (
                     <div key={index} className="my-4 space-y-1.5">
-                      <div className="border border-gray-200 overflow-hidden bg-gray-50 rounded-sm">
+                      <div className="border border-gray-200 overflow-hidden bg-gray-50 rounded-md md:rounded-sm">
                         <img
                           src={block.src}
                           alt={block.caption || "Hình ảnh bài viết"}
@@ -118,10 +119,12 @@ export default async function PostDetailPage({ params }: PageProps) {
                   );
                 } else if (block.type === "ad") {
                   return (
-                    <div key={index} className="relative w-full overflow-hidden rounded border border-gray-200 bg-gray-50 flex justify-center group shadow-sm my-5 aspect-[650/300]">
+                    <div key={index} className="relative w-full overflow-hidden rounded-lg md:rounded-sm border border-gray-200 bg-gray-50 flex justify-center group shadow-sm my-5 aspect-[650/300] md:aspect-auto">
                       {/* Mobile View */}
-                      <div className="flex md:hidden w-full h-[100px] bg-[#e0e0e0] items-center justify-center text-[#1a1a1a] font-extrabold text-[16px] border border-gray-300">
-                        QC
+                      <div className="flex md:hidden w-full h-[90px] rounded-lg bg-gradient-to-br from-[#ebfbee] to-[#d3f9d8] border border-dashed border-[#b2f2bb] flex-col items-center justify-center gap-1.5 p-3 text-center shadow-inner">
+                        <span className="text-[9px] font-extrabold tracking-widest text-[#40c057] uppercase bg-[#ebfbee] px-2 py-0.5 rounded-sm">QUẢNG CÁO</span>
+                        <span className="text-[11px] font-bold text-gray-800">Cửa Hàng Thiết Bị Vệ Sinh Zento Premium</span>
+                        <span className="text-[9px] text-[#2b8a3e] font-semibold">Giảm giá 30% toàn bộ sản phẩm trong tháng</span>
                       </div>
                       {/* Desktop View */}
                       <div className="hidden md:block w-full h-full">
@@ -161,7 +164,7 @@ export default async function PostDetailPage({ params }: PageProps) {
                         className="group block space-y-1.5 pb-3 border-b border-gray-100 last:border-b-0 last:pb-0"
                       >
                         <Link href={`/posts/${item.id}`} className="block">
-                          <div className="relative aspect-video w-full overflow-hidden bg-gray-100 rounded-sm border border-gray-200">
+                          <div className="relative aspect-video w-full overflow-hidden bg-gray-100 rounded-md md:rounded-sm border border-gray-200">
                             <img
                               src={item.image}
                               alt={item.title}
@@ -212,7 +215,7 @@ export default async function PostDetailPage({ params }: PageProps) {
                         className="group block space-y-1.5 pb-3 border-b border-gray-100 last:border-b-0 last:pb-0"
                       >
                         <Link href={`/posts/${item.id}`} className="block">
-                          <div className="relative aspect-video w-full overflow-hidden bg-gray-100 rounded-sm border border-gray-200">
+                          <div className="relative aspect-video w-full overflow-hidden bg-gray-100 rounded-md md:rounded-sm border border-gray-200">
                             <img
                               src={item.image}
                               alt={item.title}
@@ -283,10 +286,11 @@ export default async function PostDetailPage({ params }: PageProps) {
       </div>
 
       {/* Bottom QC 970x250 Ad */}
-      <div className="relative w-full md:w-[970px] md:h-[250px] overflow-hidden rounded border border-gray-200 mt-6 bg-gray-50 flex justify-center group shadow-sm mx-auto">
+      <div className="relative w-full md:w-[970px] md:h-[250px] overflow-hidden rounded-lg md:rounded border border-gray-200 mt-6 bg-gray-50 flex justify-center group shadow-sm mx-auto">
         {/* Mobile View */}
-        <div className="flex md:hidden w-full h-[70px] bg-[#e0e0e0] items-center justify-center text-[#1a1a1a] font-extrabold text-[18px] border border-gray-300">
-          QC
+        <div className="flex md:hidden w-full h-[80px] rounded-lg bg-gradient-to-br from-[#fff9db] to-[#fff3bf] border border-dashed border-[#ffe066] flex-col items-center justify-center gap-1.5 p-3 text-center shadow-inner">
+          <span className="text-[9px] font-extrabold tracking-widest text-[#f59f00] uppercase bg-[#fff9db] px-2 py-0.5 rounded-sm">QUẢNG CÁO</span>
+          <span className="text-[10.5px] font-bold text-gray-700">Vietnam Airlines - Sải cánh vươn cao cùng thế giới</span>
         </div>
         {/* Desktop View */}
         <div className="hidden md:block w-full h-full">
