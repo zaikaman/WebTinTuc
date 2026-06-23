@@ -25,24 +25,16 @@ export default async function PostDetailPage({ params }: PageProps) {
   return (
     <main className="w-full px-3 md:px-0 py-4 font-sans text-xs">
       {/* Top Banner Advertisement (QC 970x250) */}
-      <div className="relative w-full md:w-[970px] md:h-[250px] overflow-hidden rounded-lg md:rounded border border-gray-200 mb-5 bg-gray-50 flex justify-center group shadow-sm mx-auto">
-        {/* Mobile View */}
-        <div className="flex md:hidden w-full h-[80px] rounded-lg bg-gradient-to-br from-[#f8f9fa] to-[#e9ecef] border border-dashed border-gray-300 flex-col items-center justify-center gap-1.5 p-3 text-center shadow-inner">
-          <span className="text-[9px] font-extrabold tracking-widest text-gray-400 uppercase bg-gray-200/50 px-2 py-0.5 rounded-sm">QUẢNG CÁO</span>
-          <span className="text-[10.5px] font-bold text-gray-600">Vietnam Airlines - Đồng hành cùng mọi chuyến đi</span>
-        </div>
-        {/* Desktop View */}
-        <div className="hidden md:block w-full h-full">
-          <a href="#" className="block w-full h-full">
-            <img
-              src="/vinfast_ad.png"
-              alt="Quảng cáo 970x250"
-              className="w-full h-full object-cover"
-            />
-          </a>
-          <div className="absolute top-1 right-1 bg-black/40 hover:bg-black/70 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
-            Quảng cáo &times;
-          </div>
+      <div className="relative w-full md:w-[970px] overflow-hidden rounded border border-gray-200 mb-5 bg-gray-50 flex justify-center group shadow-sm mx-auto aspect-[970/250] md:aspect-auto md:h-[250px]">
+        <a href="#" className="block w-full h-full">
+          <img
+            src="/vinfast_ad.png"
+            alt="Quảng cáo 970x250"
+            className="w-full h-full object-cover"
+          />
+        </a>
+        <div className="absolute top-1.5 right-1.5 bg-black/40 hover:bg-black/70 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
+          Quảng cáo &times;
         </div>
       </div>
 
@@ -119,25 +111,16 @@ export default async function PostDetailPage({ params }: PageProps) {
                   );
                 } else if (block.type === "ad") {
                   return (
-                    <div key={index} className="relative w-full overflow-hidden rounded-lg md:rounded-sm border border-gray-200 bg-gray-50 flex justify-center group shadow-sm my-5 aspect-[650/300] md:aspect-auto">
-                      {/* Mobile View */}
-                      <div className="flex md:hidden w-full h-[90px] rounded-lg bg-gradient-to-br from-[#ebfbee] to-[#d3f9d8] border border-dashed border-[#b2f2bb] flex-col items-center justify-center gap-1.5 p-3 text-center shadow-inner">
-                        <span className="text-[9px] font-extrabold tracking-widest text-[#40c057] uppercase bg-[#ebfbee] px-2 py-0.5 rounded-sm">QUẢNG CÁO</span>
-                        <span className="text-[11px] font-bold text-gray-800">Cửa Hàng Thiết Bị Vệ Sinh Zento Premium</span>
-                        <span className="text-[9px] text-[#2b8a3e] font-semibold">Giảm giá 30% toàn bộ sản phẩm trong tháng</span>
-                      </div>
-                      {/* Desktop View */}
-                      <div className="hidden md:block w-full h-full">
-                        <a href="#" className="block w-full h-full">
-                          <img
-                            src="/qc_650_300_premium.png"
-                            alt="Quảng cáo 650x300"
-                            className="w-full h-full object-cover"
-                          />
-                        </a>
-                        <div className="absolute top-1 right-1 bg-black/45 hover:bg-black/75 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
-                          Quảng cáo &times;
-                        </div>
+                    <div key={index} className="relative w-full overflow-hidden rounded border border-gray-200 bg-gray-50 flex justify-center group shadow-sm my-5 aspect-[650/300]">
+                      <a href="#" className="block w-full h-full">
+                        <img
+                          src="/qc_650_300_premium.png"
+                          alt="Quảng cáo 650x300"
+                          className="w-full h-full object-cover"
+                        />
+                      </a>
+                      <div className="absolute top-1.5 right-1.5 bg-black/45 hover:bg-black/75 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
+                        Quảng cáo &times;
                       </div>
                     </div>
                   );
@@ -286,24 +269,16 @@ export default async function PostDetailPage({ params }: PageProps) {
       </div>
 
       {/* Bottom QC 970x250 Ad */}
-      <div className="relative w-full md:w-[970px] md:h-[250px] overflow-hidden rounded-lg md:rounded border border-gray-200 mt-6 bg-gray-50 flex justify-center group shadow-sm mx-auto">
-        {/* Mobile View */}
-        <div className="flex md:hidden w-full h-[80px] rounded-lg bg-gradient-to-br from-[#fff9db] to-[#fff3bf] border border-dashed border-[#ffe066] flex-col items-center justify-center gap-1.5 p-3 text-center shadow-inner">
-          <span className="text-[9px] font-extrabold tracking-widest text-[#f59f00] uppercase bg-[#fff9db] px-2 py-0.5 rounded-sm">QUẢNG CÁO</span>
-          <span className="text-[10.5px] font-bold text-gray-700">Vietnam Airlines - Sải cánh vươn cao cùng thế giới</span>
-        </div>
-        {/* Desktop View */}
-        <div className="hidden md:block w-full h-full">
-          <a href="#" className="block w-full h-full">
-            <img
-              src="/vietnam_airlines_ad.png"
-              alt="Quảng cáo 970x250"
-              className="w-full h-full object-cover"
-            />
-          </a>
-          <div className="absolute top-1 right-1 bg-black/45 hover:bg-black/75 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
-            Quảng cáo &times;
-          </div>
+      <div className="relative w-full md:w-[970px] overflow-hidden rounded border border-gray-200 mt-6 bg-gray-50 flex justify-center group shadow-sm mx-auto aspect-[970/250] md:aspect-auto md:h-[250px]">
+        <a href="#" className="block w-full h-full">
+          <img
+            src="/vietnam_airlines_ad.png"
+            alt="Quảng cáo 970x250"
+            className="w-full h-full object-cover"
+          />
+        </a>
+        <div className="absolute top-1.5 right-1.5 bg-black/45 hover:bg-black/75 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
+          Quảng cáo &times;
         </div>
       </div>
     </main>
