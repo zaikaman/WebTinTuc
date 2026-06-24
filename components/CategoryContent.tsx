@@ -261,6 +261,20 @@ export function CategoryContent({ category, label, featured, initialList }: Cate
           </div>
         </aside>
       </div>
+
+      {/* Bottom QC 970x250 Ad */}
+      <div className="relative w-full md:w-[970px] overflow-hidden rounded border border-gray-200 mt-6 bg-gray-50 flex justify-center group shadow-sm mx-auto aspect-[970/250] md:aspect-auto md:h-[250px]">
+        <a href="#" className="block w-full h-full">
+          <img
+            src="/vietnam_airlines_ad.png"
+            alt="Quảng cáo 970x250"
+            className="w-full h-full object-cover"
+          />
+        </a>
+        <div className="absolute top-1.5 right-1.5 bg-black/45 hover:bg-black/75 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
+          Quảng cáo &times;
+        </div>
+      </div>
     </main>
   );
 }

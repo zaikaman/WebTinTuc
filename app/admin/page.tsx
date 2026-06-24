@@ -87,6 +87,7 @@ interface Ad {
   endDate: string;
   status: "Hoạt động" | "Ngừng hoạt động";
   image?: string;
+  link?: string;
 }
 
 type TabType = "dashboard" | "posts" | "categories" | "ads" | "logo-footer" | "media";
@@ -420,7 +421,9 @@ export default function AdminPage() {
       clicks: 1230,
       startDate: "2026-04-20",
       endDate: "2026-06-20",
-      status: "Hoạt động"
+      status: "Hoạt động",
+      image: "/marketing_tiles.png",
+      link: "https://shopee.vn"
     },
     {
       id: 2,
@@ -429,7 +432,9 @@ export default function AdminPage() {
       clicks: 899,
       startDate: "2026-04-23",
       endDate: "2026-07-23",
-      status: "Hoạt động"
+      status: "Hoạt động",
+      image: "/laptop_charts.png",
+      link: "https://nhathuoclongchau.com.vn"
     },
     {
       id: 3,
@@ -438,7 +443,8 @@ export default function AdminPage() {
       clicks: 1003,
       startDate: "2026-05-01",
       endDate: "2026-08-16",
-      status: "Hoạt động"
+      status: "Hoạt động",
+      image: "/tech_2026_cover.png"
     },
     {
       id: 4,
@@ -447,7 +453,9 @@ export default function AdminPage() {
       clicks: 432,
       startDate: "2026-04-30",
       endDate: "2026-06-30",
-      status: "Hoạt động"
+      status: "Hoạt động",
+      image: "/tech_2026_vision.png",
+      link: "https://thegioididong.com"
     },
     {
       id: 5,
@@ -464,7 +472,9 @@ export default function AdminPage() {
   const [postsPage, setPostsPage] = useState(1);
   const [categoriesPage, setCategoriesPage] = useState(1);
   const [adsPage, setAdsPage] = useState(1);
+  const [mediaPage, setMediaPage] = useState(1);
   const itemsPerPage = 6;
+  const mediaItemsPerPage = 9;
 
   // Dialog / Modal Form states
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -498,7 +508,8 @@ export default function AdminPage() {
     clicks: 0,
     startDate: new Date().toISOString().split("T")[0],
     endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-    status: "Hoạt động"
+    status: "Hoạt động",
+    link: ""
   });
 
   const [editId, setEditId] = useState<number | null>(null);
@@ -565,6 +576,27 @@ export default function AdminPage() {
   const postsTotalPages = Math.ceil(filteredPosts.length / itemsPerPage) || 1;
   const categoriesTotalPages = Math.ceil(filteredCategories.length / itemsPerPage) || 1;
   const adsTotalPages = Math.ceil(filteredAds.length / itemsPerPage) || 1;
+
+  const filteredMedia = useMemo(() => {
+    return mediaItems.filter((item) => {
+      const matchesSearch = item.title.toLowerCase().includes(mediaSearchQuery.toLowerCase()) ||
+        item.url.toLowerCase().includes(mediaSearchQuery.toLowerCase());
+      const matchesType = mediaTypeFilter === "all" || item.type === mediaTypeFilter;
+      const matchesFolder = activeFolder ? (item.folder === activeFolder) : true;
+      return matchesSearch && matchesType && matchesFolder;
+    });
+  }, [mediaItems, mediaSearchQuery, mediaTypeFilter, activeFolder]);
+
+  const paginatedMedia = useMemo(() => {
+    const start = (mediaPage - 1) * mediaItemsPerPage;
+    return filteredMedia.slice(start, start + mediaItemsPerPage);
+  }, [filteredMedia, mediaPage]);
+
+  const mediaTotalPages = Math.ceil(filteredMedia.length / mediaItemsPerPage) || 1;
+
+  useEffect(() => {
+    setMediaPage(1);
+  }, [mediaSearchQuery, mediaTypeFilter, activeFolder]);
 
   // Categories list options
   const categoryOptions = useMemo(() => {
@@ -735,7 +767,8 @@ export default function AdminPage() {
         startDate: new Date().toISOString().split("T")[0],
         endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
         status: "Hoạt động",
-        image: undefined
+        image: undefined,
+        link: ""
       });
       setAdDialogOpen(true);
     }
@@ -842,7 +875,8 @@ export default function AdminPage() {
           startDate: adForm.startDate || new Date().toISOString().split("T")[0],
           endDate: adForm.endDate || new Date().toISOString().split("T")[0],
           status: adForm.status || "Hoạt động",
-          image: adForm.image
+          image: adForm.image,
+          link: adForm.link
         };
         setAds([newAd, ...ads]);
         toast.success("Thêm quảng cáo mới thành công!");
@@ -2417,181 +2451,185 @@ export default function AdminPage() {
                   <div className="flex items-center gap-2 text-xs font-bold text-gray-800 py-1">
                     <input type="checkbox" className="w-4 h-4 rounded border-gray-300 text-[#eb5757] focus:ring-[#eb5757]/20 cursor-pointer" />
                     <span>Chọn tất cả</span>
-                    {(() => {
-                      const filteredMedia = mediaItems.filter((item) => {
-                        const matchesSearch = item.title.toLowerCase().includes(mediaSearchQuery.toLowerCase()) ||
-                          item.url.toLowerCase().includes(mediaSearchQuery.toLowerCase());
-                        const matchesType = mediaTypeFilter === "all" || item.type === mediaTypeFilter;
-                        const matchesFolder = activeFolder ? (item.folder === activeFolder) : true;
-                        return matchesSearch && matchesType && matchesFolder;
-                      });
-                      return (
-                        <span className="text-gray-500 font-medium ml-1.5">{filteredMedia.length} file</span>
-                      );
-                    })()}
+                    <span className="text-gray-500 font-medium ml-1.5">{filteredMedia.length} file</span>
                   </div>
 
                   {/* Cards Grid */}
-                  {(() => {
-                    const filteredMedia = mediaItems.filter((item) => {
-                      const matchesSearch = item.title.toLowerCase().includes(mediaSearchQuery.toLowerCase()) ||
-                        item.url.toLowerCase().includes(mediaSearchQuery.toLowerCase());
-                      const matchesType = mediaTypeFilter === "all" || item.type === mediaTypeFilter;
-                      const matchesFolder = activeFolder ? (item.folder === activeFolder) : true;
-                      return matchesSearch && matchesType && matchesFolder;
-                    });
+                  {paginatedMedia.length > 0 ? (
+                    <>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4.5">
+                        {paginatedMedia.map((item) => {
+                          const formattedDate = (() => {
+                            if (item.createdAt.includes("/")) return item.createdAt;
+                            const parts = item.createdAt.split("-");
+                            if (parts.length === 3) {
+                              return `${parts[2]}/${parts[1]}/${parts[0]}`;
+                            }
+                            return item.createdAt;
+                          })();
 
-                    return filteredMedia.length > 0 ? (
-                      <>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4.5">
-                          {filteredMedia.map((item) => {
-                            const formattedDate = (() => {
-                              if (item.createdAt.includes("/")) return item.createdAt;
-                              const parts = item.createdAt.split("-");
-                              if (parts.length === 3) {
-                                return `${parts[2]}/${parts[1]}/${parts[0]}`;
-                              }
-                              return item.createdAt;
-                            })();
-
-                            return (
-                              <div
-                                key={item.id}
-                                className="group relative border border-gray-250 rounded-xl overflow-hidden bg-white shadow-sm flex flex-col justify-between transition-all duration-300 hover:shadow-md hover:border-gray-350 animate-fade-in"
-                              >
-                                {/* Thumbnail */}
-                                <div className="relative aspect-[4/3] w-full bg-gray-100 overflow-hidden flex items-center justify-center border-b border-gray-150">
-                                  {item.type === "video" ? (
-                                    <div className="w-full h-full relative flex items-center justify-center bg-slate-950">
-                                      {item.url.startsWith("http") ? (
-                                        <div className="w-full h-full flex items-center justify-center text-white/50">
-                                          <Video className="w-8 h-8" />
-                                        </div>
-                                      ) : (
-                                        <img
-                                          src={item.url}
-                                          alt={item.title}
-                                          className="w-full h-full object-cover opacity-80"
-                                        />
-                                      )}
-                                      <div className="absolute inset-0 bg-black/25 flex items-center justify-center">
-                                        <div className="w-9 h-9 rounded-full bg-white/90 flex items-center justify-center text-gray-900 shadow-md group-hover:scale-110 transition-transform">
-                                          <svg className="w-4.5 h-4.5 fill-current ml-0.5" viewBox="0 0 24 24">
-                                            <path d="M8 5v14l11-7z" />
-                                          </svg>
-                                        </div>
+                          return (
+                            <div
+                              key={item.id}
+                              className="group relative border border-gray-250 rounded-xl overflow-hidden bg-white shadow-sm flex flex-col justify-between transition-all duration-300 hover:shadow-md hover:border-gray-350 animate-fade-in"
+                            >
+                              {/* Thumbnail */}
+                              <div className="relative aspect-[4/3] w-full bg-gray-100 overflow-hidden flex items-center justify-center border-b border-gray-150">
+                                {item.type === "video" ? (
+                                  <div className="w-full h-full relative flex items-center justify-center bg-slate-950">
+                                    {item.url.startsWith("http") ? (
+                                      <div className="w-full h-full flex items-center justify-center text-white/50">
+                                        <Video className="w-8 h-8" />
                                       </div>
-                                      <span className="absolute bottom-2 right-2 text-[9px] bg-black/60 px-1.5 py-0.5 rounded text-white font-mono font-bold">
-                                        {item.duration || "00:00"}
-                                      </span>
+                                    ) : (
+                                      <img
+                                        src={item.url}
+                                        alt={item.title}
+                                        className="w-full h-full object-cover opacity-80"
+                                      />
+                                    )}
+                                    <div className="absolute inset-0 bg-black/25 flex items-center justify-center">
+                                      <div className="w-9 h-9 rounded-full bg-white/90 flex items-center justify-center text-gray-900 shadow-md group-hover:scale-110 transition-transform">
+                                        <svg className="w-4.5 h-4.5 fill-current ml-0.5" viewBox="0 0 24 24">
+                                          <path d="M8 5v14l11-7z" />
+                                        </svg>
+                                      </div>
                                     </div>
-                                  ) : (
-                                    <img
-                                      src={item.url}
-                                      alt={item.title}
-                                      className="w-full h-full object-cover group-hover:scale-102 transition-all duration-500"
-                                    />
-                                  )}
-
-                                  {/* Glassmorphic Hover Action Overlay */}
-                                  <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-2 z-20">
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        const copyUrl = item.url.startsWith("blob:") || item.url.startsWith("data:") || item.url.startsWith("http") ? item.url : (window.location.origin + item.url);
-                                        navigator.clipboard.writeText(copyUrl);
-                                        toast.success("Đã sao chép link media vào bộ nhớ tạm!");
-                                      }}
-                                      className="w-8 h-8 rounded-full bg-white hover:bg-gray-100 text-gray-800 flex items-center justify-center shadow transition-all active:scale-95"
-                                      title="Sao chép đường dẫn"
-                                      >
-                                        <Copy size={13} />
-                                      </button>
-                                      <button
-                                      type="button"
-                                      onClick={() => setMediaPreviewItem(item)}
-                                      className="w-8 h-8 rounded-full bg-white hover:bg-gray-100 text-gray-800 flex items-center justify-center shadow transition-all active:scale-95"
-                                      title="Xem trước"
-                                    >
-                                      <Eye size={13} />
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setMediaDialogMode("edit");
-                                        setMediaEditId(item.id);
-                                        setMediaForm(item);
-                                        setMediaDialogOpen(true);
-                                      }}
-                                      className="w-8 h-8 rounded-full bg-white hover:bg-gray-100 text-gray-800 flex items-center justify-center shadow transition-all active:scale-95"
-                                      title="Chỉnh sửa"
-                                    >
-                                      <SquarePen size={13} />
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        if (confirm("Bạn có chắc chắn muốn xóa file media này không?")) {
-                                          setMediaItems(mediaItems.filter((m) => m.id !== item.id));
-                                          toast.success("Đã xóa file media thành công!");
-                                        }
-                                      }}
-                                      className="w-8 h-8 rounded-full bg-white hover:bg-red-50 text-red-650 flex items-center justify-center shadow transition-all active:scale-95"
-                                      title="Xóa media"
-                                    >
-                                      <Trash2 size={13} />
-                                    </button>
+                                    <span className="absolute bottom-2 right-2 text-[9px] bg-black/60 px-1.5 py-0.5 rounded text-white font-mono font-bold">
+                                      {item.duration || "00:00"}
+                                    </span>
                                   </div>
-                                </div>
+                                ) : (
+                                  <img
+                                    src={item.url}
+                                    alt={item.title}
+                                    className="w-full h-full object-cover group-hover:scale-102 transition-all duration-500"
+                                  />
+                                )}
 
-                                {/* Info Panel */}
-                                <div className="p-3 bg-gray-50 flex flex-col gap-1 border-t border-gray-150">
-                                  <h5 className="text-[11px] font-bold text-gray-800 truncate leading-snug" title={item.title}>
-                                    {item.title}
-                                  </h5>
-                                  <div className="flex items-center justify-between text-[9px] text-gray-400 font-bold">
-                                    <span>{item.size}</span>
-                                    <span>{formattedDate}</span>
-                                  </div>
+                                {/* Glassmorphic Hover Action Overlay */}
+                                <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-2 z-20">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const copyUrl = item.url.startsWith("blob:") || item.url.startsWith("data:") || item.url.startsWith("http") ? item.url : (window.location.origin + item.url);
+                                      navigator.clipboard.writeText(copyUrl);
+                                      toast.success("Đã sao chép link media vào bộ nhớ tạm!");
+                                    }}
+                                    className="w-8 h-8 rounded-full bg-white hover:bg-gray-100 text-gray-800 flex items-center justify-center shadow transition-all active:scale-95"
+                                    title="Sao chép đường dẫn"
+                                    >
+                                      <Copy size={13} />
+                                    </button>
+                                    <button
+                                    type="button"
+                                    onClick={() => setMediaPreviewItem(item)}
+                                    className="w-8 h-8 rounded-full bg-white hover:bg-gray-100 text-gray-800 flex items-center justify-center shadow transition-all active:scale-95"
+                                    title="Xem trước"
+                                  >
+                                    <Eye size={13} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setMediaDialogMode("edit");
+                                      setMediaEditId(item.id);
+                                      setMediaForm(item);
+                                      setMediaDialogOpen(true);
+                                    }}
+                                    className="w-8 h-8 rounded-full bg-white hover:bg-gray-100 text-gray-800 flex items-center justify-center shadow transition-all active:scale-95"
+                                    title="Chỉnh sửa"
+                                  >
+                                    <SquarePen size={13} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (confirm("Bạn có chắc chắn muốn xóa file media này không?")) {
+                                        setMediaItems(mediaItems.filter((m) => m.id !== item.id));
+                                        toast.success("Đã xóa file media thành công!");
+                                      }
+                                    }}
+                                    className="w-8 h-8 rounded-full bg-white hover:bg-red-50 text-red-650 flex items-center justify-center shadow transition-all active:scale-95"
+                                    title="Xóa media"
+                                  >
+                                    <Trash2 size={13} />
+                                  </button>
                                 </div>
                               </div>
+
+                              {/* Info Panel */}
+                              <div className="p-3 bg-gray-50 flex flex-col gap-1 border-t border-gray-150">
+                                <h5 className="text-[11px] font-bold text-gray-800 truncate leading-snug" title={item.title}>
+                                  {item.title}
+                                </h5>
+                                <div className="flex items-center justify-between text-[9px] text-gray-400 font-bold">
+                                  <span>{item.size}</span>
+                                  <span>{formattedDate}</span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Pagination footer */}
+                      <div className="flex justify-center mt-6">
+                        <div className="inline-flex items-center bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden divide-x divide-gray-200">
+                          
+                          {/* Prev Button */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (mediaPage > 1) setMediaPage(mediaPage - 1);
+                            }}
+                            disabled={mediaPage === 1}
+                            className="px-3 py-2 hover:bg-gray-50 text-gray-500 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
+                          >
+                            <ChevronLeft size={16} />
+                          </button>
+
+                          {/* Page Numbers */}
+                          {Array.from({ length: mediaTotalPages }).map((_, idx) => {
+                            const pageNumber = idx + 1;
+                            const isCurrent = mediaPage === pageNumber;
+
+                            return (
+                              <button
+                                key={pageNumber}
+                                type="button"
+                                onClick={() => setMediaPage(pageNumber)}
+                                className={`px-4 py-2 text-xs font-bold transition-all ${
+                                  isCurrent
+                                    ? "bg-[#eb5757] text-white"
+                                    : "text-gray-700 hover:bg-gray-50"
+                                }`}
+                              >
+                                {pageNumber}
+                              </button>
                             );
                           })}
-                        </div>
 
-                        {/* Pagination footer */}
-                        <div className="flex justify-center mt-6">
-                          <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm">
-                            <button type="button" className="px-3 py-1.5 hover:bg-gray-50 text-gray-500 font-bold border-r border-gray-200 flex items-center justify-center text-xs">
-                              &lt;&lt;
-                            </button>
-                            <button type="button" className="px-3.5 py-1.5 bg-gray-50 text-gray-850 font-extrabold border-r border-gray-200 text-xs">
-                              1
-                            </button>
-                            <button type="button" className="px-3.5 py-1.5 hover:bg-gray-50 text-gray-600 font-bold border-r border-gray-200 text-xs">
-                              2
-                            </button>
-                            <button type="button" className="px-3.5 py-1.5 hover:bg-gray-50 text-gray-600 font-bold border-r border-gray-200 text-xs">
-                              3
-                            </button>
-                            <button type="button" className="px-3.5 py-1.5 hover:bg-gray-50 text-gray-600 font-bold border-r border-gray-200 text-xs">
-                              4
-                            </button>
-                            <button type="button" className="px-3.5 py-1.5 hover:bg-gray-50 text-gray-600 font-bold border-r border-gray-200 text-xs">
-                              5
-                            </button>
-                            <button type="button" className="px-3 py-1.5 hover:bg-gray-50 text-gray-500 font-bold flex items-center justify-center text-xs">
-                              &gt;&gt;
-                            </button>
-                          </div>
+                          {/* Next Button */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (mediaPage < mediaTotalPages) setMediaPage(mediaPage + 1);
+                            }}
+                            disabled={mediaPage === mediaTotalPages}
+                            className="px-3 py-2 hover:bg-gray-50 text-gray-500 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
+                          >
+                            <ChevronRight size={16} />
+                          </button>
+
                         </div>
-                      </>
-                    ) : (
-                      <div className="py-20 text-center text-gray-400 font-bold flex-1 flex items-center justify-center">
-                        Không tìm thấy file media nào tương ứng.
                       </div>
-                    );
-                  })()}
+                    </>
+                  ) : (
+                    <div className="py-20 text-center text-gray-400 font-bold flex-1 flex items-center justify-center">
+                      Không tìm thấy file media nào tương ứng.
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -2875,7 +2913,47 @@ export default function AdminPage() {
                           paginatedAds.map((ad) => (
                             <tr key={ad.id} className="hover:bg-gray-50/50 transition-colors text-sm font-medium">
                               <td className="py-4 px-6 text-center text-gray-400 font-bold">{ad.id}</td>
-                              <td className="py-4 px-4 text-gray-900 font-semibold">{ad.name}</td>
+                              <td className="py-4 px-4">
+                                <div className="flex items-center gap-3">
+                                  {ad.image ? (
+                                    ad.link ? (
+                                      <a
+                                        href={ad.link}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="relative w-12 h-7 rounded overflow-hidden border border-gray-200 flex-shrink-0 cursor-pointer hover:opacity-85 transition-opacity"
+                                        title="Click to visit link"
+                                      >
+                                        <img src={ad.image} alt={ad.name} className="w-full h-full object-cover" />
+                                      </a>
+                                    ) : (
+                                      <div className="relative w-12 h-7 rounded overflow-hidden border border-gray-200 flex-shrink-0">
+                                        <img src={ad.image} alt={ad.name} className="w-full h-full object-cover" />
+                                      </div>
+                                    )
+                                  ) : (
+                                    <div className="w-12 h-7 rounded bg-gray-100 border border-gray-200 flex-shrink-0 flex items-center justify-center text-[10px] text-gray-400 font-bold">
+                                      No Image
+                                    </div>
+                                  )}
+                                  <div className="flex flex-col">
+                                    <span className="text-gray-900 font-semibold">{ad.name}</span>
+                                    {ad.link ? (
+                                      <a
+                                        href={ad.link}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-[10px] text-[#E55956] hover:underline flex items-center gap-0.5 mt-0.5 font-bold"
+                                      >
+                                        <ExternalLink size={10} />
+                                        <span className="truncate max-w-[150px]">{ad.link}</span>
+                                      </a>
+                                    ) : (
+                                      <span className="text-[10px] text-gray-400 font-medium mt-0.5">(Không có link)</span>
+                                    )}
+                                  </div>
+                                </div>
+                              </td>
                               <td className="py-4 px-4 text-gray-600 font-bold">{ad.position}</td>
                               <td className="py-4 px-4 text-right text-gray-900 font-mono font-bold">
                                 {ad.clicks.toLocaleString("en-US")}
@@ -3311,16 +3389,52 @@ export default function AdminPage() {
 
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-900">
+                Link liên kết (Không bắt buộc)
+              </label>
+              <input
+                type="url"
+                value={adForm.link || ""}
+                onChange={(e) => setAdForm({ ...adForm, link: e.target.value })}
+                placeholder="https://example.com"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white shadow-sm font-medium"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-gray-900">
                 Ảnh quảng cáo
               </label>
               {adForm.image ? (
                 <div className="relative rounded-xl overflow-hidden border border-gray-200 group aspect-[2.2/1] w-full flex-shrink-0 bg-gray-50 flex items-center justify-center">
-                  <img src={adForm.image} alt="Ad Preview" className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  {adForm.link ? (
+                    <a
+                      href={adForm.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full h-full block cursor-pointer animate-none"
+                      title="Ấn để kiểm tra liên kết quảng cáo"
+                    >
+                      <img src={adForm.image} alt="Ad Preview" className="w-full h-full object-cover hover:scale-[1.02] transition-transform duration-300" />
+                    </a>
+                  ) : (
+                    <img src={adForm.image} alt="Ad Preview" className="w-full h-full object-cover" />
+                  )}
+                  <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 pointer-events-none group-hover:pointer-events-auto">
+                    {adForm.link && (
+                      <a
+                        href={adForm.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1.5 bg-[#E55956]/90 hover:bg-[#E55956] text-white text-xs font-bold rounded-lg transition-all shadow-md flex items-center gap-1 active:scale-95 pointer-events-auto"
+                      >
+                        <ExternalLink size={12} />
+                        <span>Thử Link</span>
+                      </a>
+                    )}
                     <button
                       type="button"
                       onClick={() => setAdForm({ ...adForm, image: undefined })}
-                      className="px-3.5 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg transition-colors shadow-md"
+                      className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg transition-all shadow-md active:scale-95 pointer-events-auto"
                     >
                       Xóa ảnh
                     </button>
