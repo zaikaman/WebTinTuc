@@ -10,7 +10,8 @@ export const articleListQuerySchema = paginationSchema.extend({
   featured: z.coerce.boolean().optional(),
   publishedFrom: z.string().datetime().optional(),
   publishedTo: z.string().datetime().optional(),
-  sortBy: z.enum(['title', 'published_at', 'views', 'created_at']).default('created_at')
+  sortBy: z.enum(['title', 'published_at', 'views', 'created_at']).default('created_at'),
+  includeDeleted: z.coerce.boolean().optional()
 })
 
 export const publicArticleListQuerySchema = z.object({

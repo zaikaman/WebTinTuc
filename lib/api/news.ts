@@ -1,4 +1,7 @@
-import { apiGet } from "@/lib/api/http";
+import { unstable_cache } from 'next/cache';
+import * as siteSettingsService from '@/server/services/site-settings.service';
+import * as categoryService from '@/server/services/category.service';
+import * as articleService from '@/server/services/article.service';
 import type {
   Article,
   CategoryFeed,
@@ -12,8 +15,8 @@ export function mapBackendArticleToFrontend(data: any): Article {
   return {
     id: data.slug || data.id?.toString() || "",
     title: data.title || "",
-    category: data.category?.name || data.category || "Tin tức",
-    categorySlug: data.category?.slug || undefined,
+    category: data.category?.name || data.category || data.categories?.name || "Tin tức",
+    categorySlug: data.category?.slug || data.categories?.slug || undefined,
     time: data.published_at || data.created_at || new Date().toISOString(),
     image: data.thumbnail_key || "",
     intro: data.summary || undefined,
@@ -21,135 +24,151 @@ export function mapBackendArticleToFrontend(data: any): Article {
   };
 }
 
-export async function getSiteSettings(): Promise<{ settings: SiteSettings, categories: NavigationItem[] }> {
-  try {
-    const [settingsData, categoriesData] = await Promise.all([
-      apiGet<any>("/settings", { next: { revalidate: 60 } }).catch(() => null),
-      apiGet<any>("/categories", { next: { revalidate: 60 } }).catch(() => null),
-    ]);
+export const getSiteSettings = unstable_cache(
+  async (): Promise<{ settings: SiteSettings, categories: NavigationItem[] }> => {
+    try {
+      const [settingsData, categoriesData] = await Promise.all([
+        siteSettingsService.getSiteSettings(),
+        categoryService.listPublicCategories(20)
+      ]);
 
-    const data = settingsData || {};
-    const categoriesItems = Array.isArray(categoriesData?.items) ? categoriesData.items : (Array.isArray(categoriesData) ? categoriesData : []);
-    
-    const dynamicPrimaryLinks = categoriesItems
-      .filter((cat: any) => !cat.deleted_at && cat.status !== 'inactive')
-      .slice(0, 6)
-      .map((cat: any) => ({
-          label: cat.name.toUpperCase(),
-          href: `/${cat.slug}`,
-        }));
+      const data = settingsData || {};
+      const categoriesItems = Array.isArray(categoriesData) ? categoriesData : [];
+      
+      const dynamicPrimaryLinks = categoriesItems
+        .slice(0, 6)
+        .map((cat: any) => ({
+            label: cat.name.toUpperCase(),
+            href: `/${cat.slug}`,
+          }));
 
-    return {
-      settings: {
-        brand: {
-          name: data?.brand?.name || "WebTinTuc",
-          tagline: data?.brand?.tagline || "",
-          footerDescription: data?.brand?.footerDescription || "",
-          copyright: data?.brand?.copyright || "",
-          searchPlaceholder: data?.brand?.searchPlaceholder || "Tìm kiếm...",
-          utilityLinks: data?.brand?.utilityLinks || [],
-          socialLinks: data?.brand?.socialLinks || [],
+      return {
+        settings: {
+          brand: {
+            name: data?.brand?.name || "WebTinTuc",
+            tagline: data?.brand?.tagline || "",
+            footerDescription: data?.brand?.footerDescription || "",
+            copyright: data?.brand?.copyright || "",
+            searchPlaceholder: data?.brand?.searchPlaceholder || "Tìm kiếm...",
+            utilityLinks: data?.brand?.utilityLinks || [],
+            socialLinks: data?.brand?.socialLinks || [],
+          },
+          footer: {
+            columns: data?.footer?.columns || [],
+          }
         },
-        footer: {
-          columns: data?.footer?.columns || [],
-        }
-      },
-      categories: dynamicPrimaryLinks
-    };
-  } catch (error) {
-    console.error("Failed to fetch settings:", error);
-    return {
-      settings: {
-        brand: { name: "WebTinTuc", tagline: "", footerDescription: "", copyright: "", searchPlaceholder: "Tìm kiếm...", utilityLinks: [], socialLinks: [] },
-        footer: { columns: [] }
-      },
-      categories: []
-    };
-  }
-}
+        categories: dynamicPrimaryLinks
+      };
+    } catch (error) {
+      console.error("Failed to fetch settings:", error);
+      return {
+        settings: {
+          brand: { name: "WebTinTuc", tagline: "", footerDescription: "", copyright: "", searchPlaceholder: "Tìm kiếm...", utilityLinks: [], socialLinks: [] },
+          footer: { columns: [] }
+        },
+        categories: []
+      };
+    }
+  },
+  ['getSiteSettings'],
+  { revalidate: 60, tags: ['settings', 'categories'] }
+);
 
-export async function getHomeFeed(): Promise<HomeFeed> {
-  const [featuredData, latestData] = await Promise.all([
-    apiGet<any>("/articles?featured=true&limit=1", { next: { revalidate: 60 } }),
-    apiGet<any>("/articles?limit=12", { next: { revalidate: 60 } }),
-  ]);
-  
-  const featuredItems = Array.isArray(featuredData?.items) ? featuredData.items : (Array.isArray(featuredData) ? featuredData : []);
-  const latestItems = Array.isArray(latestData?.items) ? latestData.items : (Array.isArray(latestData) ? latestData : []);
+export const getHomeFeed = unstable_cache(
+  async (): Promise<HomeFeed> => {
+    try {
+      const [featuredData, latestData] = await Promise.all([
+        articleService.listPublicArticles({ featured: true, limit: 1 }),
+        articleService.listPublicArticles({ limit: 12 }),
+      ]);
+      
+      const featuredItems = featuredData?.items || [];
+      const latestItems = latestData?.items || [];
 
-  return {
-    featuredArticle: featuredItems.length > 0 ? mapBackendArticleToFrontend(featuredItems[0]) : undefined,
-    latestArticles: latestItems.map(mapBackendArticleToFrontend),
-  };
-}
+      return {
+        featuredArticle: featuredItems.length > 0 ? mapBackendArticleToFrontend(featuredItems[0]) : undefined,
+        latestArticles: latestItems.map(mapBackendArticleToFrontend),
+      };
+    } catch (error) {
+      console.error("Failed to fetch home feed:", error);
+      return { latestArticles: [] };
+    }
+  },
+  ['getHomeFeed'],
+  { revalidate: 60, tags: ['articles'] }
+);
 
-export async function getArticleById(id: string): Promise<Article | undefined> {
-  try {
-    const data = await apiGet<any>(`/articles/${encodeURIComponent(id)}`, {
-      next: { revalidate: 60 },
-    });
-    return mapBackendArticleToFrontend(data);
-  } catch (error) {
-    if (isNotFound(error)) return undefined;
-    throw error;
-  }
-}
+export const getArticleById = unstable_cache(
+  async (slug: string): Promise<Article | undefined> => {
+    try {
+      const data = await articleService.getArticleBySlug(slug);
+      if (!data) return undefined;
+      return mapBackendArticleToFrontend(data);
+    } catch (error) {
+      return undefined;
+    }
+  },
+  ['getArticleById'],
+  { revalidate: 60, tags: ['articles'] }
+);
 
-export async function getPostRecommendations(
-  articleId: string,
-): Promise<PostRecommendations> {
-  const [relatedData, likeData] = await Promise.all([
-    apiGet<any>(`/articles?limit=4`, { next: { revalidate: 60 } }).catch(() => null),
-    apiGet<any>(`/articles?limit=4`, { next: { revalidate: 60 } }).catch(() => null),
-  ]);
+export const getPostRecommendations = unstable_cache(
+  async (articleId: string): Promise<PostRecommendations> => {
+    try {
+      // Just fetching 4 latest articles for now as related/like
+      const [relatedData, likeData] = await Promise.all([
+        articleService.listPublicArticles({ limit: 4 }),
+        articleService.listPublicArticles({ limit: 4 }),
+      ]);
 
-  const relatedItems = Array.isArray(relatedData?.items) ? relatedData.items : (Array.isArray(relatedData) ? relatedData : []);
-  const likeItems = Array.isArray(likeData?.items) ? likeData.items : (Array.isArray(likeData) ? likeData : []);
+      const relatedItems = relatedData?.items || [];
+      const likeItems = likeData?.items || [];
 
-  return {
-    relatedPosts: relatedItems.map(mapBackendArticleToFrontend),
-    likePosts: likeItems.map(mapBackendArticleToFrontend),
-  };
-}
+      return {
+        relatedPosts: relatedItems.map(mapBackendArticleToFrontend),
+        likePosts: likeItems.map(mapBackendArticleToFrontend),
+      };
+    } catch (error) {
+      return { relatedPosts: [], likePosts: [] };
+    }
+  },
+  ['getPostRecommendations'],
+  { revalidate: 60, tags: ['articles'] }
+);
 
-export async function getCategoryFeed(
-  category: string,
-): Promise<CategoryFeed | undefined> {
-  try {
-    const data = await apiGet<any>(
-      `/articles/category/${encodeURIComponent(category)}`,
-      { next: { revalidate: 60 } },
-    );
-    
-    const categoryInfo = data?.category || { name: category };
-    const items = Array.isArray(data?.articles?.items) ? data.articles.items : (Array.isArray(data?.items) ? data.items : []);
-    
-    return {
-      label: categoryInfo.name,
-      featured: items.length > 0 ? mapBackendArticleToFrontend(items[0]) : mapBackendArticleToFrontend({}),
-      list: items.slice(1).map(mapBackendArticleToFrontend),
-    };
-  } catch (error) {
-    if (isNotFound(error)) return undefined;
-    throw error;
-  }
-}
+export const getCategoryFeed = unstable_cache(
+  async (categorySlug: string): Promise<CategoryFeed | undefined> => {
+    try {
+      // Find category first
+      const categoryData = await categoryService.getCategoryBySlug(categorySlug);
+      if (!categoryData) return undefined;
 
-export async function getKnownCategorySlugs() {
-  try {
-    const categoriesData = await apiGet<any>("/categories", { next: { revalidate: 60 } });
-    const items = Array.isArray(categoriesData?.items) ? categoriesData.items : (Array.isArray(categoriesData) ? categoriesData : []);
-    return items.filter((cat: any) => !cat.deleted_at).map((cat: any) => cat.slug);
-  } catch (error) {
-    return [];
-  }
-}
+      const articlesData = await articleService.listPublicArticles({ categoryId: categoryData.id, limit: 50 });
+      const items = articlesData?.items || [];
+      
+      return {
+        label: categoryData.name,
+        featured: items.length > 0 ? mapBackendArticleToFrontend(items[0]) : mapBackendArticleToFrontend({}),
+        list: items.slice(1).map(mapBackendArticleToFrontend),
+      };
+    } catch (error) {
+      return undefined;
+    }
+  },
+  ['getCategoryFeed'],
+  { revalidate: 60, tags: ['categories', 'articles'] }
+);
 
-function isNotFound(error: unknown) {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "status" in error &&
-    error.status === 404
-  );
-}
+export const getKnownCategorySlugs = unstable_cache(
+  async () => {
+    try {
+      const categoriesData = await categoryService.listPublicCategories(100);
+      const items = Array.isArray(categoriesData) ? categoriesData : [];
+      return items.map((cat: any) => cat.slug).filter(Boolean);
+    } catch (error) {
+      return [];
+    }
+  },
+  ['getKnownCategorySlugs'],
+  { revalidate: 60, tags: ['categories'] }
+);

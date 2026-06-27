@@ -35,6 +35,7 @@ export const getAdminArticles = (qs = "") => fetchAdmin<any>(`/articles${qs}`);
 export const createAdminArticle = (data: any) => fetchAdmin<any>("/articles", { method: "POST", body: JSON.stringify(data) });
 export const updateAdminArticle = (id: number, data: any) => fetchAdmin<any>(`/articles/${id}`, { method: "PATCH", body: JSON.stringify(data) });
 export const deleteAdminArticle = (id: number) => fetchAdmin<any>(`/articles/${id}`, { method: "DELETE" });
+export const restoreAdminArticle = (id: number) => fetchAdmin<any>(`/articles/${id}/restore`, { method: "POST" });
 
 // CATEGORIES
 export const getAdminCategories = (qs = "") => fetchAdmin<any>(`/categories${qs}`);

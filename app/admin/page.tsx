@@ -43,9 +43,10 @@ import {
   Copy,
   ExternalLink,
   Link2,
-  Globe
+  Globe,
+  RotateCcw
 } from "lucide-react";
-import { getAdminSettings, updateAdminSettings, getAdminMedia, uploadAdminMedia, deleteAdminMedia, getAdminCategories, createAdminCategory, updateAdminCategory, deleteAdminCategory, getAdminArticles, createAdminArticle, updateAdminArticle, deleteAdminArticle } from "@/lib/api/adminClient";
+import { getAdminSettings, updateAdminSettings, getAdminMedia, uploadAdminMedia, deleteAdminMedia, getAdminCategories, createAdminCategory, updateAdminCategory, deleteAdminCategory, getAdminArticles, createAdminArticle, updateAdminArticle, deleteAdminArticle, restoreAdminArticle } from "@/lib/api/adminClient";
 import { Toaster, toast } from "sonner";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -128,6 +129,7 @@ interface Post {
   createdAt: string;
   content?: string;
   coverImage?: string;
+  isDeleted?: boolean;
 }
 
 interface Category {
@@ -276,7 +278,7 @@ export default function AdminPage() {
 
   const loadPosts = async () => {
     try {
-      const res = await getAdminArticles("?limit=1000");
+      const res = await getAdminArticles("?limit=1000&includeDeleted=true");
       if (res && res.items) {
         setPosts(res.items.map((a: any) => ({
           id: a.id,
@@ -286,7 +288,8 @@ export default function AdminPage() {
           status: a.status === 'published' ? 'Đã đăng' : 'Nháp',
           createdAt: a.created_at ? new Date(a.created_at).toISOString().split('T')[0] : "",
           content: a.content ? blocksToHtml(a.content) : "",
-          coverImage: a.thumbnail_key || ""
+          coverImage: a.thumbnail_key || "",
+          isDeleted: !!a.deleted_at
         })));
       }
     } catch (err) {
@@ -350,6 +353,7 @@ export default function AdminPage() {
   const [postCategoryFilter, setPostCategoryFilter] = useState("all");
   const [postStartDate, setPostStartDate] = useState("");
   const [postEndDate, setPostEndDate] = useState("");
+  const [hideDeletedPosts, setHideDeletedPosts] = useState(true);
 
   // In-Memory Database (initially populated with screenshot data)
   const [posts, setPosts] = useState<Post[]>([]);
@@ -469,6 +473,7 @@ export default function AdminPage() {
   // Filtered & Paginated items
   const filteredPosts = useMemo(() => {
     return posts.filter(post => {
+      if (hideDeletedPosts && post.isDeleted) return false;
       const matchesSearch = post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                             post.id.toString() === searchQuery;
       const matchesCategory = postCategoryFilter === "all" || post.category === postCategoryFilter;
@@ -483,7 +488,7 @@ export default function AdminPage() {
       
       return matchesSearch && matchesCategory && matchesDates;
     });
-  }, [posts, searchQuery, postCategoryFilter, postStartDate, postEndDate]);
+  }, [posts, searchQuery, postCategoryFilter, postStartDate, postEndDate, hideDeletedPosts]);
 
   const filteredCategories = useMemo(() => {
     return categories.filter(cat => {
@@ -746,6 +751,17 @@ export default function AdminPage() {
     } else {
       setAdForm(item);
       setAdDialogOpen(true);
+    }
+  };
+
+  const executeRestore = async (id: number) => {
+    try {
+      toast.loading("Đang khôi phục...", { id: "restore-post" });
+      await restoreAdminArticle(id);
+      toast.success("Khôi phục bài viết thành công!", { id: "restore-post" });
+      loadPosts();
+    } catch (err) {
+      toast.error("Lỗi khi khôi phục bài viết!", { id: "restore-post" });
     }
   };
 
@@ -2698,6 +2714,20 @@ export default function AdminPage() {
                           Xóa bộ lọc
                         </button>
                       </div>
+
+                      {activeTab === "posts" && (
+                        <div className="md:col-span-9 flex items-center mt-2">
+                          <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-600 font-medium select-none w-max">
+                            <input 
+                              type="checkbox" 
+                              checked={hideDeletedPosts} 
+                              onChange={(e) => setHideDeletedPosts(e.target.checked)} 
+                              className="w-4 h-4 rounded text-[#E55956] focus:ring-[#E55956] cursor-pointer" 
+                            />
+                            Ẩn bài viết đã xóa
+                          </label>
+                        </div>
+                      )}
                     </>
                   )}
 
@@ -2725,10 +2755,11 @@ export default function AdminPage() {
                       <tbody className="divide-y divide-gray-150">
                         {paginatedPosts.length > 0 ? (
                           paginatedPosts.map((post) => (
-                            <tr key={post.id} className="hover:bg-gray-50/50 transition-colors text-sm font-medium">
+                            <tr key={post.id} className={`transition-colors text-sm font-medium ${post.isDeleted ? 'opacity-50 bg-red-50/20' : 'hover:bg-gray-50/50'}`}>
                               <td className="py-4 px-6 text-center text-gray-400 font-bold">{post.id}</td>
                               <td className="py-4 px-4 text-gray-900 font-semibold line-clamp-2 max-w-[450px]">
                                 {post.title}
+                                {post.isDeleted && <span className="ml-2 px-2 py-0.5 text-[10px] bg-red-100 text-red-600 rounded whitespace-nowrap align-middle">Đã xóa</span>}
                               </td>
                               <td className="py-4 px-4 text-gray-600">{post.category}</td>
                               <td className="py-4 px-4 text-right text-gray-900 font-mono font-bold">
@@ -2757,13 +2788,25 @@ export default function AdminPage() {
                                   >
                                     <SquarePen size={15} />
                                   </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleConfirmDelete(post.id)}
-                                    className="p-1.5 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
-                                  >
-                                    <Trash2 size={15} />
-                                  </button>
+                                  {post.isDeleted ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => executeRestore(post.id)}
+                                      className="p-1.5 border border-emerald-200 text-emerald-600 rounded-lg hover:bg-emerald-50 transition-colors"
+                                      title="Khôi phục bài viết"
+                                    >
+                                      <RotateCcw size={15} />
+                                    </button>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleConfirmDelete(post.id)}
+                                      className="p-1.5 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                                      title="Xóa bài viết"
+                                    >
+                                      <Trash2 size={15} />
+                                    </button>
+                                  )}
                                 </div>
                               </td>
                             </tr>

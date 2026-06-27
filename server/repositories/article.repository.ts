@@ -20,6 +20,7 @@ type ArticleListOptions = {
   publishedTo?: string
   sortBy?: 'title' | 'published_at' | 'views' | 'created_at'
   sortOrder?: 'asc' | 'desc'
+  includeDeleted?: boolean
 }
 
 function normalizeStatus(options: ArticleListOptions) {
@@ -47,6 +48,7 @@ export async function listAdminArticles(options: ArticleListOptions = {}) {
   if (options.featured !== undefined) query = query.eq('featured', options.featured)
   if (options.publishedFrom) query = query.gte('published_at', options.publishedFrom)
   if (options.publishedTo) query = query.lte('published_at', options.publishedTo)
+  if (!options.includeDeleted) query = query.is('deleted_at', null)
 
   const { data, error, count } = await query
   if (error) throw error
