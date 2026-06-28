@@ -1,5 +1,7 @@
 # dependencies
 node_modules/
+docs/
+database/
 
 # next.js
 .next/
@@ -39,3 +41,6 @@ Thumbs.db
 *.tsbuildinfo
 
 AGENTS.md
+API_WebTinTuc.md
+
+swagger.yaml

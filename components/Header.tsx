@@ -4,10 +4,11 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Mail, Menu, Search, X, ChevronRight } from "lucide-react";
-import type { SiteSettings, SocialLink } from "@/lib/types/news";
+import type { SiteSettings, SocialLink, NavigationItem } from "@/lib/types/news";
 
 interface HeaderProps {
-  settings: SiteSettings["header"];
+  brand: SiteSettings["brand"];
+  categories: NavigationItem[];
 }
 
 function HomeIcon({ className = "h-5 w-5" }: { className?: string }) {
@@ -43,11 +44,11 @@ function ZaloIcon({ className = "h-4 w-4" }: { className?: string }) {
   );
 }
 
-export function Header({ settings }: HeaderProps) {
+export function Header({ brand, categories }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const pathname = usePathname();
-  const utilityLink = settings.utilityLinks[0];
+  const utilityLink = brand.utilityLinks[0];
 
   return (
     <header className="w-full select-none font-sans bg-white relative">
@@ -65,14 +66,14 @@ export function Header({ settings }: HeaderProps) {
         {/* Center: Brand Logo */}
         <Link href="/" className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center font-extrabold text-[#df3232] text-sm shadow-sm">
-            {settings.logoText.slice(0, 1).toUpperCase()}
+            {brand.name.slice(0, 1).toUpperCase()}
           </div>
           <div className="flex flex-col">
             <span className="text-white font-extrabold text-[12px] tracking-wider uppercase leading-none">
-              {settings.logoText}
+              {brand.name}
             </span>
             <span className="text-white/80 font-bold text-[8px] tracking-wide leading-none mt-1">
-              {settings.logoSubtitle}
+              {brand.tagline}
             </span>
           </div>
         </Link>
@@ -100,7 +101,7 @@ export function Header({ settings }: HeaderProps) {
             <Search size={14} className="mr-2 text-white/80 group-focus-within:text-gray-500" />
             <input
               type="text"
-              placeholder={settings.searchPlaceholder}
+              placeholder={brand.searchPlaceholder}
               className="h-full w-full bg-transparent text-xs font-bold text-white group-focus-within:text-gray-900 outline-none placeholder:text-white/60 group-focus-within:placeholder:text-gray-400"
             />
           </div>
@@ -116,10 +117,10 @@ export function Header({ settings }: HeaderProps) {
           <div className="w-6 h-6 md:w-9 md:h-9 rounded-full bg-white flex-shrink-0" />
           <div className="flex flex-col justify-center">
             <span className="text-white font-extrabold text-[11px] md:text-[15px] leading-[1.1] tracking-wider uppercase">
-              {settings.logoText}
+              {brand.name}
             </span>
             <span className="text-white font-bold text-[8px] md:text-[11px] leading-[1.1] whitespace-nowrap tracking-wide mt-0.5">
-              {settings.logoSubtitle}
+              {brand.tagline}
             </span>
           </div>
         </Link>
@@ -131,7 +132,7 @@ export function Header({ settings }: HeaderProps) {
                 <Search size={15} className="mr-2.5 flex-shrink-0 text-[#4c6281]" />
                 <input
                   type="text"
-                  placeholder={settings.searchPlaceholder}
+                  placeholder={brand.searchPlaceholder}
                   className="h-full w-full bg-transparent text-[13px] font-bold text-[#4c6281] outline-none placeholder:text-[#4c6281]/70"
                 />
               </div>
@@ -150,7 +151,7 @@ export function Header({ settings }: HeaderProps) {
                 </span>
               ) : null}
               <div className="flex items-center gap-2.5">
-                {settings.socialLinks.map((item) => (
+                {brand.socialLinks.map((item) => (
                   <HeaderSocialLink key={`${item.label}-${item.href}`} item={item} />
                 ))}
               </div>
@@ -173,7 +174,7 @@ export function Header({ settings }: HeaderProps) {
         
         {/* Divided categories navigation */}
         <nav className="flex-1 flex h-full text-xs font-bold tracking-wide">
-          {settings.primaryLinks.map((item) => {
+          {categories.map((item) => {
             const isActive = pathname === item.href;
 
             return (
@@ -224,14 +225,14 @@ export function Header({ settings }: HeaderProps) {
             <div className="flex items-center justify-between pb-4 border-b border-white/10">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-[#df3232] flex items-center justify-center font-extrabold text-white text-base shadow-inner">
-                  {settings.logoText.slice(0, 1).toUpperCase()}
+                  {brand.name.slice(0, 1).toUpperCase()}
                 </div>
                 <div className="flex flex-col">
                   <span className="text-white font-extrabold text-xs tracking-wider uppercase leading-none">
-                    {settings.logoText}
+                    {brand.name}
                   </span>
                   <span className="text-white/60 font-bold text-[8px] tracking-wide leading-none mt-1">
-                    {settings.logoSubtitle}
+                    {brand.tagline}
                   </span>
                 </div>
               </div>
@@ -250,7 +251,7 @@ export function Header({ settings }: HeaderProps) {
               <Search size={14} className="text-gray-400 flex-shrink-0" />
               <input
                 type="text"
-                placeholder={settings.searchPlaceholder}
+                placeholder={brand.searchPlaceholder}
                 className="bg-transparent text-xs text-white outline-none placeholder:text-gray-500 w-full font-medium"
               />
             </div>
@@ -260,7 +261,7 @@ export function Header({ settings }: HeaderProps) {
               <span className="text-[10px] font-extrabold text-gray-500 uppercase tracking-widest px-2 mb-1">
                 Chuyên mục
               </span>
-              {settings.primaryLinks.map((item) => {
+              {categories.map((item) => {
                 const isActive = pathname === item.href;
                 return (
                   <Link
@@ -303,7 +304,7 @@ export function Header({ settings }: HeaderProps) {
 
             {/* Social Links */}
             <div className="flex gap-2">
-              {settings.socialLinks.map((item) => (
+              {brand.socialLinks.map((item) => (
                 <a
                   key={`drawer-${item.label}-${item.href}`}
                   href={item.href}

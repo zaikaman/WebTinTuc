@@ -2,7 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   getArticleById,
-  getCategorySlug,
   getPostRecommendations,
 } from "@/lib/api/news";
 import { Clock, Link2, Star } from "lucide-react";
@@ -22,11 +21,17 @@ export default async function PostDetailPage({ params }: PageProps) {
 
   const { relatedPosts, likePosts } = await getPostRecommendations(id);
 
+  // Determine if content is array of blocks or HTML string
+  const isBlocksArray = Array.isArray(article.content);
+  
   // Filter out any existing ad blocks to ensure no duplicates, then insert one ad block in the middle of content
-  const contentBlocks = [...(article.content?.filter((b: any) => b.type !== "ad") || [])];
-  if (contentBlocks.length > 0) {
-    const insertIndex = Math.max(1, Math.floor(contentBlocks.length / 2));
-    contentBlocks.splice(insertIndex, 0, { type: "ad" } as any);
+  let contentBlocks: any[] = [];
+  if (isBlocksArray) {
+    contentBlocks = [...(article.content.filter((b: any) => b.type !== "ad") || [])];
+    if (contentBlocks.length > 0) {
+      const insertIndex = Math.max(1, Math.floor(contentBlocks.length / 2));
+      contentBlocks.splice(insertIndex, 0, { type: "ad" } as any);
+    }
   }
 
   return (
@@ -53,7 +58,7 @@ export default async function PostDetailPage({ params }: PageProps) {
             {/* Metadata: Category & Date Time */}
             <div className="flex items-center gap-1.5 text-gray-500 font-semibold mb-2">
               <Link
-                href={`/${getCategorySlug(article.category)}`}
+                href={`/${article.categorySlug || article.category}`}
                 className="text-[#df3232] font-bold text-[11px] hover:underline"
               >
                 {formatCategory(article.category)}
@@ -83,57 +88,64 @@ export default async function PostDetailPage({ params }: PageProps) {
               </p>
             )}
 
-            {/* Content Blocks */}
+            {/* Content */}
             <div className="space-y-4 text-xs sm:text-[13px] text-gray-800 leading-relaxed">
-              {contentBlocks.map((block, index) => {
-                if (block.type === "paragraph") {
-                  return (
-                    <p key={index} className="text-gray-700 font-sans">
-                      {block.text}
-                    </p>
-                  );
-                } else if (block.type === "bold-paragraph") {
-                  return (
-                    <p key={index} className="font-bold text-gray-900 font-sans">
-                      {block.text}
-                    </p>
-                  );
-                } else if (block.type === "image") {
-                  return (
-                    <div key={index} className="my-4 space-y-1.5">
-                      <div className="border border-gray-200 overflow-hidden bg-gray-50 rounded-md md:rounded-sm">
-                        <img
-                          src={block.src}
-                          alt={block.caption || "Hình ảnh bài viết"}
-                          className="w-full h-auto object-cover max-h-[500px] mx-auto"
-                          loading="lazy"
-                        />
+              {!isBlocksArray && typeof article.content === 'string' ? (
+                <div 
+                  className="prose prose-sm max-w-none"
+                  dangerouslySetInnerHTML={{ __html: article.content }} 
+                />
+              ) : (
+                contentBlocks.map((block, index) => {
+                  if (block.type === "paragraph") {
+                    return (
+                      <p key={index} className="text-gray-700 font-sans">
+                        {block.text}
+                      </p>
+                    );
+                  } else if (block.type === "bold-paragraph") {
+                    return (
+                      <p key={index} className="font-bold text-gray-900 font-sans">
+                        {block.text}
+                      </p>
+                    );
+                  } else if (block.type === "image") {
+                    return (
+                      <div key={index} className="my-4 space-y-1.5">
+                        <div className="border border-gray-200 overflow-hidden bg-gray-50 rounded-md md:rounded-sm">
+                          <img
+                            src={block.src}
+                            alt={block.caption || "Hình ảnh bài viết"}
+                            className="w-full h-auto object-cover max-h-[500px] mx-auto"
+                            loading="lazy"
+                          />
+                        </div>
+                        {block.caption && (
+                          <p className="text-gray-500 text-[11px] italic text-center px-4 leading-normal font-sans">
+                            {block.caption}
+                          </p>
+                        )}
                       </div>
-                      {block.caption && (
-                        <p className="text-gray-500 text-[11px] italic text-center px-4 leading-normal font-sans">
-                          {block.caption}
-                        </p>
-                      )}
-                    </div>
-                  );
-                } else if (block.type === "ad") {
-                  return (
-                    <div key={index} className="relative w-full overflow-hidden rounded border border-gray-200 bg-gray-50 flex justify-center group shadow-sm my-5 aspect-[650/300]">
-                      <a href="#" className="block w-full h-full">
-                        <img
-                          src="/qc_650_300_premium.png"
-                          alt="Quảng cáo 650x300"
-                          className="w-full h-full object-cover"
-                        />
-                      </a>
-                      <div className="absolute top-1.5 right-1.5 bg-black/45 hover:bg-black/75 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
-                        Quảng cáo &times;
+                    );
+                  } else if (block.type === "ad") {
+                    return (
+                      <div key={index} className="relative w-full overflow-hidden rounded border border-gray-200 bg-gray-50 flex justify-center group shadow-sm my-5 aspect-[650/300]">
+                        <a href="#" className="block w-full h-full">
+                          <img
+                            src="/qc_650_300_premium.png"
+                            alt="Quảng cáo 650x300"
+                            className="w-full h-full object-cover"
+                          />
+                        </a>
+                        <div className="absolute top-1.5 right-1.5 bg-black/45 hover:bg-black/75 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
+                          Quảng cáo &times;
+                        </div>
                       </div>
-                    </div>
-                  );
-                }
-                return null;
-              })}
+                    );
+                  }
+                  return null;
+                })
+              )}
             </div>
 
             {/* Middle Advertisement (QC 650x300 for PC, Swipable 3 vertical ads for Mobile) */}
@@ -204,7 +216,7 @@ export default async function PostDetailPage({ params }: PageProps) {
 
                 <div className="flex flex-col gap-4">
                   {relatedPosts.map((item) => {
-                    const catSlug = getCategorySlug(item.category);
+                    const catSlug = item.categorySlug || item.category;
                     return (
                       <div
                         key={item.id}
@@ -255,7 +267,7 @@ export default async function PostDetailPage({ params }: PageProps) {
 
                 <div className="flex flex-col gap-4">
                   {likePosts.map((item) => {
-                    const catSlug = getCategorySlug(item.category);
+                    const catSlug = item.categorySlug || item.category;
                     return (
                       <div
                         key={item.id}

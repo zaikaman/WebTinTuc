@@ -14,8 +14,9 @@ interface PageProps {
   params: Promise<{ category: string }>;
 }
 
-export function generateStaticParams() {
-  return getKnownCategorySlugs().map((category) => ({ category }));
+export async function generateStaticParams() {
+  const slugs = await getKnownCategorySlugs();
+  return slugs.map((category: string) => ({ category }));
 }
 
 export async function generateMetadata({ params }: PageProps) {

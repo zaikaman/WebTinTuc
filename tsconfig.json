@@ -24,6 +24,7 @@
   "include": [
     "next-env.d.ts",
     "global.d.ts",
+    "middleware.ts",
     "app/**/*.ts",
     "app/**/*.tsx",
     "components/**/*.ts",
@@ -32,6 +33,7 @@
     "hooks/**/*.tsx",
     "lib/**/*.ts",
     "lib/**/*.tsx",
+    "server/**/*.ts",
     ".next/types/**/*.ts",
     ".next-dev/types/**/*.ts"
   ],

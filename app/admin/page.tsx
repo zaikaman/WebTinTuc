@@ -43,8 +43,10 @@ import {
   Copy,
   ExternalLink,
   Link2,
-  Globe
+  Globe,
+  RotateCcw
 } from "lucide-react";
+import { getAdminSettings, updateAdminSettings, getAdminMedia, uploadAdminMedia, deleteAdminMedia, getAdminCategories, createAdminCategory, updateAdminCategory, deleteAdminCategory, getAdminArticles, createAdminArticle, updateAdminArticle, deleteAdminArticle, restoreAdminArticle } from "@/lib/api/adminClient";
 import { Toaster, toast } from "sonner";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -55,6 +57,65 @@ import {
   DialogFooter
 } from "@/components/ui/dialog";
 import { mockSiteSettings } from "@/lib/mockSiteSettings";
+
+const htmlToBlocks = (html: string) => {
+  if (!html) return [];
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  const blocks: any[] = [];
+  
+  doc.body.childNodes.forEach((node) => {
+    if (node.nodeName === 'P') {
+      const el = node as HTMLElement;
+      if (el.querySelector('strong')) {
+        blocks.push({ type: 'bold-paragraph', text: el.textContent || '' });
+      } else {
+        blocks.push({ type: 'paragraph', text: el.textContent || '' });
+      }
+    } else if (node.nodeName === 'DIV') {
+      const el = node as HTMLElement;
+      const img = el.querySelector('img');
+      if (img) {
+        const src = img.getAttribute('src');
+        const pTags = el.querySelectorAll('p');
+        let caption = '';
+        if (pTags.length > 0) caption = pTags[pTags.length - 1].textContent || '';
+        if (!caption && img.getAttribute('alt')) caption = img.getAttribute('alt') || '';
+        
+        if (src) {
+          blocks.push({ type: 'image', src, caption });
+        }
+      } else {
+        if (el.textContent?.trim()) {
+           blocks.push({ type: 'paragraph', text: el.textContent });
+        }
+      }
+    } else if (node.nodeName === 'UL' || node.nodeName === 'OL') {
+      const el = node as HTMLElement;
+      el.querySelectorAll('li').forEach(li => {
+        blocks.push({ type: 'paragraph', text: li.textContent || '' });
+      });
+    }
+  });
+  return blocks;
+};
+
+const blocksToHtml = (blocks: any[]) => {
+  if (!Array.isArray(blocks)) return typeof blocks === 'string' ? blocks : '';
+  return blocks.map(block => {
+    if (block.type === "paragraph") {
+      return `<p>${block.text || ''}</p>`;
+    } else if (block.type === "bold-paragraph") {
+      return `<p><strong>${block.text || ''}</strong></p>`;
+    } else if (block.type === "image") {
+      return `<div class="my-4">
+  <img src="${block.src || ''}" alt="${block.caption || ''}" class="w-full rounded-xl border border-gray-200 shadow-sm" />
+  ${block.caption ? `<p class="text-center text-xs italic text-gray-500 mt-1.5">${block.caption}</p>` : ''}
+</div>`;
+    }
+    return '';
+  }).join('\\n');
+};
 
 // ==========================================
 // TYPES
@@ -68,6 +129,7 @@ interface Post {
   createdAt: string;
   content?: string;
   coverImage?: string;
+  isDeleted?: boolean;
 }
 
 interface Category {
@@ -152,128 +214,7 @@ export default function AdminPage() {
     folder?: string;
   }
 
-  const [mediaItems, setMediaItems] = useState<MediaItem[]>([
-    {
-      id: 1,
-      title: "banner-homepage.jpg",
-      type: "image",
-      url: "/marketing_tiles.png",
-      size: "1.2 MB",
-      dimensions: "1200x800",
-      createdAt: "2026-06-20",
-      folder: "Thumbnails"
-    },
-    {
-      id: 2,
-      title: "banner-homepage.jpg",
-      type: "image",
-      url: "/laptop_charts.png",
-      size: "804 KB",
-      dimensions: "1280x800",
-      createdAt: "2026-06-20",
-      folder: "Thumbnails"
-    },
-    {
-      id: 3,
-      title: "intro-video.mp4",
-      type: "video",
-      url: "https://www.w3schools.com/html/mov_bbb.mp4",
-      size: "13.8 MB",
-      duration: "00:10",
-      createdAt: "2026-06-20",
-      folder: "Thumbnails"
-    },
-    {
-      id: 4,
-      title: "Nvidia RTX 5090 Leak Cover",
-      type: "image",
-      url: "/tech_2026_cover.png",
-      size: "763 KB",
-      dimensions: "1280x720",
-      createdAt: "2026-05-24",
-      folder: "Public"
-    },
-    {
-      id: 5,
-      title: "Apple Vision Pro Space",
-      type: "image",
-      url: "/tech_2026_vision.png",
-      size: "421 KB",
-      dimensions: "1280x800",
-      createdAt: "2026-05-27",
-      folder: "Public"
-    },
-    {
-      id: 6,
-      title: "AI robot in warehouse",
-      type: "image",
-      url: "/tech_2026_warehouse.png",
-      size: "891 KB",
-      dimensions: "1024x768",
-      createdAt: "2026-05-24",
-      folder: "Public"
-    },
-    {
-      id: 7,
-      title: "Huawei Autonomous Electric Car",
-      type: "image",
-      url: "/tech_2026_car.png",
-      size: "735 KB",
-      dimensions: "1920x1080",
-      createdAt: "2026-05-24",
-      folder: "Videos"
-    },
-    {
-      id: 8,
-      title: "eSports News Feature",
-      type: "image",
-      url: "/esports_news.png",
-      size: "1.05 MB",
-      dimensions: "1600x900",
-      createdAt: "2026-05-28",
-      folder: "Public"
-    },
-    {
-      id: 9,
-      title: "GTA 6 Beta Gameplay Preview",
-      type: "image",
-      url: "/gta6_beta.png",
-      size: "915 KB",
-      dimensions: "1920x1080",
-      createdAt: "2026-05-29",
-      folder: "Videos"
-    },
-    {
-      id: 10,
-      title: "Ốc Mượn Hồn Poster",
-      type: "image",
-      url: "/oc_muon_hon_poster.png",
-      size: "757 KB",
-      dimensions: "1080x1920",
-      createdAt: "2026-05-27",
-      folder: "Public"
-    },
-    {
-      id: 11,
-      title: "Soulslike Game Announcement",
-      type: "image",
-      url: "/soulslike_game.png",
-      size: "854 KB",
-      dimensions: "1920x1080",
-      createdAt: "2026-05-25",
-      folder: "Public"
-    },
-    {
-      id: 12,
-      title: "Intro Video 2026",
-      type: "video",
-      url: "https://www.w3schools.com/html/mov_bbb.mp4",
-      size: "12.4 MB",
-      duration: "00:10",
-      createdAt: "2026-06-01",
-      folder: "Videos"
-    }
-  ]);
+  const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
 
   const [siteSettings, setSiteSettings] = useState(mockSiteSettings);
   const [logoFooterActiveTab, setLogoFooterActiveTab] = useState<"general" | "footer" | "social" | "columns">("general");
@@ -288,17 +229,7 @@ export default function AdminPage() {
   const [footerEmail, setFooterEmail] = useState("congtyphdstudio@gmail.com");
   const [footerLicense, setFooterLicense] = useState("Số bao nhiêu ....");
 
-  const [mediaDialogOpen, setMediaDialogOpen] = useState(false);
-  const [mediaDialogMode, setMediaDialogMode] = useState<"add" | "edit">("add");
-  const [mediaEditId, setMediaEditId] = useState<number | null>(null);
-  const [mediaForm, setMediaForm] = useState<Partial<MediaItem>>({
-    title: "",
-    type: "image",
-    url: "",
-    size: "100 KB",
-    dimensions: "1280x720",
-    duration: ""
-  });
+  const [mediaSort, setMediaSort] = useState<"newest" | "oldest" | "az">("newest");
 
   const [mediaPreviewItem, setMediaPreviewItem] = useState<MediaItem | null>(null);
   const [mediaSearchQuery, setMediaSearchQuery] = useState("");
@@ -310,6 +241,93 @@ export default function AdminPage() {
   const [dashboardDay, setDashboardDay] = useState("");
   const [dashboardMonth, setDashboardMonth] = useState("");
   const [dashboardYear, setDashboardYear] = useState("");
+
+  const loadMedia = async () => {
+    try {
+      const res = await getAdminMedia(activeFolder || "");
+      if (res && res.files) {
+        setMediaItems(res.files.map((f: any, idx: number) => ({
+          id: idx + 1,
+          title: f.name,
+          type: f.type,
+          url: f.url,
+          size: (f.size / 1024).toFixed(2) + " KB",
+          createdAt: f.lastModified ? new Date(f.lastModified).toISOString().split("T")[0] : "",
+          folder: f.key.split('/')[0] || "Public"
+        })));
+      }
+    } catch (err) {}
+  };
+
+  const loadCategories = async () => {
+    try {
+      const res = await getAdminCategories("?limit=100");
+      if (res && res.items) {
+        setCategories(res.items.map((c: any) => ({
+          id: c.id,
+          name: c.name,
+          postCount: c.postCount || 0,
+          priority: c.priority || 0,
+          status: c.status === "active" ? "Hoạt động" : "Ngừng hoạt động"
+        })));
+      }
+    } catch (err) {
+      toast.error("Không thể tải danh sách danh mục");
+    }
+  };
+
+  const loadPosts = async () => {
+    try {
+      const res = await getAdminArticles("?limit=1000&includeDeleted=true");
+      if (res && res.items) {
+        setPosts(res.items.map((a: any) => ({
+          id: a.id,
+          title: a.title,
+          category: a.categories?.name || "Tin tức",
+          views: a.views || 0,
+          status: a.status === 'published' ? 'Đã đăng' : 'Nháp',
+          createdAt: a.created_at ? new Date(a.created_at).toISOString().split('T')[0] : "",
+          content: a.content ? blocksToHtml(a.content) : "",
+          coverImage: a.thumbnail_key || "",
+          isDeleted: !!a.deleted_at
+        })));
+      }
+    } catch (err) {
+      toast.error("Không thể tải danh sách bài viết");
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "posts") {
+      loadPosts();
+      if (categories.length === 0) loadCategories();
+    }
+    if (activeTab === "categories") {
+      loadCategories();
+    }
+    if (activeTab === "media") {
+      loadMedia();
+    }
+    if (activeTab === "logo-footer" || activeTab === "dashboard") {
+      getAdminSettings().then(res => {
+        if (res) {
+          setSiteSettings(res as any);
+          if (res.brand) {
+            setLogoWebsiteName(res.brand.name || "Tên Web");
+            setLogoUrl(res.brand.logo_url || null);
+            setFooterOperator(res.brand.copyright || "");
+          }
+          if (res.footer) {
+            setFooterAddress(res.footer.address || "");
+            setFooterPhone(res.footer.phone || "");
+            setFooterEmail(res.footer.email || "");
+            setFooterLicense(res.footer.license || "");
+            setFooterResponsible(res.footer.responsible || "");
+          }
+        }
+      }).catch(() => {});
+    }
+  }, [activeTab, activeFolder]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentView, setCurrentView] = useState<"list" | "editor">("list");
   const [postCoverImage, setPostCoverImage] = useState<string | null>(null);
@@ -335,83 +353,12 @@ export default function AdminPage() {
   const [postCategoryFilter, setPostCategoryFilter] = useState("all");
   const [postStartDate, setPostStartDate] = useState("");
   const [postEndDate, setPostEndDate] = useState("");
+  const [hideDeletedPosts, setHideDeletedPosts] = useState(true);
 
   // In-Memory Database (initially populated with screenshot data)
-  const [posts, setPosts] = useState<Post[]>([
-    {
-      id: 1,
-      title: "Tin tức công nghệ mới nhất 2026",
-      category: "Công nghệ",
-      views: 15204,
-      status: "Đã đăng",
-      createdAt: "2026-05-24"
-    },
-    {
-      id: 2,
-      title: "Kinh tế thế giới trong năm nay",
-      category: "Tin tức",
-      views: 9325,
-      status: "Đã đăng",
-      createdAt: "2026-05-24"
-    },
-    {
-      id: 3,
-      title: "Kết quả V-League vòng đấu mới nhất",
-      category: "Tin tức",
-      views: 8520,
-      status: "Nháp",
-      createdAt: "2026-05-24"
-    },
-    {
-      id: 4,
-      title: "Ốc Mượn Hồn tung dàn poster nhân vật cực chất",
-      category: "Phim",
-      views: 12050,
-      status: "Đã đăng",
-      createdAt: "2026-05-27"
-    },
-    {
-      id: 5,
-      title: "NVIDIA GeForce RTX 5090 rò rỉ thông số khủng",
-      category: "Công nghệ",
-      views: 18900,
-      status: "Đã đăng",
-      createdAt: "2026-05-24"
-    },
-    {
-      id: 6,
-      title: "One Piece 1116 chính thức ra mắt toàn cầu",
-      category: "Anime/Manga",
-      views: 31002,
-      status: "Đã đăng",
-      createdAt: "2026-05-24"
-    },
-    {
-      id: 7,
-      title: "Apple công bố chip M5 với nhân xử lý AI thế hệ mới",
-      category: "Công nghệ",
-      views: 14500,
-      status: "Đã đăng",
-      createdAt: "2026-05-24"
-    },
-    {
-      id: 8,
-      title: "Dự báo thời tiết 28/5/2026: Không khí mát tràn về miền Bắc",
-      category: "Tin tức",
-      views: 5200,
-      status: "Nháp",
-      createdAt: "2026-05-28"
-    }
-  ]);
+  const [posts, setPosts] = useState<Post[]>([]);
 
-  const [categories, setCategories] = useState<Category[]>([
-    { id: 1, name: "Tin Tức", postCount: 151, priority: 1, status: "Hoạt động" },
-    { id: 2, name: "Anime/Manga", postCount: 107, priority: 2, status: "Hoạt động" },
-    { id: 3, name: "Công nghệ", postCount: 86, priority: 3, status: "Hoạt động" },
-    { id: 4, name: "Phim", postCount: 64, priority: 4, status: "Hoạt động" },
-    { id: 5, name: "Kiến thức", postCount: 23, priority: 5, status: "Hoạt động" },
-    { id: 6, name: "Cái gì đó", postCount: 23, priority: 0, status: "Hoạt động" }
-  ]);
+  const [categories, setCategories] = useState<Category[]>([]);
 
   const [ads, setAds] = useState<Ad[]>([
     {
@@ -526,6 +473,7 @@ export default function AdminPage() {
   // Filtered & Paginated items
   const filteredPosts = useMemo(() => {
     return posts.filter(post => {
+      if (hideDeletedPosts && post.isDeleted) return false;
       const matchesSearch = post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                             post.id.toString() === searchQuery;
       const matchesCategory = postCategoryFilter === "all" || post.category === postCategoryFilter;
@@ -540,7 +488,7 @@ export default function AdminPage() {
       
       return matchesSearch && matchesCategory && matchesDates;
     });
-  }, [posts, searchQuery, postCategoryFilter, postStartDate, postEndDate]);
+  }, [posts, searchQuery, postCategoryFilter, postStartDate, postEndDate, hideDeletedPosts]);
 
   const filteredCategories = useMemo(() => {
     return categories.filter(cat => {
@@ -578,14 +526,27 @@ export default function AdminPage() {
   const adsTotalPages = Math.ceil(filteredAds.length / itemsPerPage) || 1;
 
   const filteredMedia = useMemo(() => {
-    return mediaItems.filter((item) => {
+    const filtered = mediaItems.filter((item) => {
       const matchesSearch = item.title.toLowerCase().includes(mediaSearchQuery.toLowerCase()) ||
         item.url.toLowerCase().includes(mediaSearchQuery.toLowerCase());
       const matchesType = mediaTypeFilter === "all" || item.type === mediaTypeFilter;
       const matchesFolder = activeFolder ? (item.folder === activeFolder) : true;
       return matchesSearch && matchesType && matchesFolder;
     });
-  }, [mediaItems, mediaSearchQuery, mediaTypeFilter, activeFolder]);
+
+    return filtered.sort((a, b) => {
+      if (mediaSort === "newest") {
+        return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+      }
+      if (mediaSort === "oldest") {
+        return new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
+      }
+      if (mediaSort === "az") {
+        return a.title.localeCompare(b.title);
+      }
+      return 0;
+    });
+  }, [mediaItems, mediaSearchQuery, mediaTypeFilter, activeFolder, mediaSort]);
 
   const paginatedMedia = useMemo(() => {
     const start = (mediaPage - 1) * mediaItemsPerPage;
@@ -779,14 +740,10 @@ export default function AdminPage() {
     setEditId(item.id);
     if (activeTab === "posts") {
       setPostForm({
-        ...item,
-        title: "Tin tức công nghệ mới nhất 2026",
-        category: "Công nghệ",
-        status: "Đã đăng"
+        ...item
       });
-      const DEFAULT_TECH_CONTENT = `<p><strong>Năm 2026 đánh dấu bước ngoặt lớn khi công nghệ không còn dừng lại ở màn hình điện thoại mà chính thức bước ra thế giới thực, thay đổi toàn diện cách con người sống và làm việc.</strong></p>\n<p>Theo báo cáo toàn cảnh công nghệ vừa công bố, thị trường năm nay ghi nhận 3 làn sóng đột phá dịch chuyển mạnh mẽ:</p>\n<ul class="list-disc pl-5 space-y-2">\n  <li><strong>Sự trỗi dậy của AI Agent (Tác nhân AI tự chủ):</strong> Trí tuệ nhân tạo năm 2026 đã vượt qua thế giới chatbot thông thường. Các "AI Agent" giờ đây có khả năng tự tư duy, lên kế hoạch và thực hiện các chuỗi công việc phức tạp như một nhân sự thực thụ mà không cần con người can thiệp từng bước.</li>\n</ul>\n<div class="my-4">\n  <img src="/tech_2026_robot.png" alt="Sự trỗi dậy của AI" class="w-full rounded-xl border border-gray-200 shadow-sm" />\n</div>\n<ul class="list-disc pl-5 space-y-2">\n  <li><strong>Kính thực tế hỗn hợp (MR) thay thế Smartphone:</strong> Điện thoại thông minh bắt đầu thoái lui khi các dòng kính thông minh thế hệ mới đạt trọng lượng siêu nhẹ như kính cận. Người dùng dịch chuyển sang làm việc và giải trí hoàn toàn trong không gian số 3D (Spatial Computing).</li>\n</ul>\n<div class="my-4">\n  <img src="/tech_2026_vision.png" alt="Apple Vision Pro" class="w-full rounded-xl border border-gray-200 shadow-sm" />\n  <p class="text-center text-xs italic text-gray-500 mt-1.5">Kính thực tế hỗn hợp Apple Vision Pro</p>\n</div>\n<ul class="list-disc pl-5 space-y-2">\n  <li><strong>Robot nhân hình và Xe tự lái đổ bộ đời sống:</strong> Robot dáng người (Humanoid Robot) đã chính thức được thương mại hóa, tham gia vào các dây chuyền sản xuất và hỗ trợ việc nhà. Song song đó, mạng lưới Robotaxi tự lái cấp độ 4 kết hợp pin trạng thái rắn (sạc 5 phút, đi 1.000km) đã trở thành phương tiện công cộng phổ biến tại các đô thị lớn.</li>\n</ul>\n<div class="my-4 flex flex-col gap-4">\n  <img src="/tech_2026_warehouse.png" alt="Robot in warehouse" class="w-full rounded-xl border border-gray-200 shadow-sm" />\n  <img src="/tech_2026_car.png" alt="Huawei Car" class="w-full rounded-xl border border-gray-200 shadow-sm" />\n  <p class="text-center text-xs italic text-gray-500 mt-1.5">Công nghệ tự lái trên xe điện Huawei: tự lái và tự đỗ mượt mà</p>\n</div>\n<p class="mt-4">Công nghệ năm 2026 mang đến sự tiện nghi tối đa nhưng cũng đặt ra thách thức lớn về an toàn dữ liệu. Việc làm chủ và thích ứng nhanh với các công cụ AI tự chủ sẽ là khóa quyết định năng lực cạnh tranh của cả cá nhân lẫn doanh nghiệp trong giai đoạn này.</p>`;
-      setPostContent(DEFAULT_TECH_CONTENT);
-      setPostCoverImage("/tech_2026_cover.png");
+      setPostContent(item.content || "");
+      setPostCoverImage(item.coverImage || null);
       setCurrentView("editor");
     } else if (activeTab === "categories") {
       setCategoryForm(item);
@@ -797,20 +754,41 @@ export default function AdminPage() {
     }
   };
 
+  const executeRestore = async (id: number) => {
+    try {
+      toast.loading("Đang khôi phục...", { id: "restore-post" });
+      await restoreAdminArticle(id);
+      toast.success("Khôi phục bài viết thành công!", { id: "restore-post" });
+      loadPosts();
+    } catch (err) {
+      toast.error("Lỗi khi khôi phục bài viết!", { id: "restore-post" });
+    }
+  };
+
   const handleConfirmDelete = (id: number) => {
     setTargetIdToDelete(id);
     setDeleteConfirmOpen(true);
   };
 
-  const executeDelete = () => {
+  const executeDelete = async () => {
     if (targetIdToDelete === null) return;
 
     if (activeTab === "posts") {
-      setPosts(posts.filter(p => p.id !== targetIdToDelete));
-      toast.success("Xóa bài viết thành công!");
+      try {
+        await deleteAdminArticle(targetIdToDelete);
+        toast.success("Xóa bài viết thành công!");
+        loadPosts();
+      } catch (err) {
+        toast.error("Lỗi khi xóa bài viết!");
+      }
     } else if (activeTab === "categories") {
-      setCategories(categories.filter(c => c.id !== targetIdToDelete));
-      toast.success("Xóa danh mục thành công!");
+      try {
+        await deleteAdminCategory(targetIdToDelete);
+        toast.success("Xóa danh mục thành công!");
+        loadCategories();
+      } catch (err) {
+        toast.error("Lỗi khi xóa danh mục!");
+      }
     } else {
       setAds(ads.filter(a => a.id !== targetIdToDelete));
       toast.success("Xóa quảng cáo thành công!");
@@ -819,48 +797,66 @@ export default function AdminPage() {
     setTargetIdToDelete(null);
   };
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (activeTab === "posts") {
       if (!postForm.title?.trim()) {
         toast.error("Vui lòng nhập tiêu đề bài viết!");
         return;
       }
-      if (dialogMode === "add") {
-        const newPost: Post = {
-          id: posts.length > 0 ? Math.max(...posts.map(p => p.id)) + 1 : 1,
+      try {
+        toast.loading(dialogMode === "add" ? "Đang thêm bài viết..." : "Đang cập nhật...", { id: "post-submit" });
+        const targetCategory = categories.find(c => c.name === postForm.category);
+        const payload = {
           title: postForm.title,
-          category: postForm.category || "Tin tức",
+          category_id: targetCategory ? targetCategory.id : undefined,
           views: Number(postForm.views) || 0,
-          status: postForm.status || "Đã đăng",
-          createdAt: postForm.createdAt || new Date().toISOString().split("T")[0]
+          status: postForm.status === "Đã đăng" ? "published" : "draft",
+          thumbnail_key: postCoverImage,
+          content: htmlToBlocks(postContent)
         };
-        setPosts([newPost, ...posts]);
-        toast.success("Thêm bài viết mới thành công!");
-      } else {
-        setPosts(posts.map(p => (p.id === editId ? { ...p, ...postForm } as Post : p)));
-        toast.success("Cập nhật bài viết thành công!");
+        
+        if (dialogMode === "add") {
+          await createAdminArticle(payload);
+          toast.success("Thêm bài viết mới thành công!", { id: "post-submit" });
+        } else {
+          if (editId) {
+            await updateAdminArticle(editId, payload);
+            toast.success("Cập nhật bài viết thành công!", { id: "post-submit" });
+          }
+        }
+        loadPosts();
+        setCurrentView("list");
+      } catch (err) {
+        toast.error("Có lỗi xảy ra, vui lòng thử lại!", { id: "post-submit" });
       }
     } else if (activeTab === "categories") {
       if (!categoryForm.name?.trim()) {
         toast.error("Vui lòng nhập tên danh mục!");
         return;
       }
-      if (dialogMode === "add") {
-        const newCategory: Category = {
-          id: categories.length > 0 ? Math.max(...categories.map(c => c.id)) + 1 : 1,
+      try {
+        toast.loading(dialogMode === "add" ? "Đang thêm danh mục..." : "Đang cập nhật...", { id: "cat-submit" });
+        const payload = {
           name: categoryForm.name,
-          postCount: 0,
           priority: Number(categoryForm.priority) || 0,
-          status: categoryForm.status || "Hoạt động"
+          status: categoryForm.status === "Hoạt động" ? "active" : "inactive"
         };
-        setCategories([...categories, newCategory]);
-        toast.success("Thêm danh mục mới thành công!");
-      } else {
-        setCategories(categories.map(c => (c.id === editId ? { ...c, ...categoryForm } as Category : c)));
-        toast.success("Cập nhật danh mục thành công!");
+        
+        if (dialogMode === "add") {
+          await createAdminCategory(payload);
+          toast.success("Thêm danh mục mới thành công!", { id: "cat-submit" });
+        } else {
+          if (editId) {
+            await updateAdminCategory(editId, payload);
+            toast.success("Cập nhật danh mục thành công!", { id: "cat-submit" });
+          }
+        }
+        loadCategories();
+        setCategoryDialogOpen(false);
+      } catch (err) {
+        toast.error("Có lỗi xảy ra, vui lòng thử lại!", { id: "cat-submit" });
       }
-      setCategoryDialogOpen(false);
     } else {
       if (!adForm.name?.trim()) {
         toast.error("Vui lòng nhập tên quảng cáo!");
@@ -906,42 +902,39 @@ export default function AdminPage() {
     setSidebarOpen(false);
   };
 
-  const handleSavePost = (e: React.FormEvent) => {
+  const handleSavePost = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!postForm.title?.trim()) {
       toast.error("Vui lòng nhập tiêu đề bài viết!");
       return;
     }
 
-    if (dialogMode === "add") {
-      const newPost: Post = {
-        id: posts.length > 0 ? Math.max(...posts.map(p => p.id)) + 1 : 1,
+    try {
+      toast.loading(dialogMode === "add" ? "Đang thêm bài viết..." : "Đang cập nhật...", { id: "post-submit" });
+      const targetCategory = categories.find(c => c.name === postForm.category);
+      const payload = {
         title: postForm.title,
-        category: postForm.category || "Tin tức",
-        views: 0,
-        status: postForm.status || "Đã đăng",
-        createdAt: postForm.createdAt || new Date().toISOString().split("T")[0],
-        content: postContent,
-        coverImage: postCoverImage || undefined
+        category_id: targetCategory ? targetCategory.id : undefined,
+        views: Number(postForm.views) || 0,
+        status: postForm.status === "Đã đăng" ? "published" : "draft",
+        thumbnail_key: postCoverImage,
+        content: htmlToBlocks(postContent)
       };
-      setPosts([newPost, ...posts]);
-      toast.success("Thêm bài viết mới thành công!");
-    } else {
-      setPosts(
-        posts.map(p =>
-          p.id === editId
-            ? ({
-                ...p,
-                ...postForm,
-                content: postContent,
-                coverImage: postCoverImage || undefined
-              } as Post)
-            : p
-        )
-      );
-      toast.success("Cập nhật bài viết thành công!");
+      
+      if (dialogMode === "add") {
+        await createAdminArticle(payload);
+        toast.success("Thêm bài viết mới thành công!", { id: "post-submit" });
+      } else {
+        if (editId) {
+          await updateAdminArticle(editId, payload);
+          toast.success("Cập nhật bài viết thành công!", { id: "post-submit" });
+        }
+      }
+      loadPosts();
+      setCurrentView("list");
+    } catch (err) {
+      toast.error("Có lỗi xảy ra, vui lòng thử lại!", { id: "post-submit" });
     }
-    setCurrentView("list");
   };
 
   const handleTriggerImageUpload = () => {
@@ -972,66 +965,34 @@ export default function AdminPage() {
     }
   };
 
-  const handleMediaDirectUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMediaDirectUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    Array.from(files).forEach((file) => {
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
       const isVideo = file.type.startsWith("video/");
       const isImage = file.type.startsWith("image/");
       
       if (!isImage && !isVideo) {
-        toast.error(`File "${file.name}" không đúng định dạng hình ảnh hoặc video!`);
-        return;
+        toast.error(`File "${file.name}" không hợp lệ!`);
+        continue;
       }
 
-      let sizeStr = "";
-      if (file.size < 1024 * 1024) {
-        sizeStr = `${(file.size / 1024).toFixed(0)} KB`;
-      } else {
-        sizeStr = `${(file.size / (1024 * 1024)).toFixed(1)} MB`;
+      toast.loading(`Đang tải lên ${file.name}...`, { id: `upload-${file.name}` });
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        if (activeFolder) formData.append("folder", activeFolder);
+
+        await uploadAdminMedia(formData);
+        toast.success(`Tải lên thành công: ${file.name}`, { id: `upload-${file.name}` });
+      } catch (err: any) {
+        toast.error(`Lỗi tải lên ${file.name}: ${err.message}`, { id: `upload-${file.name}` });
       }
-
-      const objectUrl = URL.createObjectURL(file);
-      const titleWithoutExt = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
-
-      const newItem: MediaItem = {
-        id: Date.now() + Math.random(),
-        title: file.name,
-        type: isVideo ? "video" : "image",
-        url: objectUrl,
-        size: sizeStr,
-        createdAt: new Date().toLocaleDateString("en-GB"),
-        folder: activeFolder || "Public"
-      };
-
-      setMediaItems(prev => [newItem, ...prev]);
-      toast.success(`Đã thêm thành công media: ${file.name}`);
-
-      if (isImage) {
-        const img = new Image();
-        img.onload = () => {
-          const dims = `${img.width}x${img.height}`;
-          setMediaItems((prev) =>
-            prev.map((m) => (m.id === newItem.id ? { ...m, dimensions: dims } : m))
-          );
-        };
-        img.src = objectUrl;
-      } else if (isVideo) {
-        const video = document.createElement("video");
-        video.preload = "metadata";
-        video.onloadedmetadata = () => {
-          const minutes = Math.floor(video.duration / 60);
-          const seconds = Math.floor(video.duration % 60);
-          const durationStr = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-          setMediaItems((prev) =>
-            prev.map((m) => (m.id === newItem.id ? { ...m, duration: durationStr } : m))
-          );
-        };
-        video.src = objectUrl;
-      }
-    });
-
+    }
+    
+    loadMedia();
     e.target.value = "";
   };
 
@@ -1609,7 +1570,7 @@ export default function AdminPage() {
           {/* Logo Brand Header */}
           <div className="flex items-center gap-3.5 mb-10 mt-2">
             <div className="w-[50px] h-[50px] bg-[#d9d9d9] rounded-full flex-shrink-0 border-2 border-white/25 shadow-sm" />
-            <span className="font-extrabold text-[22px] tracking-tight drop-shadow-sm">{siteSettings.header.logoText || "Logo"}</span>
+            <span className="font-extrabold text-[22px] tracking-tight drop-shadow-sm">{logoWebsiteName || "Logo"}</span>
             <button
               onClick={() => setSidebarOpen(false)}
               className="ml-auto lg:hidden text-white hover:text-red-100 p-1"
@@ -2117,9 +2078,24 @@ export default function AdminPage() {
                   type="button"
                   onClick={() => {
                     toast.loading("Đang lưu cấu hình...", { id: "save-logo-footer" });
-                    setTimeout(() => {
+                    updateAdminSettings({
+                      brand: {
+                        name: logoWebsiteName,
+                        logo_url: logoUrl,
+                        copyright: footerOperator,
+                      },
+                      footer: {
+                        address: footerAddress,
+                        phone: footerPhone,
+                        email: footerEmail,
+                        license: footerLicense,
+                        responsible: footerResponsible
+                      }
+                    }).then(() => {
                       toast.success("Lưu thay đổi thành công!", { id: "save-logo-footer" });
-                    }, 800);
+                    }).catch(() => {
+                      toast.error("Lỗi khi lưu cấu hình!", { id: "save-logo-footer" });
+                    });
                   }}
                   className="flex items-center justify-center gap-2 px-5 py-2.5 bg-[#E55956] hover:bg-[#cb4643] active:scale-[0.98] text-white text-sm font-bold rounded-xl shadow-md transition-all self-start sm:self-center"
                 >
@@ -2438,10 +2414,14 @@ export default function AdminPage() {
 
                     {/* Sorting select */}
                     <div className="relative">
-                      <select className="pl-3 pr-7 py-1 border border-gray-300 rounded-lg text-xs font-bold text-gray-700 appearance-none bg-white focus:outline-none min-w-[90px] cursor-pointer">
-                        <option>Mới nhất</option>
-                        <option>Cũ nhất</option>
-                        <option>Tên A-Z</option>
+                      <select 
+                        value={mediaSort}
+                        onChange={(e) => setMediaSort(e.target.value as any)}
+                        className="pl-3 pr-7 py-1 border border-gray-300 rounded-lg text-xs font-bold text-gray-700 appearance-none bg-white focus:outline-none min-w-[90px] cursor-pointer"
+                      >
+                        <option value="newest">Mới nhất</option>
+                        <option value="oldest">Cũ nhất</option>
+                        <option value="az">Tên A-Z</option>
                       </select>
                       <ChevronDown size={11} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                     </div>
@@ -2528,19 +2508,6 @@ export default function AdminPage() {
                                     title="Xem trước"
                                   >
                                     <Eye size={13} />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setMediaDialogMode("edit");
-                                      setMediaEditId(item.id);
-                                      setMediaForm(item);
-                                      setMediaDialogOpen(true);
-                                    }}
-                                    className="w-8 h-8 rounded-full bg-white hover:bg-gray-100 text-gray-800 flex items-center justify-center shadow transition-all active:scale-95"
-                                    title="Chỉnh sửa"
-                                  >
-                                    <SquarePen size={13} />
                                   </button>
                                   <button
                                     type="button"
@@ -2747,6 +2714,20 @@ export default function AdminPage() {
                           Xóa bộ lọc
                         </button>
                       </div>
+
+                      {activeTab === "posts" && (
+                        <div className="md:col-span-9 flex items-center mt-2">
+                          <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-600 font-medium select-none w-max">
+                            <input 
+                              type="checkbox" 
+                              checked={hideDeletedPosts} 
+                              onChange={(e) => setHideDeletedPosts(e.target.checked)} 
+                              className="w-4 h-4 rounded text-[#E55956] focus:ring-[#E55956] cursor-pointer" 
+                            />
+                            Ẩn bài viết đã xóa
+                          </label>
+                        </div>
+                      )}
                     </>
                   )}
 
@@ -2774,10 +2755,11 @@ export default function AdminPage() {
                       <tbody className="divide-y divide-gray-150">
                         {paginatedPosts.length > 0 ? (
                           paginatedPosts.map((post) => (
-                            <tr key={post.id} className="hover:bg-gray-50/50 transition-colors text-sm font-medium">
+                            <tr key={post.id} className={`transition-colors text-sm font-medium ${post.isDeleted ? 'opacity-50 bg-red-50/20' : 'hover:bg-gray-50/50'}`}>
                               <td className="py-4 px-6 text-center text-gray-400 font-bold">{post.id}</td>
                               <td className="py-4 px-4 text-gray-900 font-semibold line-clamp-2 max-w-[450px]">
                                 {post.title}
+                                {post.isDeleted && <span className="ml-2 px-2 py-0.5 text-[10px] bg-red-100 text-red-600 rounded whitespace-nowrap align-middle">Đã xóa</span>}
                               </td>
                               <td className="py-4 px-4 text-gray-600">{post.category}</td>
                               <td className="py-4 px-4 text-right text-gray-900 font-mono font-bold">
@@ -2806,13 +2788,25 @@ export default function AdminPage() {
                                   >
                                     <SquarePen size={15} />
                                   </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleConfirmDelete(post.id)}
-                                    className="p-1.5 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
-                                  >
-                                    <Trash2 size={15} />
-                                  </button>
+                                  {post.isDeleted ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => executeRestore(post.id)}
+                                      className="p-1.5 border border-emerald-200 text-emerald-600 rounded-lg hover:bg-emerald-50 transition-colors"
+                                      title="Khôi phục bài viết"
+                                    >
+                                      <RotateCcw size={15} />
+                                    </button>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleConfirmDelete(post.id)}
+                                      className="p-1.5 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                                      title="Xóa bài viết"
+                                    >
+                                      <Trash2 size={15} />
+                                    </button>
+                                  )}
                                 </div>
                               </td>
                             </tr>
@@ -3533,161 +3527,7 @@ export default function AdminPage() {
         </DialogContent>
       </Dialog>
 
-      {/* ==========================================
-          MODAL: ADD / EDIT MEDIA DIALOG
-          ========================================== */}
-      <Dialog open={mediaDialogOpen} onOpenChange={setMediaDialogOpen}>
-        <DialogContent className="max-w-[460px] w-[95%] max-h-[90vh] overflow-y-auto rounded-[24px] p-6 border border-gray-100 shadow-2xl bg-white text-[#2c3e50] outline-none [&>button]:hidden">
-          <DialogHeader className="border-b border-gray-150 pb-3 -mx-6 px-6">
-            <DialogTitle className="text-xl font-bold text-gray-900 text-left">
-              {mediaDialogMode === "add" ? "Thêm file Media" : "Sửa file Media"}
-            </DialogTitle>
-          </DialogHeader>
-
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (!mediaForm.title?.trim() || !mediaForm.url?.trim()) {
-                toast.error("Vui lòng điền đầy đủ tiêu đề và URL!");
-                return;
-              }
-
-              if (mediaDialogMode === "add") {
-                const newItem: MediaItem = {
-                  id: mediaItems.length > 0 ? Math.max(...mediaItems.map(m => m.id)) + 1 : 1,
-                  title: mediaForm.title,
-                  type: mediaForm.type || "image",
-                  url: mediaForm.url,
-                  size: mediaForm.size || "150 KB",
-                  dimensions: mediaForm.type === "image" ? (mediaForm.dimensions || "1280x720") : undefined,
-                  duration: mediaForm.type === "video" ? (mediaForm.duration || "01:00") : undefined,
-                  createdAt: new Date().toLocaleDateString("en-GB"),
-                  folder: activeFolder || "Public"
-                };
-                setMediaItems([newItem, ...mediaItems]);
-                toast.success("Thêm file media mới thành công!");
-              } else {
-                setMediaItems(
-                  mediaItems.map((m) =>
-                    m.id === mediaEditId
-                      ? ({ ...m, ...mediaForm } as MediaItem)
-                      : m
-                  )
-                );
-                toast.success("Cập nhật thông tin file media thành công!");
-              }
-              setMediaDialogOpen(false);
-            }}
-            className="space-y-4 pt-4"
-          >
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">
-                Tiêu đề Media
-              </label>
-              <input
-                type="text"
-                value={mediaForm.title || ""}
-                onChange={(e) => setMediaForm({ ...mediaForm, title: e.target.value })}
-                placeholder="Nhập tiêu đề..."
-                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white shadow-sm font-medium"
-                required
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">
-                Loại định dạng
-              </label>
-              <div className="relative">
-                <select
-                  value={mediaForm.type || "image"}
-                  onChange={(e) => setMediaForm({ ...mediaForm, type: e.target.value as "image" | "video" })}
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white shadow-sm font-semibold text-gray-800 appearance-none cursor-pointer"
-                >
-                  <option value="image">Hình ảnh (Image)</option>
-                  <option value="video">Phim / Video</option>
-                </select>
-                <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">
-                Đường dẫn URL
-              </label>
-              <input
-                type="text"
-                value={mediaForm.url || ""}
-                onChange={(e) => setMediaForm({ ...mediaForm, url: e.target.value })}
-                placeholder="Ví dụ: /soulslike_game.png hoặc URL ngoài..."
-                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white shadow-sm font-mono"
-                required
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">
-                  Kích thước (Size)
-                </label>
-                <input
-                  type="text"
-                  value={mediaForm.size || ""}
-                  onChange={(e) => setMediaForm({ ...mediaForm, size: e.target.value })}
-                  placeholder="Ví dụ: 350 KB, 12 MB..."
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white shadow-sm font-medium"
-                />
-              </div>
-
-              {mediaForm.type === "video" ? (
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">
-                    Thời lượng (Duration)
-                  </label>
-                  <input
-                    type="text"
-                    value={mediaForm.duration || ""}
-                    onChange={(e) => setMediaForm({ ...mediaForm, duration: e.target.value })}
-                    placeholder="Ví dụ: 01:24..."
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white shadow-sm font-mono"
-                  />
-                </div>
-              ) : (
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">
-                    Độ phân giải (Resolution)
-                  </label>
-                  <input
-                    type="text"
-                    value={mediaForm.dimensions || ""}
-                    onChange={(e) => setMediaForm({ ...mediaForm, dimensions: e.target.value })}
-                    placeholder="Ví dụ: 1920x1080..."
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white shadow-sm font-mono"
-                  />
-                </div>
-              )}
-            </div>
-
-            <div className="flex items-center justify-center gap-4 pt-6 pb-2">
-              <button
-                type="button"
-                onClick={() => setMediaDialogOpen(false)}
-                className="flex-1 max-w-[144px] py-2.5 border border-gray-200 hover:bg-gray-50 text-gray-900 text-sm font-bold rounded-xl transition-all shadow-sm flex items-center justify-center"
-              >
-                Hủy
-              </button>
-              <button
-                type="submit"
-                className="flex-1 max-w-[144px] py-2.5 bg-[#e86b6b] hover:bg-[#e55956] text-white text-sm font-bold rounded-xl transition-all shadow-md flex items-center justify-center"
-              >
-                {mediaDialogMode === "add" ? "Thêm mới" : "Lưu sửa"}
-              </button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* ==========================================
+        {/* ==========================================
           MODAL: MEDIA PREVIEW DIALOG
           ========================================== */}
       <Dialog open={mediaPreviewItem !== null} onOpenChange={(open) => {

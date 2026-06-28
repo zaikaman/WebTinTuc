@@ -11,6 +11,7 @@ export interface Article {
   id: string;
   title: string;
   category: string;
+  categorySlug?: string;
   time: string;
   image: string;
   badge?: string;
@@ -54,14 +55,9 @@ export interface SiteSettings {
     tagline: string;
     footerDescription: string;
     copyright: string;
-  };
-  header: {
-    logoText: string;
-    logoSubtitle: string;
-    primaryLinks: NavigationItem[];
+    searchPlaceholder: string;
     utilityLinks: NavigationItem[];
     socialLinks: SocialLink[];
-    searchPlaceholder: string;
   };
   footer: {
     columns: FooterColumn[];

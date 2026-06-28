@@ -8,10 +8,6 @@ export const mockSiteSettings: SiteSettings = {
       "Trang tin tức công nghệ, anime, manga và thế giới game hàng đầu Việt Nam.",
     copyright:
       "© 2026 LINHKA - Tin Tức Công Nghệ & Game. All rights reserved.",
-  },
-  header: {
-    logoText: "LOGO",
-    logoSubtitle: "TIN TỨC GAME",
     searchPlaceholder: "Tìm kiếm",
     utilityLinks: [
       {
@@ -29,13 +25,6 @@ export const mockSiteSettings: SiteSettings = {
         href: "mailto:quangcao@linhka.vn",
         platform: "email",
       },
-    ],
-    primaryLinks: [
-      { label: "TIN TỨC", href: "/tin-tuc" },
-      { label: "ANIME/MANGA", href: "/anime-manga" },
-      { label: "CÔNG NGHỆ", href: "/cong-nghe" },
-      { label: "PHIM", href: "/phim" },
-      { label: "KIẾN THỨC", href: "/kien-thuc" },
     ],
   },
   footer: {

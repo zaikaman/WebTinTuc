@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getCategorySlug, getHomeFeed } from "@/lib/api/news";
+import { getHomeFeed } from "@/lib/api/news";
 import { Clock } from "lucide-react";
 import { formatCategory } from "@/lib/utils";
 import { FeaturedCarousel } from "@/components/FeaturedCarousel";
@@ -105,7 +105,7 @@ export default async function HomePage() {
             <div key={`group-${groupIndex}`} className="contents">
               <div className="flex flex-col bg-white md:border md:border-gray-200 md:rounded-sm p-0 md:p-4 md:shadow-sm divide-y divide-gray-200">
                 {group.map((article, index) => {
-                  const categorySlug = getCategorySlug(article.category);
+                  const categorySlug = article.categorySlug || article.category;
                   const displayIntro = article.intro || `Bản tin mới nhất về ${article.category.toLowerCase()} - Cập nhật nhanh các thông tin xoay quanh chủ đề "${article.title}" đang thu hút sự chú ý của độc giả.`;
                   return (
                     <div

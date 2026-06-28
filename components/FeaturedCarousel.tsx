@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
-import { getCategorySlug } from "@/lib/api/news";
+
 import { formatCategory } from "@/lib/utils";
 import type { Article } from "@/lib/types/news";
 
@@ -52,7 +52,7 @@ export function FeaturedCarousel({ articles }: FeaturedCarouselProps) {
   if (!articles || articles.length === 0) return null;
 
   const currentArticle = articles[currentIndex];
-  const categorySlug = getCategorySlug(currentArticle.category);
+  const categorySlug = currentArticle.categorySlug || currentArticle.category;
 
   return (
     <div
