@@ -6,15 +6,17 @@ import { Clock } from "lucide-react";
 import type { Article } from "@/lib/types/news";
 import { formatCategory } from "@/lib/utils";
 import { FeaturedCarousel } from "@/components/FeaturedCarousel";
+import AdBanner from "@/components/AdBanner";
 
 interface CategoryContentProps {
   category: string;
   label: string;
   featured: Article;
   initialList: Article[];
+  ads?: any[];
 }
 
-export function CategoryContent({ category, label, featured, initialList }: CategoryContentProps) {
+export function CategoryContent({ category, label, featured, initialList, ads = [] }: CategoryContentProps) {
   // We display first 12 items (6 before ad, 6 after ad).
   // The rest (items 12 to 16) are loaded when clicking "Xem Thêm".
   const initialDisplayList = initialList.slice(0, 12);
@@ -51,18 +53,12 @@ export function CategoryContent({ category, label, featured, initialList }: Cate
   return (
     <main className="w-full px-3 md:px-0 py-4 font-sans text-xs bg-white">
       {/* Top Banner Advertisement (QC 970x250) */}
-      <div className="relative w-full md:w-[970px] overflow-hidden rounded border border-gray-200 mb-5 bg-gray-50 flex justify-center group shadow-sm mx-auto aspect-[970/250] md:aspect-auto md:h-[250px]">
-        <a href="#" className="block w-full h-full">
-          <img
-            src="/vinfast_ad.png"
-            alt="Quảng cáo 970x250"
-            className="w-full h-full object-cover"
-          />
-        </a>
-        <div className="absolute top-1.5 right-1.5 bg-black/40 hover:bg-black/70 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
-          Quảng cáo &times;
-        </div>
-      </div>
+      <AdBanner 
+        position="header" 
+        ads={ads} 
+        fallbackImg="/vinfast_ad.png" 
+        className="w-full md:w-[970px] rounded border border-gray-200 mb-5 bg-gray-50 shadow-sm mx-auto overflow-hidden aspect-[970/250] md:aspect-auto md:h-[250px]" 
+      />
 
       {/* Main Two-Column Content Layout */}
       <div className="flex flex-col lg:flex-row gap-5 items-start">
@@ -149,18 +145,12 @@ export function CategoryContent({ category, label, featured, initialList }: Cate
           </div>
 
           {/* Middle Banner Ad (QC 650x300) */}
-          <div className="relative w-full overflow-hidden rounded border border-gray-200 bg-gray-50 flex justify-center group shadow-sm aspect-[650/300]">
-            <a href="#" className="block w-full h-full">
-              <img
-                src="/qc_650_300_premium.png"
-                alt="Quảng cáo 650x300"
-                className="w-full h-full object-cover"
-              />
-            </a>
-            <div className="absolute top-1.5 right-1.5 bg-black/45 hover:bg-black/75 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
-              Quảng cáo &times;
-            </div>
-          </div>
+          <AdBanner 
+              position="inline" 
+              ads={ads} 
+              fallbackImg="/qc_650_300_premium.png" 
+              className="w-full rounded border border-gray-200 bg-gray-50 shadow-sm overflow-hidden aspect-[650/300]" 
+            />
 
           {/* List Part 2 (Next 6 items + Load More items) */}
           <div className="bg-white md:border md:border-gray-200 p-0 md:p-4 rounded-sm md:shadow-sm flex flex-col gap-4">
@@ -232,49 +222,28 @@ export function CategoryContent({ category, label, featured, initialList }: Cate
 
         {/* Right Column: Sticky Sidebar Ads - Hidden on Mobile */}
         <aside className="hidden lg:flex w-[300px] flex-shrink-0 lg:sticky lg:top-4 flex-col gap-4">
-          {/* Ad 1 (QC 300x600) */}
-          <div className="relative w-full md:w-[300px] md:h-[600px] overflow-hidden rounded border border-gray-200 bg-gray-50 flex justify-center group shadow-sm mx-auto">
-            <a href="#" className="block w-full h-full">
-              <img
-                src="/zento_cabinet_ad.png"
-                alt="Quảng cáo 300x600"
-                className="w-full h-full object-cover"
-              />
-            </a>
-            <div className="absolute top-1.5 right-1.5 bg-black/45 hover:bg-black/75 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
-              Quảng cáo &times;
-            </div>
-          </div>
-
-          {/* Ad 2 (QC 300x600) */}
-          <div className="relative w-full md:w-[300px] md:h-[600px] overflow-hidden rounded border border-gray-200 bg-gray-50 flex justify-center group shadow-sm mx-auto">
-            <a href="#" className="block w-full h-full">
-              <img
-                src="/ztc_bathtub_ad.png"
-                alt="Quảng cáo 300x600"
-                className="w-full h-full object-cover"
-              />
-            </a>
-            <div className="absolute top-1.5 right-1.5 bg-black/45 hover:bg-black/75 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
-              Quảng cáo &times;
-            </div>
-          </div>
+          <AdBanner 
+            position="sidebar_1" 
+            ads={ads} 
+            fallbackImg="/zento_cabinet_ad.png" 
+            className="w-full md:w-[300px] md:h-[600px] rounded border border-gray-200 bg-gray-50 shadow-sm mx-auto overflow-hidden" 
+          />
+          <AdBanner 
+            position="sidebar_2" 
+            ads={ads} 
+            fallbackImg="/ztc_bathtub_ad.png" 
+            className="w-full md:w-[300px] md:h-[600px] rounded border border-gray-200 bg-gray-50 shadow-sm mx-auto overflow-hidden" 
+          />
         </aside>
       </div>
 
       {/* Bottom QC 970x250 Ad */}
-      <div className="relative w-full md:w-[970px] overflow-hidden rounded border border-gray-200 mt-6 bg-gray-50 flex justify-center group shadow-sm mx-auto aspect-[970/250] md:aspect-auto md:h-[250px]">
-        <a href="#" className="block w-full h-full">
-          <img
-            src="/vietnam_airlines_ad.png"
-            alt="Quảng cáo 970x250"
-            className="w-full h-full object-cover"
-          />
-        </a>
-        <div className="absolute top-1.5 right-1.5 bg-black/45 hover:bg-black/75 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
-          Quảng cáo &times;
-        </div>
-      </div>
+      <AdBanner 
+        position="footer" 
+        ads={ads} 
+        fallbackImg="/vietnam_airlines_ad.png" 
+        className="w-full md:w-[970px] mt-6 rounded border border-gray-200 bg-gray-50 shadow-sm mx-auto overflow-hidden aspect-[970/250] md:aspect-auto md:h-[250px]" 
+      />
     </main>
   );
 }

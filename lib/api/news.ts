@@ -2,6 +2,7 @@ import { unstable_cache } from 'next/cache';
 import * as siteSettingsService from '@/server/services/site-settings.service';
 import * as categoryService from '@/server/services/category.service';
 import * as articleService from '@/server/services/article.service';
+import * as adService from '@/server/services/ad.service';
 import type {
   Article,
   CategoryFeed,
@@ -171,4 +172,16 @@ export const getKnownCategorySlugs = unstable_cache(
   },
   ['getKnownCategorySlugs'],
   { revalidate: 60, tags: ['categories'] }
+);
+
+
+/**
+ * Lấy danh sách quảng cáo công khai
+ */
+export const getPublicAds = unstable_cache(
+  async () => {
+    return await adService.listPublicAds();
+  },
+  ['public_ads'],
+  { revalidate: 60, tags: ['ads'] }
 );

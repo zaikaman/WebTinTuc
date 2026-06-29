@@ -3,9 +3,11 @@ import { notFound } from "next/navigation";
 import {
   getArticleById,
   getPostRecommendations,
+  getPublicAds,
 } from "@/lib/api/news";
 import { Clock, Link2, Star } from "lucide-react";
 import { formatCategory } from "@/lib/utils";
+import AdBanner from "@/components/AdBanner";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -20,6 +22,7 @@ export default async function PostDetailPage({ params }: PageProps) {
   }
 
   const { relatedPosts, likePosts } = await getPostRecommendations(id);
+  const ads = await getPublicAds();
 
   // Determine if content is array of blocks or HTML string
   const isBlocksArray = Array.isArray(article.content);
@@ -37,18 +40,12 @@ export default async function PostDetailPage({ params }: PageProps) {
   return (
     <main className="w-full px-3 md:px-0 py-4 font-sans text-xs">
       {/* Top Banner Advertisement (QC 970x250) */}
-      <div className="relative w-full md:w-[970px] overflow-hidden rounded border border-gray-200 mb-5 bg-gray-50 flex justify-center group shadow-sm mx-auto aspect-[970/250] md:aspect-auto md:h-[250px]">
-        <a href="#" className="block w-full h-full">
-          <img
-            src="/vinfast_ad.png"
-            alt="Quảng cáo 970x250"
-            className="w-full h-full object-cover"
-          />
-        </a>
-        <div className="absolute top-1.5 right-1.5 bg-black/40 hover:bg-black/70 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
-          Quảng cáo &times;
-        </div>
-      </div>
+      <AdBanner 
+        position="header" 
+        ads={ads} 
+        fallbackImg="/vinfast_ad.png" 
+        className="w-full md:w-[970px] rounded border border-gray-200 mb-5 bg-gray-50 shadow-sm mx-auto overflow-hidden aspect-[970/250] md:aspect-auto md:h-[250px]" 
+      />
 
       {/* Main Two-Column Content Layout */}
       <div className="flex flex-col lg:flex-row gap-5 items-start">
@@ -129,18 +126,13 @@ export default async function PostDetailPage({ params }: PageProps) {
                     );
                   } else if (block.type === "ad") {
                     return (
-                      <div key={index} className="relative w-full overflow-hidden rounded border border-gray-200 bg-gray-50 flex justify-center group shadow-sm my-5 aspect-[650/300]">
-                        <a href="#" className="block w-full h-full">
-                          <img
-                            src="/qc_650_300_premium.png"
-                            alt="Quảng cáo 650x300"
-                            className="w-full h-full object-cover"
-                          />
-                        </a>
-                        <div className="absolute top-1.5 right-1.5 bg-black/45 hover:bg-black/75 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
-                          Quảng cáo &times;
-                        </div>
-                      </div>
+                      <AdBanner 
+                        key={index}
+                        position="inline" 
+                        ads={ads} 
+                        fallbackImg="/qc_650_300_premium.png" 
+                        className="w-full rounded border border-gray-200 bg-gray-50 shadow-sm my-5 overflow-hidden aspect-[650/300]" 
+                      />
                     );
                   }
                   return null;
@@ -151,57 +143,33 @@ export default async function PostDetailPage({ params }: PageProps) {
             {/* Middle Advertisement (QC 650x300 for PC, Swipable 3 vertical ads for Mobile) */}
             <div className="my-5">
               {/* PC View */}
-              <div className="hidden md:flex relative w-full overflow-hidden rounded border border-gray-200 bg-gray-50 justify-center group shadow-sm aspect-[650/300]">
-                <a href="#" className="block w-full h-full">
-                  <img
-                    src="/qc_650_300_premium.png"
-                    alt="Quảng cáo 650x300"
-                    className="w-full h-full object-cover"
-                  />
-                </a>
-                <div className="absolute top-1.5 right-1.5 bg-black/45 hover:bg-black/75 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
-                  Quảng cáo &times;
-                </div>
-              </div>
+              <AdBanner 
+                position="inline" 
+                ads={ads} 
+                fallbackImg="/qc_650_300_premium.png" 
+                className="hidden md:flex w-full rounded border border-gray-200 bg-gray-50 shadow-sm overflow-hidden aspect-[650/300]" 
+              />
 
               {/* Mobile View: Swipable vertical ads */}
               <div className="flex md:hidden gap-3.5 my-2.5 overflow-x-auto scrollbar-none snap-x snap-mandatory">
-                <div className="w-[46%] min-w-[140px] flex-shrink-0 snap-start relative overflow-hidden rounded border border-gray-200 bg-gray-50 shadow-xs aspect-[300/600]">
-                  <a href="#" className="block w-full h-full">
-                    <img
-                      src="/zento_cabinet_ad.png"
-                      alt="Quảng cáo 1"
-                      className="w-full h-full object-cover"
-                    />
-                  </a>
-                  <div className="absolute top-1 right-1 bg-black/45 text-white/90 text-[8px] px-1 py-0.5 rounded-sm select-none z-10">
-                    QC &times;
-                  </div>
-                </div>
-                <div className="w-[46%] min-w-[140px] flex-shrink-0 snap-start relative overflow-hidden rounded border border-gray-200 bg-gray-50 shadow-xs aspect-[300/600]">
-                  <a href="#" className="block w-full h-full">
-                    <img
-                      src="/ztc_bathtub_ad.png"
-                      alt="Quảng cáo 2"
-                      className="w-full h-full object-cover"
-                    />
-                  </a>
-                  <div className="absolute top-1 right-1 bg-black/45 text-white/90 text-[8px] px-1 py-0.5 rounded-sm select-none z-10">
-                    QC &times;
-                  </div>
-                </div>
-                <div className="w-[46%] min-w-[140px] flex-shrink-0 snap-start relative overflow-hidden rounded border border-gray-200 bg-gray-50 shadow-xs aspect-[300/600]">
-                  <a href="#" className="block w-full h-full">
-                    <img
-                      src="/zento_toilet_ad.png"
-                      alt="Quảng cáo 3"
-                      className="w-full h-full object-cover"
-                    />
-                  </a>
-                  <div className="absolute top-1 right-1 bg-black/45 text-white/90 text-[8px] px-1 py-0.5 rounded-sm select-none z-10">
-                    QC &times;
-                  </div>
-                </div>
+                <AdBanner 
+                  position="sidebar_1" 
+                  ads={ads} 
+                  fallbackImg="/zento_cabinet_ad.png" 
+                  className="w-[46%] min-w-[140px] flex-shrink-0 snap-start rounded border border-gray-200 bg-gray-50 shadow-xs overflow-hidden aspect-[300/600]" 
+                />
+                <AdBanner 
+                  position="sidebar_2" 
+                  ads={ads} 
+                  fallbackImg="/ztc_bathtub_ad.png" 
+                  className="w-[46%] min-w-[140px] flex-shrink-0 snap-start rounded border border-gray-200 bg-gray-50 shadow-xs overflow-hidden aspect-[300/600]" 
+                />
+                <AdBanner 
+                  position="sidebar_3" 
+                  ads={ads} 
+                  fallbackImg="/zento_toilet_ad.png" 
+                  className="w-[46%] min-w-[140px] flex-shrink-0 snap-start rounded border border-gray-200 bg-gray-50 shadow-xs overflow-hidden aspect-[300/600]" 
+                />
               </div>
             </div>
 
@@ -315,48 +283,30 @@ export default async function PostDetailPage({ params }: PageProps) {
         {/* Right Column: Sidebar - Hidden on Mobile */}
         <aside className="hidden lg:block w-[300px] flex-shrink-0 lg:sticky lg:top-4 space-y-4">
           {/* Ad 1: QC 300x600 */}
-          <div className="relative w-full md:w-[300px] md:h-[600px] overflow-hidden rounded border border-gray-200 bg-gray-50 flex justify-center group shadow-sm mx-auto">
-            <a href="#" className="block w-full h-full">
-              <img
-                src="/zento_cabinet_ad.png"
-                alt="Quảng cáo 300x600"
-                className="w-full h-full object-cover"
-              />
-            </a>
-            <div className="absolute top-1 right-1 bg-black/45 hover:bg-black/75 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
-              Quảng cáo &times;
-            </div>
-          </div>
+          <AdBanner 
+            position="sidebar_1" 
+            ads={ads} 
+            fallbackImg="/zento_cabinet_ad.png" 
+            className="w-full md:w-[300px] md:h-[600px] rounded border border-gray-200 bg-gray-50 shadow-sm mx-auto overflow-hidden" 
+          />
 
           {/* Ad 2: QC 300x600 */}
-          <div className="relative w-full md:w-[300px] md:h-[600px] overflow-hidden rounded border border-gray-200 bg-gray-50 flex justify-center group shadow-sm mx-auto">
-            <a href="#" className="block w-full h-full">
-              <img
-                src="/zento_toilet_ad.png"
-                alt="Quảng cáo 300x600"
-                className="w-full h-full object-cover"
-              />
-            </a>
-            <div className="absolute top-1 right-1 bg-black/45 hover:bg-black/75 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
-              Quảng cáo &times;
-            </div>
-          </div>
+          <AdBanner 
+            position="sidebar_3" 
+            ads={ads} 
+            fallbackImg="/zento_toilet_ad.png" 
+            className="w-full md:w-[300px] md:h-[600px] rounded border border-gray-200 bg-gray-50 shadow-sm mx-auto overflow-hidden" 
+          />
         </aside>
       </div>
 
       {/* Bottom QC 970x250 Ad */}
-      <div className="relative w-full md:w-[970px] overflow-hidden rounded border border-gray-200 mt-6 bg-gray-50 flex justify-center group shadow-sm mx-auto aspect-[970/250] md:aspect-auto md:h-[250px]">
-        <a href="#" className="block w-full h-full">
-          <img
-            src="/vietnam_airlines_ad.png"
-            alt="Quảng cáo 970x250"
-            className="w-full h-full object-cover"
-          />
-        </a>
-        <div className="absolute top-1.5 right-1.5 bg-black/45 hover:bg-black/75 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
-          Quảng cáo &times;
-        </div>
-      </div>
+      <AdBanner 
+        position="footer" 
+        ads={ads} 
+        fallbackImg="/vietnam_airlines_ad.png" 
+        className="w-full md:w-[970px] rounded border border-gray-200 mt-6 bg-gray-50 shadow-sm mx-auto overflow-hidden aspect-[970/250] md:aspect-auto md:h-[250px]" 
+      />
     </main>
   );
 }

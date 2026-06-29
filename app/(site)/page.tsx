@@ -3,9 +3,12 @@ import { getHomeFeed } from "@/lib/api/news";
 import { Clock } from "lucide-react";
 import { formatCategory } from "@/lib/utils";
 import { FeaturedCarousel } from "@/components/FeaturedCarousel";
+import { getPublicAds } from "@/lib/api/news";
+import AdBanner from "@/components/AdBanner";
 
 export default async function HomePage() {
   const { featuredArticle, latestArticles } = await getHomeFeed();
+  const ads = await getPublicAds();
 
   // Get exactly 4 articles for the carousel
   const carouselArticles = [];
@@ -29,18 +32,12 @@ export default async function HomePage() {
   return (
     <main className="w-full px-3 md:px-0 py-4 font-sans text-xs flex flex-col gap-5 bg-white">
       {/* Top Banner Advertisement (QC 970x250) */}
-      <div className="relative w-full md:w-[970px] overflow-hidden rounded border border-gray-200 bg-gray-50 group shadow-sm mx-auto aspect-[970/250] md:aspect-auto md:h-[250px]">
-        <a href="#" className="block w-full h-full">
-          <img
-            src="/vietnam_airlines_ad.png"
-            alt="Quảng cáo 970x250"
-            className="w-full h-full object-cover"
-          />
-        </a>
-        <div className="absolute top-1.5 right-1.5 bg-black/40 hover:bg-black/70 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
-          Quảng cáo &times;
-        </div>
-      </div>
+      <AdBanner 
+        position="header" 
+        ads={ads} 
+        fallbackImg="/vietnam_airlines_ad.png" 
+        className="w-full md:w-[970px] rounded border border-gray-200 bg-gray-50 shadow-sm mx-auto overflow-hidden aspect-[970/250] md:aspect-auto md:h-[250px]" 
+      />
 
       {/* Main Two-Column Layout */}
       <div className="flex flex-col lg:flex-row gap-5 items-start w-full">
@@ -54,42 +51,24 @@ export default async function HomePage() {
 
           {/* Swipable QC container on mobile immediately below Featured Carousel */}
           <div className="flex gap-3.5 my-2.5 md:hidden overflow-x-auto scrollbar-none snap-x snap-mandatory">
-            <div className="w-[46%] min-w-[140px] flex-shrink-0 snap-start relative overflow-hidden rounded border border-gray-200 bg-gray-50 shadow-xs aspect-[300/600]">
-              <a href="#" className="block w-full h-full">
-                <img
-                  src="/zento_cabinet_ad.png"
-                  alt="Quảng cáo 1"
-                  className="w-full h-full object-cover"
-                />
-              </a>
-              <div className="absolute top-1 right-1 bg-black/45 text-white/90 text-[8px] px-1 py-0.5 rounded-sm select-none z-10">
-                QC &times;
-              </div>
-            </div>
-            <div className="w-[46%] min-w-[140px] flex-shrink-0 snap-start relative overflow-hidden rounded border border-gray-200 bg-gray-50 shadow-xs aspect-[300/600]">
-              <a href="#" className="block w-full h-full">
-                <img
-                  src="/ztc_bathtub_ad.png"
-                  alt="Quảng cáo 2"
-                  className="w-full h-full object-cover"
-                />
-              </a>
-              <div className="absolute top-1 right-1 bg-black/45 text-white/90 text-[8px] px-1 py-0.5 rounded-sm select-none z-10">
-                QC &times;
-              </div>
-            </div>
-            <div className="w-[46%] min-w-[140px] flex-shrink-0 snap-start relative overflow-hidden rounded border border-gray-200 bg-gray-50 shadow-xs aspect-[300/600]">
-              <a href="#" className="block w-full h-full">
-                <img
-                  src="/zento_toilet_ad.png"
-                  alt="Quảng cáo 3"
-                  className="w-full h-full object-cover"
-                />
-              </a>
-              <div className="absolute top-1 right-1 bg-black/45 text-white/90 text-[8px] px-1 py-0.5 rounded-sm select-none z-10">
-                QC &times;
-              </div>
-            </div>
+            <AdBanner 
+              position="sidebar_1" 
+              ads={ads} 
+              fallbackImg="/zento_cabinet_ad.png" 
+              className="w-[46%] min-w-[140px] flex-shrink-0 snap-start rounded border border-gray-200 bg-gray-50 shadow-xs overflow-hidden aspect-[300/600]" 
+            />
+            <AdBanner 
+              position="sidebar_2" 
+              ads={ads} 
+              fallbackImg="/ztc_bathtub_ad.png" 
+              className="w-[46%] min-w-[140px] flex-shrink-0 snap-start rounded border border-gray-200 bg-gray-50 shadow-xs overflow-hidden aspect-[300/600]" 
+            />
+            <AdBanner 
+              position="sidebar_3" 
+              ads={ads} 
+              fallbackImg="/zento_toilet_ad.png" 
+              className="w-[46%] min-w-[140px] flex-shrink-0 snap-start rounded border border-gray-200 bg-gray-50 shadow-xs overflow-hidden aspect-[300/600]" 
+            />
           </div>
 
           {/* "MỚI NHẤT" Category Header */}
@@ -162,18 +141,12 @@ export default async function HomePage() {
 
               {/* Advertisement Banner (QC 650x300) between groups */}
               {groupIndex < articleGroups.length - 1 && (
-                <div className="relative w-full overflow-hidden rounded border border-gray-200 bg-gray-50 flex justify-center group shadow-sm aspect-[650/300]">
-                  <a href="#" className="block w-full h-full">
-                    <img
-                      src="/qc_650_300_premium.png"
-                      alt={`Quảng cáo ${groupIndex + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                  </a>
-                  <div className="absolute top-1.5 right-1.5 bg-black/45 hover:bg-black/75 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded-sm select-none z-10 transition-colors">
-                    Quảng cáo &times;
-                  </div>
-                </div>
+                <AdBanner 
+                  position="inline" 
+                  ads={ads} 
+                  fallbackImg="/qc_650_300_premium.png" 
+                  className="w-full rounded border border-gray-200 bg-gray-50 shadow-sm overflow-hidden aspect-[650/300]" 
+                />
               )}
             </div>
           ))}
@@ -183,62 +156,38 @@ export default async function HomePage() {
         {/* Right Column: Sidebar (contains 300x600 Ads) - Hidden on Mobile */}
         <div className="hidden lg:block w-[300px] flex-shrink-0 space-y-4 lg:sticky lg:top-4">
           {/* Ad 1: Zento Premium Cabinet */}
-          <div className="relative w-full md:w-[300px] md:h-[600px] overflow-hidden rounded border border-gray-200 bg-gray-50 flex justify-center group shadow-sm mx-auto">
-            <a href="#" className="block w-full h-full">
-              <img
-                src="/zento_cabinet_ad.png"
-                alt="Zento Premium Cabinet Ad"
-                className="w-full h-full object-cover"
-              />
-            </a>
-            <div className="absolute top-1.5 right-1.5 bg-black/45 hover:bg-black/75 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
-              Quảng cáo &times;
-            </div>
-          </div>
+          <AdBanner 
+            position="sidebar_1" 
+            ads={ads} 
+            fallbackImg="/zento_cabinet_ad.png" 
+            className="w-full md:w-[300px] md:h-[600px] rounded border border-gray-200 bg-gray-50 shadow-sm mx-auto overflow-hidden" 
+          />
 
           {/* Ad 2: ZTC Massage Bathtub */}
-          <div className="relative w-full md:w-[300px] md:h-[600px] overflow-hidden rounded border border-gray-200 bg-gray-50 flex justify-center group shadow-sm mx-auto">
-            <a href="#" className="block w-full h-full">
-              <img
-                src="/ztc_bathtub_ad.png"
-                alt="ZTC Massage Bathtub Ad"
-                className="w-full h-full object-cover"
-              />
-            </a>
-            <div className="absolute top-1.5 right-1.5 bg-black/45 hover:bg-black/75 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
-              Quảng cáo &times;
-            </div>
-          </div>
+          <AdBanner 
+            position="sidebar_2" 
+            ads={ads} 
+            fallbackImg="/ztc_bathtub_ad.png" 
+            className="w-full md:w-[300px] md:h-[600px] rounded border border-gray-200 bg-gray-50 shadow-sm mx-auto overflow-hidden" 
+          />
 
           {/* Ad 3: Zento Premium Toilet */}
-          <div className="relative w-full md:w-[300px] md:h-[600px] overflow-hidden rounded border border-gray-200 bg-gray-50 flex justify-center group shadow-sm mx-auto">
-            <a href="#" className="block w-full h-full">
-              <img
-                src="/zento_toilet_ad.png"
-                alt="Zento Premium Toilet Banner Ad"
-                className="w-full h-full object-cover"
-              />
-            </a>
-            <div className="absolute top-1.5 right-1.5 bg-black/45 hover:bg-black/75 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
-              Quảng cáo &times;
-            </div>
-          </div>
+          <AdBanner 
+            position="sidebar_3" 
+            ads={ads} 
+            fallbackImg="/zento_toilet_ad.png" 
+            className="w-full md:w-[300px] md:h-[600px] rounded border border-gray-200 bg-gray-50 shadow-sm mx-auto overflow-hidden" 
+          />
         </div>
       </div>
 
       {/* Bottom Full-Width Ad (970x250) */}
-      <div className="relative w-full md:w-[970px] overflow-hidden rounded border border-gray-200 bg-gray-50 flex justify-center group shadow-sm mx-auto mt-4 aspect-[970/250] md:aspect-auto md:h-[250px]">
-        <a href="#" className="block w-full h-full">
-          <img
-            src="/vietnam_airlines_ad.png"
-            alt="Quảng cáo 970x250"
-            className="w-full h-full object-cover"
-          />
-        </a>
-        <div className="absolute top-1.5 right-1.5 bg-black/45 hover:bg-black/75 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded select-none z-10 transition-colors">
-          Quảng cáo &times;
-        </div>
-      </div>
+      <AdBanner 
+        position="footer" 
+        ads={ads} 
+        fallbackImg="/vietnam_airlines_ad.png" 
+        className="w-full md:w-[970px] rounded border border-gray-200 bg-gray-50 shadow-sm mx-auto mt-4 overflow-hidden aspect-[970/250] md:aspect-auto md:h-[250px]" 
+      />
     </main>
   );
 }

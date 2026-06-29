@@ -45,10 +45,11 @@ export const deleteAdminCategory = (id: number) => fetchAdmin<any>(`/categories/
 export const restoreAdminCategory = (id: number) => fetchAdmin<any>(`/categories/${id}/restore`, { method: "POST" });
 
 // ADS
-export const getAdminAds = () => fetchAdmin<any>("/ads");
+export const getAdminAds = (query: string = "") => fetchAdmin<any>(`/ads${query}`);
 export const createAdminAd = (data: any) => fetchAdmin<any>("/ads", { method: "POST", body: JSON.stringify(data) });
 export const updateAdminAd = (id: number, data: any) => fetchAdmin<any>(`/ads/${id}`, { method: "PATCH", body: JSON.stringify(data) });
 export const deleteAdminAd = (id: number) => fetchAdmin<any>(`/ads/${id}`, { method: "DELETE" });
+export const restoreAdminAd = (id: number) => fetchAdmin<any>(`/ads/${id}/restore`, { method: "POST" });
 
 // SETTINGS
 export const getAdminSettings = () => fetchAdmin<any>("/settings");

@@ -46,7 +46,7 @@ import {
   Globe,
   RotateCcw
 } from "lucide-react";
-import { getAdminSettings, updateAdminSettings, getAdminMedia, uploadAdminMedia, deleteAdminMedia, getAdminCategories, createAdminCategory, updateAdminCategory, deleteAdminCategory, getAdminArticles, createAdminArticle, updateAdminArticle, deleteAdminArticle, restoreAdminArticle } from "@/lib/api/adminClient";
+import { getAdminSettings, updateAdminSettings, getAdminMedia, uploadAdminMedia, deleteAdminMedia, getAdminCategories, createAdminCategory, updateAdminCategory, deleteAdminCategory, getAdminArticles, createAdminArticle, updateAdminArticle, deleteAdminArticle, restoreAdminArticle, getAdminAds, createAdminAd, updateAdminAd, deleteAdminAd } from "@/lib/api/adminClient";
 import { Toaster, toast } from "sonner";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -137,7 +137,7 @@ interface Category {
   name: string;
   postCount: number;
   priority: number;
-  status: "Hoạt động" | "Ngừng hoạt động";
+  status: "Hoạt động" | "Ngừng hoạt động" | "Chờ chạy" | "Đã kết thúc";
 }
 
 interface Ad {
@@ -147,7 +147,7 @@ interface Ad {
   clicks: number;
   startDate: string;
   endDate: string;
-  status: "Hoạt động" | "Ngừng hoạt động";
+  status: "Hoạt động" | "Ngừng hoạt động" | "Chờ chạy" | "Đã kết thúc" | string;
   image?: string;
   link?: string;
 }
@@ -276,6 +276,47 @@ export default function AdminPage() {
     }
   };
 
+  const loadAds = async () => {
+    try {
+      setAdsLoading(true);
+      const res = await getAdminAds("?limit=100");
+      setAds((res.items || []).map((a: any) => {
+        const now = new Date();
+        
+        // Parse dates safely using the YYYY-MM-DD part
+        const startDateStr = a.starts_at ? a.starts_at.split('T')[0] : null;
+        const endDateStr = a.ends_at ? a.ends_at.split('T')[0] : null;
+        
+        const start = startDateStr ? new Date(startDateStr + 'T00:00:00') : null;
+        const end = endDateStr ? new Date(endDateStr + 'T23:59:59') : null;
+        
+        let computedStatus = "Ngừng hoạt động";
+        
+        if (a.status === "active") {
+          if (end && end < now) computedStatus = "Đã kết thúc";
+          else if (start && start > now) computedStatus = "Chờ chạy";
+          else computedStatus = "Hoạt động";
+        }
+
+        return {
+          id: a.id,
+          name: a.name,
+          position: a.position || "header",
+          clicks: a.stats?.clicks || 0,
+          startDate: a.starts_at ? new Date(a.starts_at).toISOString().split('T')[0] : "",
+          endDate: a.ends_at ? new Date(a.ends_at).toISOString().split('T')[0] : "",
+          status: computedStatus,
+          image: a.media_key || undefined,
+          link: a.target_url || undefined,
+        } as Ad;
+      }));
+    } catch (err) {
+      // Ignore
+    } finally {
+      setAdsLoading(false);
+    }
+  };
+
   const loadPosts = async () => {
     try {
       const res = await getAdminArticles("?limit=1000&includeDeleted=true");
@@ -307,6 +348,9 @@ export default function AdminPage() {
     }
     if (activeTab === "media") {
       loadMedia();
+    }
+    if (activeTab === "ads") {
+      loadAds();
     }
     if (activeTab === "logo-footer" || activeTab === "dashboard") {
       getAdminSettings().then(res => {
@@ -360,60 +404,8 @@ export default function AdminPage() {
 
   const [categories, setCategories] = useState<Category[]>([]);
 
-  const [ads, setAds] = useState<Ad[]>([
-    {
-      id: 1,
-      name: "Banner Shopee",
-      position: "Header",
-      clicks: 1230,
-      startDate: "2026-04-20",
-      endDate: "2026-06-20",
-      status: "Hoạt động",
-      image: "/marketing_tiles.png",
-      link: "https://shopee.vn"
-    },
-    {
-      id: 2,
-      name: "Long châu",
-      position: "SideBar 1",
-      clicks: 899,
-      startDate: "2026-04-23",
-      endDate: "2026-07-23",
-      status: "Hoạt động",
-      image: "/laptop_charts.png",
-      link: "https://nhathuoclongchau.com.vn"
-    },
-    {
-      id: 3,
-      name: "Nivea",
-      position: "SideBar 2",
-      clicks: 1003,
-      startDate: "2026-05-01",
-      endDate: "2026-08-16",
-      status: "Hoạt động",
-      image: "/tech_2026_cover.png"
-    },
-    {
-      id: 4,
-      name: "Thế giới di động",
-      position: "Footer",
-      clicks: 432,
-      startDate: "2026-04-30",
-      endDate: "2026-06-30",
-      status: "Hoạt động",
-      image: "/tech_2026_vision.png",
-      link: "https://thegioididong.com"
-    },
-    {
-      id: 5,
-      name: "Lazada",
-      position: "SideBar 3",
-      clicks: 346,
-      startDate: "2026-04-17",
-      endDate: "2026-07-17",
-      status: "Hoạt động"
-    }
-  ]);
+  const [ads, setAds] = useState<Ad[]>([]);
+  const [adsLoading, setAdsLoading] = useState(false);
 
   // Pagination states
   const [postsPage, setPostsPage] = useState(1);
@@ -451,7 +443,7 @@ export default function AdminPage() {
   // Form states for Ads
   const [adForm, setAdForm] = useState<Partial<Ad>>({
     name: "",
-    position: "Header",
+    position: "header",
     clicks: 0,
     startDate: new Date().toISOString().split("T")[0],
     endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
@@ -789,9 +781,14 @@ export default function AdminPage() {
       } catch (err) {
         toast.error("Lỗi khi xóa danh mục!");
       }
-    } else {
-      setAds(ads.filter(a => a.id !== targetIdToDelete));
-      toast.success("Xóa quảng cáo thành công!");
+    } else if (activeTab === "ads") {
+      try {
+        await deleteAdminAd(targetIdToDelete);
+        toast.success("Xóa quảng cáo thành công!");
+        loadAds();
+      } catch (err) {
+        toast.error("Lỗi khi xóa quảng cáo!");
+      }
     }
     setDeleteConfirmOpen(false);
     setTargetIdToDelete(null);
@@ -857,30 +854,38 @@ export default function AdminPage() {
       } catch (err) {
         toast.error("Có lỗi xảy ra, vui lòng thử lại!", { id: "cat-submit" });
       }
-    } else {
+    } else if (activeTab === "ads") {
       if (!adForm.name?.trim()) {
         toast.error("Vui lòng nhập tên quảng cáo!");
         return;
       }
-      if (dialogMode === "add") {
-        const newAd: Ad = {
-          id: ads.length > 0 ? Math.max(...ads.map(a => a.id)) + 1 : 1,
+      try {
+        toast.loading(dialogMode === "add" ? "Đang thêm quảng cáo..." : "Đang cập nhật...", { id: "ad-submit" });
+        const payload = {
           name: adForm.name,
-          position: adForm.position || "Header",
-          clicks: Number(adForm.clicks) || 0,
-          startDate: adForm.startDate || new Date().toISOString().split("T")[0],
-          endDate: adForm.endDate || new Date().toISOString().split("T")[0],
-          status: adForm.status || "Hoạt động",
-          image: adForm.image,
-          link: adForm.link
+          position: adForm.position || "header",
+          type: "image",
+          media_key: adForm.image || null,
+          target_url: adForm.link || null,
+          starts_at: adForm.startDate ? new Date(adForm.startDate + 'T00:00:00').toISOString() : null,
+          ends_at: adForm.endDate ? new Date(adForm.endDate + 'T23:59:59').toISOString() : null,
+          status: adForm.status === "Ngừng hoạt động" || adForm.status === "Đã kết thúc" ? "inactive" : "active"
         };
-        setAds([newAd, ...ads]);
-        toast.success("Thêm quảng cáo mới thành công!");
-      } else {
-        setAds(ads.map(a => (a.id === editId ? { ...a, ...adForm } as Ad : a)));
-        toast.success("Cập nhật quảng cáo thành công!");
+        
+        if (dialogMode === "add") {
+          await createAdminAd(payload);
+          toast.success("Thêm quảng cáo mới thành công!", { id: "ad-submit" });
+        } else {
+          if (editId) {
+            await updateAdminAd(editId, payload);
+            toast.success("Cập nhật quảng cáo thành công!", { id: "ad-submit" });
+          }
+        }
+        loadAds();
+        setAdDialogOpen(false);
+      } catch (err) {
+        toast.error("Có lỗi xảy ra, vui lòng thử lại!", { id: "ad-submit" });
       }
-      setAdDialogOpen(false);
     }
     setDialogOpen(false);
   };
@@ -2963,6 +2968,10 @@ export default function AdminPage() {
                                   className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-bold ${
                                     ad.status === "Hoạt động"
                                       ? "bg-emerald-100 text-emerald-800"
+                                      : ad.status === "Chờ chạy"
+                                      ? "bg-blue-100 text-blue-800"
+                                      : ad.status === "Đã kết thúc"
+                                      ? "bg-gray-100 text-gray-800"
                                       : "bg-red-100 text-red-800"
                                   }`}
                                 >
@@ -3325,16 +3334,16 @@ export default function AdminPage() {
               </label>
               <div className="relative">
                 <select
-                  value={adForm.position || "Header"}
+                  value={adForm.position || "header"}
                   onChange={(e) => setAdForm({ ...adForm, position: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white shadow-sm font-semibold text-gray-800 appearance-none cursor-pointer"
                 >
-                  <option value="Header">Header</option>
-                  <option value="Top Banner">Top Banner</option>
-                  <option value="SideBar 1">SideBar 1</option>
-                  <option value="SideBar 2">SideBar 2</option>
-                  <option value="SideBar 3">SideBar 3</option>
-                  <option value="Footer">Footer</option>
+                  <option value="header">Header</option>
+                  <option value="sidebar_1">SideBar 1</option>
+                  <option value="sidebar_2">SideBar 2</option>
+                  <option value="sidebar_3">SideBar 3</option>
+                  <option value="inline">Inline</option>
+                  <option value="footer">Footer</option>
                 </select>
                 <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
               </div>
@@ -3370,20 +3379,34 @@ export default function AdminPage() {
 
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-900">
-                Trạng thái
+                Thiết lập hoạt động
               </label>
               <div className="relative">
                 <select
-                  value={adForm.status || "Hoạt động"}
-                  onChange={(e) => setAdForm({ ...adForm, status: e.target.value as "Hoạt động" | "Ngừng hoạt động" })}
+                  value={adForm.status === "Ngừng hoạt động" ? "Ngừng hoạt động" : "Hoạt động"}
+                  onChange={(e) => setAdForm({ ...adForm, status: e.target.value as any })}
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white shadow-sm font-semibold text-gray-800 appearance-none cursor-pointer"
                 >
-                  <option value="Hoạt động">Hoạt động</option>
-                  <option value="Ngừng hoạt động">Ngừng hoạt động</option>
+                  <option value="Hoạt động">Kích hoạt quảng cáo</option>
+                  <option value="Ngừng hoạt động">Tắt quảng cáo</option>
                 </select>
                 <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
               </div>
             </div>
+
+            {dialogMode === "edit" && (
+              <div className="p-3 bg-gray-50 rounded-xl border border-gray-150 flex items-center justify-between text-sm">
+                <span className="font-semibold text-gray-500">Trạng thái hiển thị thực tế:</span>
+                <span className={`font-bold px-3 py-1 rounded-full text-xs ${
+                  adForm.status === "Hoạt động" ? "bg-emerald-100 text-emerald-800" :
+                  adForm.status === "Chờ chạy" ? "bg-blue-100 text-blue-800" :
+                  adForm.status === "Đã kết thúc" ? "bg-gray-100 text-gray-800" :
+                  "bg-red-100 text-red-800"
+                }`}>
+                  {adForm.status}
+                </span>
+              </div>
+            )}
 
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-900">

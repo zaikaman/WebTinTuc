@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getCategoryFeed, getKnownCategorySlugs } from "@/lib/api/news";
+import { getCategoryFeed, getKnownCategorySlugs, getPublicAds } from "@/lib/api/news";
 import { CategoryContent } from "@/components/CategoryContent";
 
 const labelMap: Record<string, string> = {
@@ -38,7 +38,10 @@ export async function generateMetadata({ params }: PageProps) {
 
 export default async function CategoryPage({ params }: PageProps) {
   const { category } = await params;
-  const data = await getCategoryFeed(category);
+  const [data, ads] = await Promise.all([
+    getCategoryFeed(category),
+    getPublicAds()
+  ]);
 
   if (!data) {
     notFound();
@@ -50,6 +53,7 @@ export default async function CategoryPage({ params }: PageProps) {
       label={data.label}
       featured={data.featured}
       initialList={data.list}
+      ads={ads}
     />
   );
 }
