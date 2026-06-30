@@ -37,14 +37,14 @@ export async function uploadFileToR2(file: File, folder: string = 'articles'): P
   }
 }
 
-export async function getStorageTree(prefix: string = '') {
+export async function getStorageTree(prefix: string = '', recursive: boolean = false) {
   try {
     const cleanPrefix = prefix && !prefix.endsWith('/') ? `${prefix}/` : prefix
 
     const command = new ListObjectsV2Command({
       Bucket: process.env.R2_BUCKET_NAME || '',
       Prefix: cleanPrefix,
-      Delimiter: '/',
+      Delimiter: recursive ? undefined : '/',
     })
 
     const response = await s3Client.send(command)

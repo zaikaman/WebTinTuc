@@ -44,9 +44,10 @@ import {
   ExternalLink,
   Link2,
   Globe,
-  RotateCcw
+  RotateCcw,
+  Crop
 } from "lucide-react";
-import { getAdminSettings, updateAdminSettings, getAdminMedia, uploadAdminMedia, deleteAdminMedia, moveAdminMedia, createAdminFolder, getAdminCategories, createAdminCategory, updateAdminCategory, deleteAdminCategory, getAdminArticles, createAdminArticle, updateAdminArticle, deleteAdminArticle, restoreAdminArticle, getAdminAds, createAdminAd, updateAdminAd, deleteAdminAd } from "@/lib/api/adminClient";
+import { getAdminSettings, updateAdminSettings, getAdminMedia, uploadAdminMedia, deleteAdminMedia, moveAdminMedia, createAdminFolder, getAdminDashboardStats, getAdminCategories, createAdminCategory, updateAdminCategory, deleteAdminCategory, getAdminArticles, createAdminArticle, updateAdminArticle, deleteAdminArticle, restoreAdminArticle, getAdminAds, createAdminAd, updateAdminAd, deleteAdminAd } from "@/lib/api/adminClient";
 import { Toaster, toast } from "sonner";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -75,6 +76,8 @@ const htmlToBlocks = (html: string) => {
     } else if (node.nodeName === 'DIV') {
       const el = node as HTMLElement;
       const img = el.querySelector('img');
+      const video = el.querySelector('video');
+      const iframe = el.querySelector('iframe');
       if (img) {
         const src = img.getAttribute('src');
         const pTags = el.querySelectorAll('p');
@@ -83,12 +86,37 @@ const htmlToBlocks = (html: string) => {
         if (!caption && img.getAttribute('alt')) caption = img.getAttribute('alt') || '';
         
         if (src) {
-          blocks.push({ type: 'image', src, caption });
+          const width = el.style.maxWidth || el.style.width || '';
+          blocks.push({ type: 'image', src, caption, width });
+        }
+      } else if (video) {
+        const src = video.getAttribute('src');
+        if (src) {
+          const width = el.style.maxWidth || el.style.width || '';
+          blocks.push({ type: 'video', src, width });
+        }
+      } else if (iframe) {
+        const src = iframe.getAttribute('src');
+        if (src) {
+          const width = el.style.maxWidth || el.style.width || '';
+          blocks.push({ type: 'iframe', src, width });
         }
       } else {
-        if (el.textContent?.trim()) {
+        if (el.getAttribute('contenteditable') !== 'false' && el.textContent?.trim()) {
            blocks.push({ type: 'paragraph', text: el.textContent });
         }
+      }
+    } else if (node.nodeName === 'VIDEO') {
+      const el = node as HTMLElement;
+      const src = el.getAttribute('src');
+      if (src) {
+        blocks.push({ type: 'video', src });
+      }
+    } else if (node.nodeName === 'IFRAME') {
+      const el = node as HTMLElement;
+      const src = el.getAttribute('src');
+      if (src) {
+        blocks.push({ type: 'iframe', src });
       }
     } else if (node.nodeName === 'UL' || node.nodeName === 'OL') {
       const el = node as HTMLElement;
@@ -102,19 +130,79 @@ const htmlToBlocks = (html: string) => {
 
 const blocksToHtml = (blocks: any[]) => {
   if (!Array.isArray(blocks)) return typeof blocks === 'string' ? blocks : '';
-  return blocks.map(block => {
+  const htmlList = blocks.map(block => {
     if (block.type === "paragraph") {
       return `<p>${block.text || ''}</p>`;
     } else if (block.type === "bold-paragraph") {
       return `<p><strong>${block.text || ''}</strong></p>`;
     } else if (block.type === "image") {
-      return `<div class="my-4">
+      const width = block.width || "100%";
+      const wrapperId = "img-" + Math.random().toString(36).substring(2, 9);
+      return `<div id="${wrapperId}" class="my-4 relative group" contenteditable="false" style="max-width: ${width}; margin: 0 auto;">
   <img src="${block.src || ''}" alt="${block.caption || ''}" class="w-full rounded-xl border border-gray-200 shadow-sm" />
   ${block.caption ? `<p class="text-center text-xs italic text-gray-500 mt-1.5">${block.caption}</p>` : ''}
+  <button type="button" onclick="const p=this.parentElement; const ed=p.closest('[contenteditable]'); p.remove(); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="absolute top-2 right-2 hidden group-hover:flex items-center justify-center w-8 h-8 rounded-full bg-red-600 hover:bg-red-700 text-white shadow-md active:scale-95 transition-all z-30" title="Xóa hình ảnh">
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+  </button>
+  <div class="absolute bottom-2 left-1/2 -translate-x-1/2 hidden group-hover:flex items-center gap-1.5 bg-black/85 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 shadow-lg text-[11px] text-white font-bold select-none z-30">
+    <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='25%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">25%</button>
+    <span class="w-[1px] h-3 bg-white/20"></span>
+    <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='50%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">50%</button>
+    <span class="w-[1px] h-3 bg-white/20"></span>
+    <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='75%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">75%</button>
+    <span class="w-[1px] h-3 bg-white/20"></span>
+    <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='100%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">100%</button>
+    <span class="w-[1px] h-3 bg-white/20"></span>
+    <button type="button" onclick="const p=this.closest('[contenteditable=false]'); const img=p.querySelector('img'); if(img) { window.dispatchEvent(new CustomEvent('editor-crop-image', { detail: { src: img.src, id: p.id } })); }" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5 flex items-center gap-1">
+      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6.13 1L6 16a2 2 0 0 0 2 2h15"/><path d="M1 6.13L16 6a2 2 0 0 1 2 2v15"/></svg>
+      Cắt ảnh
+    </button>
+  </div>
+</div>`;
+    } else if (block.type === "video") {
+      const width = block.width || "100%";
+      return `<div class="my-4 relative group" contenteditable="false" style="max-width: ${width}; margin: 0 auto;">
+  <video controls src="${block.src || ''}" class="w-full max-h-[400px] rounded-xl border border-gray-200 shadow-sm"></video>
+  <button type="button" onclick="const p=this.parentElement; const ed=p.closest('[contenteditable]'); p.remove(); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="absolute top-2 right-2 hidden group-hover:flex items-center justify-center w-8 h-8 rounded-full bg-red-600 hover:bg-red-700 text-white shadow-md active:scale-95 transition-all z-30" title="Xóa video">
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+  </button>
+  <div class="absolute bottom-2 left-1/2 -translate-x-1/2 hidden group-hover:flex items-center gap-1.5 bg-black/85 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 shadow-lg text-[11px] text-white font-bold select-none z-30">
+    <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='25%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">25%</button>
+    <span class="w-[1px] h-3 bg-white/20"></span>
+    <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='50%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">50%</button>
+    <span class="w-[1px] h-3 bg-white/20"></span>
+    <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='75%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">75%</button>
+    <span class="w-[1px] h-3 bg-white/20"></span>
+    <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='100%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">100%</button>
+  </div>
+</div>`;
+    } else if (block.type === "iframe") {
+      const width = block.width || "100%";
+      return `<div class="my-4 relative group" contenteditable="false" style="max-width: ${width}; margin: 0 auto;">
+  <iframe class="w-full aspect-video rounded-xl shadow-sm border border-gray-200" src="${block.src || ''}" frameborder="0" allowfullscreen></iframe>
+  <button type="button" onclick="const p=this.parentElement; const ed=p.closest('[contenteditable]'); p.remove(); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="absolute top-2 right-2 hidden group-hover:flex items-center justify-center w-8 h-8 rounded-full bg-red-600 hover:bg-red-700 text-white shadow-md active:scale-95 transition-all z-30" title="Xóa video nhúng">
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+  </button>
+  <div class="absolute bottom-2 left-1/2 -translate-x-1/2 hidden group-hover:flex items-center gap-1.5 bg-black/85 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 shadow-lg text-[11px] text-white font-bold select-none z-30">
+    <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='25%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">25%</button>
+    <span class="w-[1px] h-3 bg-white/20"></span>
+    <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='50%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">50%</button>
+    <span class="w-[1px] h-3 bg-white/20"></span>
+    <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='75%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">75%</button>
+    <span class="w-[1px] h-3 bg-white/20"></span>
+    <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='100%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">100%</button>
+  </div>
 </div>`;
     }
     return '';
-  }).join('\\n');
+  });
+
+  const lastBlock = blocks[blocks.length - 1];
+  if (lastBlock && (lastBlock.type === 'image' || lastBlock.type === 'video' || lastBlock.type === 'iframe')) {
+    htmlList.push('<p><br></p>');
+  }
+
+  return htmlList.join('\n');
 };
 
 // ==========================================
@@ -169,6 +257,18 @@ export default function AdminPage() {
     if (logged === "true") {
       setIsLoggedIn(true);
     }
+
+    const handleCropEvent = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      setCropImageUrl(detail.src);
+      setCropImageElementId(detail.id);
+      setCropArea({ x: 10, y: 10, width: 80, height: 80 });
+      setCropDialogOpen(true);
+    };
+    window.addEventListener("editor-crop-image", handleCropEvent);
+    return () => {
+      window.removeEventListener("editor-crop-image", handleCropEvent);
+    };
   }, []);
 
   const handleLogin = (e: React.FormEvent) => {
@@ -239,15 +339,54 @@ export default function AdminPage() {
   const [folders, setFolders] = useState<string[]>([]);
   const [folderDialogOpen, setFolderDialogOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
+  const [dashboardData, setDashboardData] = useState<any>(null);
+  const [dashboardLoading, setDashboardLoading] = useState(true);
+  const [imageDialogOpen, setImageDialogOpen] = useState(false);
+  const [imageUrl, setImageUrl] = useState("");
+  const [imageCaption, setImageCaption] = useState("");
+  const [imageTab, setImageTab] = useState<"link" | "library">("link");
+  const [videoTab, setVideoTab] = useState<"link" | "upload" | "library">("link");
+  const [cropDialogOpen, setCropDialogOpen] = useState(false);
+  const [cropImageUrl, setCropImageUrl] = useState("");
+  const [cropImageElementId, setCropImageElementId] = useState("");
+  const [cropArea, setCropArea] = useState({ x: 10, y: 10, width: 80, height: 80 });
 
   const [timeFilter, setTimeFilter] = useState<"today" | "week" | "month" | "year">("month");
   const [dashboardDay, setDashboardDay] = useState("");
   const [dashboardMonth, setDashboardMonth] = useState("");
   const [dashboardYear, setDashboardYear] = useState("");
 
-  const loadMedia = async () => {
+  const loadDashboardStats = async () => {
     try {
-      const res = await getAdminMedia(activeFolder || "");
+      setDashboardLoading(true);
+      const res = await getAdminDashboardStats();
+      if (res) {
+        setDashboardData(res);
+      }
+    } catch (err) {
+      toast.error("Không thể tải dữ liệu thống kê dashboard");
+    } finally {
+      setDashboardLoading(false);
+    }
+  };
+
+  const loadFolders = async () => {
+    try {
+      const res = await getAdminMedia("");
+      if (res && res.subFolders) {
+        const uniqueFolders = Array.from(new Set([
+          ...res.subFolders.map((sf) => sf.name),
+          "articles", "ads", "categories" // default folders
+        ]));
+        setFolders(uniqueFolders);
+      }
+    } catch (err) {}
+  };
+
+  const loadMedia = async (folderName?: string, recursive: boolean = false) => {
+    try {
+      const targetFolder = typeof folderName === 'string' ? folderName : activeFolder;
+      const res = await getAdminMedia(targetFolder || "", recursive);
       if (res && res.files) {
         setMediaItems(res.files.map((f: any, idx: number) => ({
           id: idx + 1,
@@ -352,18 +491,13 @@ export default function AdminPage() {
     }
     if (activeTab === "media") {
       loadMedia();
-      getAdminMedia("").then(res => {
-        if (res && res.subFolders) {
-          const uniqueFolders = Array.from(new Set([
-            ...res.subFolders.map((sf) => sf.name),
-            "articles", "ads", "categories" // default folders
-          ]));
-          setFolders(uniqueFolders);
-        }
-      }).catch(() => {});
+      loadFolders();
     }
     if (activeTab === "ads") {
       loadAds();
+    }
+    if (activeTab === "dashboard") {
+      loadDashboardStats();
     }
     if (activeTab === "logo-footer" || activeTab === "dashboard") {
       getAdminSettings().then(res => {
@@ -571,88 +705,135 @@ export default function AdminPage() {
 
   // Dynamic Dashboard Statistics
   const dashboardStats = useMemo(() => {
-    const totalPostsCount = posts.length;
-    const totalViewsCount = posts.reduce((sum, p) => sum + p.views, 0);
-    const totalClicksCount = ads.reduce((sum, a) => sum + a.clicks, 0);
+    if (!dashboardData) {
+      return {
+        views: "0",
+        viewsVal: "0",
+        posts: 0,
+        clicks: "0",
+        viewsChange: "+0%",
+        postsChange: "+0",
+        clicksChange: "+0%",
+        isViewsUp: true,
+        isPostsUp: true,
+        isClicksUp: true,
+      };
+    }
+
+    const formatViews = (val: number) => {
+      if (val >= 1000000) return (val / 1000000).toFixed(1) + "M";
+      if (val >= 1000) return (val / 1000).toFixed(1) + "K";
+      return val.toString();
+    };
+
+    const getPercentageChange = (curr: number, prev: number) => {
+      if (prev === 0) return curr > 0 ? "+100%" : "+0%";
+      const diff = ((curr - prev) / prev) * 100;
+      const rounded = diff.toFixed(1);
+      return diff >= 0 ? `+${rounded}%` : `${rounded}%`;
+    };
+
+    const totalArticles = dashboardData.totalArticles || 0;
 
     switch (timeFilter) {
-      case "today":
+      case "today": {
+        const currViews = dashboardData.todayViews || 0;
+        const prevViews = dashboardData.yesterdayViews || 0;
+        const currClicks = dashboardData.todayClicks || 0;
+        const prevClicks = dashboardData.yesterdayClicks || 0;
         return {
-          views: (totalViewsCount * 0.05).toLocaleString("vi-VN", { maximumFractionDigits: 0 }) + " lượt",
-          viewsVal: (totalViewsCount * 0.05 / 1000).toFixed(1) + "K",
-          posts: Math.max(1, Math.round(totalPostsCount * 0.1)),
-          clicks: Math.round(totalClicksCount * 0.08).toLocaleString("vi-VN"),
-          viewsChange: "+12.4%",
-          postsChange: "+2",
-          clicksChange: "+8.2%",
-          isViewsUp: true,
+          views: currViews.toLocaleString("vi-VN") + " lượt",
+          viewsVal: formatViews(currViews),
+          posts: totalArticles,
+          clicks: currClicks.toLocaleString("vi-VN"),
+          viewsChange: getPercentageChange(currViews, prevViews),
+          postsChange: `Tổng: ${totalArticles}`,
+          clicksChange: getPercentageChange(currClicks, prevClicks),
+          isViewsUp: currViews >= prevViews,
           isPostsUp: true,
-          isClicksUp: true,
+          isClicksUp: currClicks >= prevClicks,
         };
-      case "week":
+      }
+      case "week": {
+        const currViews = dashboardData.weekViews || 0;
+        const prevViews = dashboardData.prevWeekViews || 0;
+        const currClicks = dashboardData.weekClicks || 0;
+        const prevClicks = dashboardData.prevWeekClicks || 0;
         return {
-          views: (totalViewsCount * 0.28).toLocaleString("vi-VN", { maximumFractionDigits: 0 }) + " lượt",
-          viewsVal: (totalViewsCount * 0.28 / 1000).toFixed(1) + "K",
-          posts: Math.max(2, Math.round(totalPostsCount * 0.35)),
-          clicks: Math.round(totalClicksCount * 0.38).toLocaleString("vi-VN"),
-          viewsChange: "+15.8%",
-          postsChange: "+8",
-          clicksChange: "+11.4%",
-          isViewsUp: true,
+          views: currViews.toLocaleString("vi-VN") + " lượt",
+          viewsVal: formatViews(currViews),
+          posts: totalArticles,
+          clicks: currClicks.toLocaleString("vi-VN"),
+          viewsChange: getPercentageChange(currViews, prevViews),
+          postsChange: `Tổng: ${totalArticles}`,
+          clicksChange: getPercentageChange(currClicks, prevClicks),
+          isViewsUp: currViews >= prevViews,
           isPostsUp: true,
-          isClicksUp: true,
+          isClicksUp: currClicks >= prevClicks,
         };
-      case "month":
-      default:
+      }
+      case "month": {
+        const currViews = dashboardData.monthViews || 0;
+        const prevViews = dashboardData.prevMonthViews || 0;
+        const currClicks = dashboardData.monthClicks || 0;
+        const prevClicks = dashboardData.prevMonthClicks || 0;
         return {
-          views: "2.4M",
-          viewsVal: "2.4M",
-          posts: 431,
-          clicks: "4,677",
-          viewsChange: "+8.7%",
-          postsChange: "+32",
-          clicksChange: "+5.1%",
-          isViewsUp: true,
+          views: currViews.toLocaleString("vi-VN") + " lượt",
+          viewsVal: formatViews(currViews),
+          posts: totalArticles,
+          clicks: currClicks.toLocaleString("vi-VN"),
+          viewsChange: getPercentageChange(currViews, prevViews),
+          postsChange: `Tổng: ${totalArticles}`,
+          clicksChange: getPercentageChange(currClicks, prevClicks),
+          isViewsUp: currViews >= prevViews,
           isPostsUp: true,
-          isClicksUp: true,
+          isClicksUp: currClicks >= prevClicks,
         };
+      }
       case "year":
+      default: {
+        const currViews = dashboardData.totalViews || 0;
+        const currClicks = dashboardData.totalClicks || 0;
         return {
-          views: "28.4M",
-          viewsVal: "28.4M",
-          posts: 1894,
-          clicks: "52,480",
-          viewsChange: "+24.5%",
-          postsChange: "+245",
-          clicksChange: "+18.9%",
+          views: currViews.toLocaleString("vi-VN") + " lượt",
+          viewsVal: formatViews(currViews),
+          posts: totalArticles,
+          clicks: currClicks.toLocaleString("vi-VN"),
+          viewsChange: "+0%",
+          postsChange: `Tổng: ${totalArticles}`,
+          clicksChange: "+0%",
           isViewsUp: true,
           isPostsUp: true,
           isClicksUp: true,
         };
+      }
     }
-  }, [timeFilter, posts, ads]);
+  }, [timeFilter, dashboardData]);
 
   // Dynamic Category Stats for Dashboard
   const categoryStats = useMemo(() => {
-    const total = categories.reduce((sum, c) => sum + c.postCount, 0) || 1;
-    return categories
-      .map((cat) => {
-        const percentage = Math.round((cat.postCount / total) * 100);
-        return {
-          name: cat.name,
-          count: cat.postCount,
-          percentage,
-        };
-      })
-      .sort((a, b) => b.count - a.count);
-  }, [categories]);
+    if (!dashboardData || !dashboardData.topCategories) return [];
+    const total = dashboardData.topCategories.reduce((sum: number, c: any) => sum + (c.article_count || 0), 0) || 1;
+    return dashboardData.topCategories.map((cat: any) => {
+      const percentage = Math.round(((cat.article_count || 0) / total) * 100);
+      return {
+        name: cat.name,
+        count: cat.article_count || 0,
+        percentage,
+      };
+    });
+  }, [dashboardData]);
 
   // Dynamic top articles
   const topPosts = useMemo(() => {
-    return [...posts]
-      .sort((a, b) => b.views - a.views)
-      .slice(0, 5);
-  }, [posts]);
+    if (!dashboardData || !dashboardData.topArticles) return [];
+    return dashboardData.topArticles.map((p: any) => ({
+      id: p.id,
+      title: p.title,
+      category: p.categories?.name || "Tin tức",
+      views: p.trending_views || p.views || 0,
+    }));
+  }, [dashboardData]);
 
   // Styles mapping helper
   const getCategoryStyles = (name: string) => {
@@ -694,10 +875,55 @@ export default function AdminPage() {
 
   // Export report handler
   const handleExportReport = () => {
-    toast.success("Bắt đầu kết xuất báo cáo thống kê...");
-    setTimeout(() => {
-      toast.success("Tải xuống báo cáo hoàn tất! Báo cáo định dạng XLSX đã được lưu.");
-    }, 1200);
+    if (!dashboardData) {
+      toast.error("Không có dữ liệu thống kê để xuất!");
+      return;
+    }
+    toast.loading("Đang xuất báo cáo...", { id: "export-report" });
+    try {
+      const csvRows = [];
+      csvRows.push("Chỉ số,Hôm nay,Tuần này,Tháng này,Tổng cộng");
+      
+      const viewsRow = `Lượt xem bài viết,${dashboardData.todayViews || 0},${dashboardData.weekViews || 0},${dashboardData.monthViews || 0},${dashboardData.totalViews || 0}`;
+      const clicksRow = `Lượt click quảng cáo,${dashboardData.todayClicks || 0},${dashboardData.weekClicks || 0},${dashboardData.monthClicks || 0},${dashboardData.totalClicks || 0}`;
+      const articlesRow = `Tổng số bài viết, , , ,${dashboardData.totalArticles || 0}`;
+      const adsRow = `Tổng số quảng cáo, , , ,${dashboardData.totalAds || 0}`;
+      const categoriesRow = `Tổng số danh mục, , , ,${dashboardData.totalCategories || 0}`;
+
+      csvRows.push(viewsRow);
+      csvRows.push(clicksRow);
+      csvRows.push(articlesRow);
+      csvRows.push(adsRow);
+      csvRows.push(categoriesRow);
+
+      csvRows.push("\nDanh mục,Số lượng bài đăng");
+      if (dashboardData.topCategories) {
+        dashboardData.topCategories.forEach((c: any) => {
+          csvRows.push(`"${c.name}",${c.article_count || 0}`);
+        });
+      }
+
+      csvRows.push("\nTop Bài viết,Lượt xem,Danh mục");
+      if (dashboardData.topArticles) {
+        dashboardData.topArticles.forEach((p: any) => {
+          csvRows.push(`"${p.title}",${p.views || 0},"${p.categories?.name || "Tin tức"}"`);
+        });
+      }
+
+      const csvContent = "\uFEFF" + csvRows.join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `bao_cao_thong_ke_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast.success("Tải xuống báo cáo CSV thành công!", { id: "export-report" });
+    } catch (err) {
+      toast.error("Có lỗi xảy ra khi xuất báo cáo!", { id: "export-report" });
+    }
   };
 
   // ==========================================
@@ -1014,7 +1240,39 @@ export default function AdminPage() {
     e.target.value = "";
   };
 
-  const handleInsertVideo = () => {
+  const insertHtmlToEditor = (html: string) => {
+    if (!editorRef.current) return;
+    
+    editorRef.current.focus();
+    const selection = window.getSelection();
+    
+    let isInsideEditor = false;
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      let node = range.commonAncestorContainer;
+      while (node) {
+        if (node === editorRef.current) {
+          isInsideEditor = true;
+          break;
+        }
+        node = node.parentNode as Node;
+      }
+    }
+    
+    if (isInsideEditor && selection) {
+      try {
+        document.execCommand("insertHTML", false, html);
+      } catch (err) {
+        editorRef.current.innerHTML += html;
+      }
+    } else {
+      editorRef.current.innerHTML += html;
+    }
+    
+    setPostContent(editorRef.current.innerHTML);
+  };
+
+  const handleInsertVideo = async () => {
     if (!videoFile && !videoUrl.trim()) {
       toast.error("Vui lòng chọn file video hoặc nhập link video!");
       return;
@@ -1022,9 +1280,36 @@ export default function AdminPage() {
 
     let videoHtml = "";
     if (videoFile) {
-      const videoSrc = URL.createObjectURL(videoFile);
-      videoHtml = `\n<video controls src="${videoSrc}" class="w-full max-h-[400px] my-4 rounded-xl border border-gray-200 shadow-sm"></video>\n`;
-      toast.success("Đã chọn video từ máy tính!");
+      toast.loading("Đang tải video lên Cloudflare R2...", { id: "upload-video" });
+      try {
+        const formData = new FormData();
+        formData.append("file", videoFile);
+        formData.append("folder", "articles");
+
+        const res = await uploadAdminMedia(formData);
+        if (res && res.url) {
+          videoHtml = `<p><br></p><div class="my-4 relative group" contenteditable="false" style="max-width: 100%; margin: 0 auto;">
+  <video controls src="${res.url}" class="w-full max-h-[400px] rounded-xl border border-gray-200 shadow-sm"></video>
+  <button type="button" onclick="const p=this.parentElement; const ed=p.closest('[contenteditable]'); p.remove(); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="absolute top-2 right-2 hidden group-hover:flex items-center justify-center w-8 h-8 rounded-full bg-red-600 hover:bg-red-700 text-white shadow-md active:scale-95 transition-all z-30" title="Xóa video">
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+  </button>
+  <div class="absolute bottom-2 left-1/2 -translate-x-1/2 hidden group-hover:flex items-center gap-1.5 bg-black/85 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 shadow-lg text-[11px] text-white font-bold select-none z-30">
+    <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='25%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">25%</button>
+    <span class="w-[1px] h-3 bg-white/20"></span>
+    <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='50%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">50%</button>
+    <span class="w-[1px] h-3 bg-white/20"></span>
+    <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='75%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">75%</button>
+    <span class="w-[1px] h-3 bg-white/20"></span>
+    <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='100%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">100%</button>
+</div><p><br></p>`;
+          toast.success("Đã tải lên và chèn video thành công!", { id: "upload-video" });
+        } else {
+          throw new Error("Không nhận được URL từ server");
+        }
+      } catch (err) {
+        toast.error("Tải lên video thất bại: " + (err.message || err), { id: "upload-video" });
+        return;
+      }
     } else if (videoUrl.trim()) {
       const url = videoUrl.trim();
       if (url.includes("youtube.com/watch") || url.includes("youtu.be")) {
@@ -1041,22 +1326,59 @@ export default function AdminPage() {
         }
 
         if (videoId) {
-          videoHtml = `\n<iframe class="w-full aspect-video my-4 rounded-xl shadow-sm border border-gray-200" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>\n`;
+          videoHtml = `<p><br></p><div class="my-4 relative group" contenteditable="false" style="max-width: 100%; margin: 0 auto;">
+  <iframe class="w-full aspect-video rounded-xl shadow-sm border border-gray-200" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+  <button type="button" onclick="const p=this.parentElement; const ed=p.closest('[contenteditable]'); p.remove(); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="absolute top-2 right-2 hidden group-hover:flex items-center justify-center w-8 h-8 rounded-full bg-red-600 hover:bg-red-700 text-white shadow-md active:scale-95 transition-all z-30" title="Xóa video nhúng">
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+  </button>
+  <div class="absolute bottom-2 left-1/2 -translate-x-1/2 hidden group-hover:flex items-center gap-1.5 bg-black/85 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 shadow-lg text-[11px] text-white font-bold select-none z-30">
+    <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='25%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">25%</button>
+    <span class="w-[1px] h-3 bg-white/20"></span>
+    <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='50%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">50%</button>
+    <span class="w-[1px] h-3 bg-white/20"></span>
+    <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='75%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">75%</button>
+    <span class="w-[1px] h-3 bg-white/20"></span>
+    <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='100%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">100%</button>
+  </div>
+</div><p><br></p>`;
         } else {
-          videoHtml = `\n<iframe class="w-full aspect-video my-4 rounded-xl shadow-sm border border-gray-200" src="${url}" frameborder="0" allowfullscreen></iframe>\n`;
+          videoHtml = `<p><br></p><div class="my-4 relative group" contenteditable="false" style="max-width: 100%; margin: 0 auto;">
+  <iframe class="w-full aspect-video rounded-xl shadow-sm border border-gray-200" src="${url}" frameborder="0" allowfullscreen></iframe>
+  <button type="button" onclick="const p=this.parentElement; const ed=p.closest('[contenteditable]'); p.remove(); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="absolute top-2 right-2 hidden group-hover:flex items-center justify-center w-8 h-8 rounded-full bg-red-600 hover:bg-red-700 text-white shadow-md active:scale-95 transition-all z-30" title="Xóa video nhúng">
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+  </button>
+  <div class="absolute bottom-2 left-1/2 -translate-x-1/2 hidden group-hover:flex items-center gap-1.5 bg-black/85 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 shadow-lg text-[11px] text-white font-bold select-none z-30">
+    <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='25%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">25%</button>
+    <span class="w-[1px] h-3 bg-white/20"></span>
+    <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='50%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">50%</button>
+    <span class="w-[1px] h-3 bg-white/20"></span>
+    <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='75%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">75%</button>
+    <span class="w-[1px] h-3 bg-white/20"></span>
+    <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='100%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">100%</button>
+  </div>
+</div><p><br></p>`;
         }
       } else {
-        videoHtml = `\n<video controls src="${url}" class="w-full max-h-[400px] my-4 rounded-xl border border-gray-200 shadow-sm"></video>\n`;
+        videoHtml = `<p><br></p><div class="my-4 relative group" contenteditable="false" style="max-width: 100%; margin: 0 auto;">
+  <video controls src="${url}" class="w-full max-h-[400px] rounded-xl border border-gray-200 shadow-sm"></video>
+  <button type="button" onclick="const p=this.parentElement; const ed=p.closest('[contenteditable]'); p.remove(); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="absolute top-2 right-2 hidden group-hover:flex items-center justify-center w-8 h-8 rounded-full bg-red-600 hover:bg-red-700 text-white shadow-md active:scale-95 transition-all z-30" title="Xóa video">
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+  </button>
+  <div class="absolute bottom-2 left-1/2 -translate-x-1/2 hidden group-hover:flex items-center gap-1.5 bg-black/85 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 shadow-lg text-[11px] text-white font-bold select-none z-30">
+    <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='25%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">25%</button>
+    <span class="w-[1px] h-3 bg-white/20"></span>
+    <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='50%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">50%</button>
+    <span class="w-[1px] h-3 bg-white/20"></span>
+    <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='75%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">75%</button>
+    <span class="w-[1px] h-3 bg-white/20"></span>
+    <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='100%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">100%</button>
+  </div>
+</div><p><br></p>`;
       }
       toast.success("Đã chèn video thành công!");
     }
 
-    if (editorRef.current) {
-      editorRef.current.innerHTML += videoHtml;
-      setPostContent(editorRef.current.innerHTML);
-    } else {
-      setPostContent((prev) => prev + videoHtml);
-    }
+    insertHtmlToEditor(videoHtml);
     setVideoDialogOpen(false);
     setVideoFile(null);
     setVideoFileName("");
@@ -1330,10 +1652,9 @@ export default function AdminPage() {
               <button
                 type="button"
                 onClick={() => {
-                  const url = prompt("Nhập URL hình ảnh:");
-                  if (url) {
-                    document.execCommand("insertImage", false, url);
-                  }                }}
+                  setImageDialogOpen(true);
+                  loadMedia("", true);
+                }}
                 className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900"
                 title="Insert Image"
               >
@@ -1341,7 +1662,10 @@ export default function AdminPage() {
               </button>
               <button
                 type="button"
-                onClick={() => setVideoDialogOpen(true)}
+                onClick={() => {
+                  setVideoDialogOpen(true);
+                  loadMedia("", true);
+                }}
                 className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900"
                 title="Insert Video"
               >
@@ -1454,7 +1778,189 @@ export default function AdminPage() {
         </main>
 
         {/* ==========================================
-            MODAL: INSERT VIDEO POPUP
+            MODAL: INSERT IMAGE POPUP
+            ========================================== */}
+        <Dialog open={imageDialogOpen} onOpenChange={(open) => {
+          setImageDialogOpen(open);
+          if (!open) {
+            setImageUrl("");
+            setImageCaption("");
+          }
+        }}>
+          <DialogContent className="max-w-[640px] w-[95%] max-h-[90vh] overflow-y-auto rounded-3xl p-7 border-none shadow-2xl bg-white text-[#2c3e50] outline-none">
+            <DialogHeader className="flex flex-row items-center gap-2 border-b border-gray-100 pb-4 pr-6">
+              <div className="w-8 h-8 rounded-lg bg-[#E55956]/10 flex items-center justify-center flex-shrink-0">
+                <ImageIcon className="text-[#E55956] w-5 h-5" />
+              </div>
+              <DialogTitle className="text-lg font-bold text-gray-900 leading-none">
+                Chèn Hình Ảnh
+              </DialogTitle>
+            </DialogHeader>
+
+            {/* Tab Selector */}
+            <div className="flex gap-2 border-b border-gray-100 py-2">
+              <button
+                type="button"
+                onClick={() => setImageTab("link")}
+                className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${
+                  imageTab === "link"
+                    ? "bg-[#E55956] text-white"
+                    : "text-gray-600 hover:bg-gray-50"
+                }`}
+              >
+                Dán liên kết (URL)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setImageTab("library");
+                  loadMedia("", true);
+                }}
+                className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${
+                  imageTab === "library"
+                    ? "bg-[#E55956] text-white"
+                    : "text-gray-600 hover:bg-gray-50"
+                }`}
+              >
+                Thư viện Media (R2)
+              </button>
+            </div>
+
+            <div className="space-y-4 py-4 min-h-[250px]">
+              {imageTab === "link" ? (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">
+                      Đường dẫn hình ảnh (URL)
+                    </label>
+                    <input
+                      type="text"
+                      value={imageUrl}
+                      onChange={(e) => setImageUrl(e.target.value)}
+                      placeholder="https://example.com/image.jpg"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white shadow-sm font-medium"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">
+                      Chú thích ảnh (Caption)
+                    </label>
+                    <input
+                      type="text"
+                      value={imageCaption}
+                      onChange={(e) => setImageCaption(e.target.value)}
+                      placeholder="Ví dụ: Quang cảnh buổi họp báo..."
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white shadow-sm font-medium"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Media Grid */}
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 max-h-[300px] overflow-y-auto p-1">
+                    {mediaItems.filter((item) => item.type === "image").map((item) => {
+                      const fullUrl = item.url.startsWith("blob:") || item.url.startsWith("data:") || item.url.startsWith("http") ? item.url : (window.location.origin + item.url);
+                      const isSelected = imageUrl === fullUrl;
+                      return (
+                        <div
+                          key={item.key}
+                          onClick={() => {
+                            setImageUrl(fullUrl);
+                            if (!imageCaption) setImageCaption(item.title);
+                          }}
+                          className={`relative aspect-square rounded-xl overflow-hidden cursor-pointer border-2 transition-all group ${
+                            isSelected ? "border-[#E55956] ring-2 ring-[#E55956]/15" : "border-transparent bg-slate-50 hover:bg-slate-100"
+                          }`}
+                        >
+                          <img
+                            src={fullUrl}
+                            alt={item.title}
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute bottom-0 inset-x-0 bg-black/60 p-1 truncate text-[10px] text-white font-medium text-center">
+                            {item.title}
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {mediaItems.filter((item) => item.type === "image").length === 0 && (
+                      <div className="col-span-full py-10 text-center text-xs text-gray-400 font-semibold">
+                        Không tìm thấy hình ảnh nào trong thư mục này
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">
+                      Chú thích ảnh (Caption)
+                    </label>
+                    <input
+                      type="text"
+                      value={imageCaption}
+                      onChange={(e) => setImageCaption(e.target.value)}
+                      placeholder="Ví dụ: Quang cảnh buổi họp báo..."
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white shadow-sm font-medium"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-center gap-4 pt-4 border-t border-gray-100 mt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setImageDialogOpen(false);
+                  setImageUrl("");
+                  setImageCaption("");
+                }}
+                className="flex-1 max-w-[144px] py-3 border border-gray-200 hover:bg-gray-50 hover:border-gray-300 text-gray-700 text-sm font-bold rounded-xl transition-all active:scale-[0.98] flex items-center justify-center"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!imageUrl.trim()) {
+                    toast.error("Vui lòng chọn hoặc nhập đường dẫn hình ảnh!");
+                    return;
+                  }
+                  const wrapperId = "img-" + Math.random().toString(36).substring(2, 9);
+                  const imgHtml = `<p><br></p><div id="${wrapperId}" class="my-4 relative group" contenteditable="false" style="max-width: 100%; margin: 0 auto;">
+  <img src="${imageUrl}" alt="${imageCaption}" class="w-full rounded-xl border border-gray-200 shadow-sm" />
+  ${imageCaption ? `<p class="text-center text-xs italic text-gray-500 mt-1.5">	ext-gray-500 mt-1.5">${imageCaption}</p>` : ''}
+  <button type="button" onclick="const p=this.parentElement; const ed=p.closest('[contenteditable]'); p.remove(); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="absolute top-2 right-2 hidden group-hover:flex items-center justify-center w-8 h-8 rounded-full bg-red-600 hover:bg-red-700 text-white shadow-md active:scale-95 transition-all z-30" title="Xóa hình ảnh">
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+  </button>
+  <div class="absolute bottom-2 left-1/2 -translate-x-1/2 hidden group-hover:flex items-center gap-1.5 bg-black/85 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 shadow-lg text-[11px] text-white font-bold select-none z-30">
+    <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='25%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">25%</button>
+    <span class="w-[1px] h-3 bg-white/20"></span>
+    <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='50%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">50%</button>
+    <span class="w-[1px] h-3 bg-white/20"></span>
+    <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='75%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">75%</button>
+    <span class="w-[1px] h-3 bg-white/20"></span>
+    <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='100%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">100%</button>
+    <span class="w-[1px] h-3 bg-white/20"></span>
+    <button type="button" onclick="const p=this.closest('[contenteditable=false]'); const img=p.querySelector('img'); if(img) { window.dispatchEvent(new CustomEvent('editor-crop-image', { detail: { src: img.src, id: p.id } })); }" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5 flex items-center gap-1">
+      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6.13 1L6 16a2 2 0 0 0 2 2h15"/><path d="M1 6.13L16 6a2 2 0 0 1 2 2v15"/></svg>
+      Cắt ảnh
+    </button>
+  </div>
+</div><p><br></p>`;
+                  insertHtmlToEditor(imgHtml);
+                  setImageDialogOpen(false);
+                  setImageUrl("");
+                  setImageCaption("");
+                }}
+                className="flex-1 max-w-[144px] py-3 bg-[#E55956] hover:bg-[#cb4643] text-white text-sm font-bold rounded-xl transition-all shadow-md active:scale-[0.98] flex items-center justify-center"
+              >
+                Chèn ảnh
+              </button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* ==========================================
+            MODAL: INSERT VIDEO POPUP (IMPROVED)
             ========================================== */}
         <Dialog open={videoDialogOpen} onOpenChange={(open) => {
           setVideoDialogOpen(open);
@@ -1464,7 +1970,7 @@ export default function AdminPage() {
             setVideoUrl("");
           }
         }}>
-          <DialogContent className="max-w-[480px] w-[95%] max-h-[90vh] overflow-y-auto rounded-3xl p-7 border-none shadow-2xl bg-white text-[#2c3e50] outline-none">
+          <DialogContent className="max-w-[640px] w-[95%] max-h-[90vh] overflow-y-auto rounded-3xl p-7 border-none shadow-2xl bg-white text-[#2c3e50] outline-none">
             <DialogHeader className="flex flex-row items-center gap-2 border-b border-gray-100 pb-4 pr-6">
               <div className="w-8 h-8 rounded-lg bg-[#E55956]/10 flex items-center justify-center flex-shrink-0">
                 <Video className="text-[#E55956] w-5 h-5" />
@@ -1474,61 +1980,122 @@ export default function AdminPage() {
               </DialogTitle>
             </DialogHeader>
 
-            <div className="space-y-6 py-4">
-              {/* Từ máy tính */}
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">
-                  Từ máy tính
-                </label>
-                <div
-                  onClick={handleTriggerVideoUpload}
-                  className="border-2 border-dashed border-gray-200 hover:border-[#E55956] hover:bg-[#E55956]/5 transition-all duration-300 rounded-2xl p-7 flex flex-col items-center justify-center gap-3 cursor-pointer group bg-gray-50/20"
-                >
-                  <div className="w-10 h-10 rounded-full bg-gray-100 group-hover:bg-[#E55956]/10 flex items-center justify-center transition-all duration-300">
-                    <Video className="w-5 h-5 text-gray-400 group-hover:text-[#E55956] transition-colors" />
-                  </div>
-                  <span className="text-xs font-semibold text-gray-500 group-hover:text-[#E55956] transition-colors text-center max-w-[280px]">
-                    {videoFileName ? videoFileName : "Chọn file video (MP4, MOV, AVI, ...)"}
-                  </span>
+            {/* Tab Selector */}
+            <div className="flex gap-2 border-b border-gray-100 py-2">
+              <button
+                type="button"
+                onClick={() => setVideoTab("link")}
+                className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${
+                  videoTab === "link"
+                    ? "bg-[#E55956] text-white"
+                    : "text-gray-600 hover:bg-gray-50"
+                }`}
+              >
+                Dán liên kết (YouTube / URL)
+              </button>
+              <button
+                type="button"
+                onClick={() => setVideoTab("upload")}
+                className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${
+                  videoTab === "upload"
+                    ? "bg-[#E55956] text-white"
+                    : "text-gray-600 hover:bg-gray-50"
+                }`}
+              >
+                Tải lên từ máy tính
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setVideoTab("library");
+                  loadMedia("", true);
+                }}
+                className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${
+                  videoTab === "library"
+                    ? "bg-[#E55956] text-white"
+                    : "text-gray-600 hover:bg-gray-50"
+                }`}
+              >
+                Thư viện Media (R2)
+              </button>
+            </div>
+
+            <div className="space-y-4 py-4 min-h-[250px]">
+              {videoTab === "link" ? (
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">
+                    Link Youtube / URL Video
+                  </label>
                   <input
-                    type="file"
-                    id="video-upload-input"
-                    className="hidden"
-                    accept="video/*"
-                    onChange={handleVideoFileChange}
-                  />
-                </div>
-              </div>
-
-              {/* Separator: Hoặc */}
-              <div className="relative flex items-center justify-center">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-200"></div>
-                </div>
-                <span className="relative px-4 bg-white text-xs font-bold text-gray-400 uppercase tracking-wider">
-                  Hoặc
-                </span>
-              </div>
-
-              {/* Link Youtube / URL Video */}
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">
-                  Link Youtube / URL Video
-                </label>
-                <input
-                  type="text"
-                  value={videoUrl}
-                  onChange={(e) => {
-                    setVideoUrl(e.target.value);
-                    if (e.target.value) {
+                    type="text"
+                    value={videoUrl}
+                    onChange={(e) => {
+                      setVideoUrl(e.target.value);
                       setVideoFile(null);
                       setVideoFileName("");
-                    }
-                  }}
-                  placeholder="https://www.youtube.com/watch?v=..."
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white shadow-sm font-medium"
-                />
-              </div>
+                    }}
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white shadow-sm font-medium"
+                  />
+                </div>
+              ) : videoTab === "upload" ? (
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">
+                    Từ máy tính
+                  </label>
+                  <div
+                    onClick={handleTriggerVideoUpload}
+                    className="border-2 border-dashed border-gray-200 hover:border-[#E55956] hover:bg-[#E55956]/5 transition-all duration-300 rounded-2xl p-7 flex flex-col items-center justify-center gap-3 cursor-pointer group bg-gray-50/20"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-gray-100 group-hover:bg-[#E55956]/10 flex items-center justify-center transition-all duration-300">
+                      <Video className="w-5 h-5 text-gray-400 group-hover:text-[#E55956] transition-colors" />
+                    </div>
+                    <span className="text-xs font-semibold text-gray-500 group-hover:text-[#E55956] transition-colors text-center max-w-[280px]">
+                      {videoFileName ? videoFileName : "Chọn file video (MP4, MOV, AVI, ...)"}
+                    </span>
+                    <input
+                      type="file"
+                      id="video-upload-input"
+                      className="hidden"
+                      accept="video/*"
+                      onChange={handleVideoFileChange}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Videos Grid */}
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 max-h-[300px] overflow-y-auto p-1">
+                    {mediaItems.filter((item) => item.type === "video" || item.key.match(/\.(mp4|webm|ogg)$/i)).map((item) => {
+                      const fullUrl = item.url.startsWith("blob:") || item.url.startsWith("data:") || item.url.startsWith("http") ? item.url : (window.location.origin + item.url);
+                      const isSelected = videoUrl === fullUrl;
+                      return (
+                        <div
+                          key={item.key}
+                          onClick={() => {
+                            setVideoUrl(fullUrl);
+                            setVideoFile(null);
+                            setVideoFileName("");
+                          }}
+                          className={`relative aspect-square rounded-xl overflow-hidden cursor-pointer border-2 transition-all bg-slate-50 flex flex-col items-center justify-center p-2 text-center gap-2 group ${
+                            isSelected ? "border-[#E55956] ring-2 ring-[#E55956]/15" : "border-transparent hover:bg-slate-100"
+                          }`}
+                        >
+                          <Video className="w-8 h-8 text-gray-400 group-hover:text-[#E55956] transition-colors" />
+                          <span className="text-[10px] text-gray-600 font-bold truncate w-full">
+                            {item.title}
+                          </span>
+                        </div>
+                      );
+                    })}
+                    {mediaItems.filter((item) => item.type === "video" || item.key.match(/\.(mp4|webm|ogg)$/i)).length === 0 && (
+                      <div className="col-span-full py-10 text-center text-xs text-gray-400 font-semibold">
+                        Không tìm thấy video nào trong thư mục này
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center justify-center gap-4 pt-4 border-t border-gray-100 mt-2">
@@ -1550,6 +2117,178 @@ export default function AdminPage() {
                 className="flex-1 max-w-[144px] py-3 bg-[#E55956] hover:bg-[#cb4643] text-white text-sm font-bold rounded-xl transition-all shadow-md active:scale-[0.98] flex items-center justify-center"
               >
                 Chèn Video
+              </button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* ==========================================
+            MODAL: CROP IMAGE POPUP
+            ========================================== */}
+        <Dialog open={cropDialogOpen} onOpenChange={setCropDialogOpen}>
+          <DialogContent className="max-w-[540px] w-[95%] max-h-[95vh] overflow-y-auto rounded-3xl p-7 border-none shadow-2xl bg-white text-[#2c3e50] outline-none">
+            <DialogHeader className="flex flex-row items-center gap-2 border-b border-gray-100 pb-4 pr-6">
+              <div className="w-8 h-8 rounded-lg bg-[#E55956]/10 flex items-center justify-center flex-shrink-0">
+                <Crop className="text-[#E55956] w-5 h-5" />
+              </div>
+              <DialogTitle className="text-lg font-bold text-gray-900 leading-none">
+                Cắt cúp hình ảnh (Crop)
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-6 py-4">
+              {/* Preview Box */}
+              <div className="relative overflow-hidden max-w-full max-h-[300px] border border-gray-200 rounded-2xl bg-slate-50 flex items-center justify-center">
+                <div className="relative max-w-full max-h-[300px]">
+                  <img 
+                    src={cropImageUrl} 
+                    alt="Source image to crop" 
+                    className="max-w-full max-h-[300px] object-contain select-none" 
+                  />
+                  {/* Dotted crop selection overlay */}
+                  <div 
+                    className="absolute border border-dashed border-[#E55956] bg-black/40 pointer-events-none"
+                    style={{
+                      left: `${cropArea.x}%`,
+                      top: `${cropArea.y}%`,
+                      width: `${cropArea.width}%`,
+                      height: `${cropArea.height}%`,
+                    }}
+                  >
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="bg-black/75 px-2 py-0.5 rounded text-[10px] text-white font-bold select-none">
+                        Vùng cắt
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Position and Size Sliders */}
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs font-bold text-gray-500 uppercase tracking-wide">
+                    <span>Vị trí ngang (X): {cropArea.x}%</span>
+                  </div>
+                  <input 
+                    type="range" 
+                    min="0" 
+                    max={100 - cropArea.width} 
+                    value={cropArea.x} 
+                    onChange={(e) => setCropArea(prev => ({ ...prev, x: parseInt(e.target.value) }))}
+                    className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#E55956]"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs font-bold text-gray-500 uppercase tracking-wide">
+                    <span>Vị trí dọc (Y): {cropArea.y}%</span>
+                  </div>
+                  <input 
+                    type="range" 
+                    min="0" 
+                    max={100 - cropArea.height} 
+                    value={cropArea.y} 
+                    onChange={(e) => setCropArea(prev => ({ ...prev, y: parseInt(e.target.value) }))}
+                    className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#E55956]"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs font-bold text-gray-500 uppercase tracking-wide">
+                    <span>Chiều rộng (Width): {cropArea.width}%</span>
+                  </div>
+                  <input 
+                    type="range" 
+                    min="10" 
+                    max={100 - cropArea.x} 
+                    value={cropArea.width} 
+                    onChange={(e) => setCropArea(prev => ({ ...prev, width: parseInt(e.target.value) }))}
+                    className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#E55956]"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs font-bold text-gray-500 uppercase tracking-wide">
+                    <span>Chiều cao (Height): {cropArea.height}%</span>
+                  </div>
+                  <input 
+                    type="range" 
+                    min="10" 
+                    max={100 - cropArea.y} 
+                    value={cropArea.height} 
+                    onChange={(e) => setCropArea(prev => ({ ...prev, height: parseInt(e.target.value) }))}
+                    className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#E55956]"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-center gap-4 pt-4 border-t border-gray-100 mt-2">
+              <button
+                type="button"
+                onClick={() => setCropDialogOpen(false)}
+                className="flex-1 max-w-[144px] py-3 border border-gray-200 hover:bg-gray-50 hover:border-gray-300 text-gray-700 text-sm font-bold rounded-xl transition-all active:scale-[0.98] flex items-center justify-center"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const img = new Image();
+                  img.crossOrigin = "anonymous";
+                  img.src = cropImageUrl;
+                  img.onload = () => {
+                    const canvas = document.createElement("canvas");
+                    const ctx = canvas.getContext("2d");
+                    if (!ctx) return;
+                    
+                    const pixelX = (cropArea.x / 100) * img.naturalWidth;
+                    const pixelY = (cropArea.y / 100) * img.naturalHeight;
+                    const pixelW = (cropArea.width / 100) * img.naturalWidth;
+                    const pixelH = (cropArea.height / 100) * img.naturalHeight;
+                    
+                    canvas.width = pixelW;
+                    canvas.height = pixelH;
+                    
+                    ctx.drawImage(
+                      img,
+                      pixelX, pixelY, pixelW, pixelH,
+                      0, 0, pixelW, pixelH
+                    );
+                    
+                    canvas.toBlob(async (blob) => {
+                      if (!blob) return;
+                      const croppedFile = new File([blob], `cropped-${Date.now()}.jpg`, { type: "image/jpeg" });
+                      
+                      toast.loading("Đang tải ảnh đã cắt lên R2...", { id: "upload-cropped" });
+                      try {
+                        const formData = new FormData();
+                        formData.append("file", croppedFile);
+                        formData.append("folder", "articles");
+                        const res = await uploadAdminMedia(formData);
+                        if (res && res.url) {
+                          const wrapper = document.getElementById(cropImageElementId);
+                          if (wrapper) {
+                            const imgEl = wrapper.querySelector("img");
+                            if (imgEl) {
+                              imgEl.src = res.url;
+                              const ed = wrapper.closest("[contenteditable]");
+                              if (ed) ed.dispatchEvent(new Event("input", { bubbles: true }));
+                            }
+                          }
+                          toast.success("Đã cắt cúp và chèn ảnh thành công!", { id: "upload-cropped" });
+                          setCropDialogOpen(false);
+                        }
+                      } catch (err) {
+                        toast.error("Lỗi tải ảnh cắt: " + (err.message || err), { id: "upload-cropped" });
+                      }
+                    }, "image/jpeg", 0.9);
+                  };
+                }}
+                className="flex-1 max-w-[144px] py-3 bg-[#E55956] hover:bg-[#cb4643] text-white text-sm font-bold rounded-xl transition-all shadow-md active:scale-[0.98] flex items-center justify-center"
+              >
+                Cắt cúp & Lưu
               </button>
             </div>
           </DialogContent>
@@ -1740,6 +2479,12 @@ export default function AdminPage() {
         {/* CONTAINER CONTENT */}
         <main className="flex-1 p-6 md:p-8 max-w-7xl w-full mx-auto space-y-6">
           {activeTab === "dashboard" ? (
+            dashboardLoading ? (
+              <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
+                <div className="w-8 h-8 border-4 border-[#E55956] border-t-transparent rounded-full animate-spin" />
+                <p className="text-sm font-bold text-gray-500">Đang tải dữ liệu thống kê...</p>
+              </div>
+            ) : (
             <>
               {/* HEADER ACTION BANNER */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden group">
@@ -1971,7 +2716,7 @@ export default function AdminPage() {
                     <div className="border-b border-gray-100 pb-4 mb-4 flex items-center justify-between">
                       <div>
                         <h3 className="text-base font-extrabold text-gray-900">Bài viết nổi bật</h3>
-                        <p className="text-xs text-gray-400 mt-0.5">Top 5 bài viết được xem nhiều nhất trên hệ thống</p>
+                        <p className="text-xs text-gray-400 mt-0.5">Top 5 bài viết được xem nhiều nhất trong 7 ngày qua</p>
                       </div>
                       <span className="text-xs font-bold text-[#E55956] bg-red-50 px-2.5 py-1 rounded-lg">Xu hướng</span>
                     </div>
@@ -2030,55 +2775,49 @@ export default function AdminPage() {
                     </div>
 
                     <div className="relative pl-6 border-l-2 border-dashed border-gray-100 space-y-5.5 py-2">
-                      <div className="relative group">
-                        <div className="absolute -left-[31px] top-0.5 w-[11px] h-[11px] rounded-full bg-[#E55956] border-2 border-white group-hover:scale-125 transition-transform" />
-                        <div>
-                          <span className="text-[10px] font-bold text-[#E55956] uppercase tracking-wider block">Bài viết mới</span>
-                          <h4 className="text-xs font-bold text-gray-800 mt-0.5">
-                            Tin tức công nghệ mới nhất 2026
-                          </h4>
-                          <span className="text-[10px] text-gray-400 font-bold block mt-1">5 phút trước &bull; bởi Admin</span>
-                        </div>
-                      </div>
+                      {dashboardData?.recentActivities && dashboardData.recentActivities.length > 0 ? (
+                        dashboardData.recentActivities.map((act: any, idx: number) => {
+                          const timeStr = (() => {
+                            const diffMs = new Date().getTime() - new Date(act.createdAt).getTime();
+                            const diffMins = Math.floor(diffMs / 60000);
+                            const diffHours = Math.floor(diffMins / 60);
+                            if (diffMins < 1) return "Vừa xong";
+                            if (diffMins < 60) return `${diffMins} phút trước`;
+                            if (diffHours < 24) return `${diffHours} giờ trước`;
+                            return new Date(act.createdAt).toLocaleDateString("vi-VN");
+                          })();
 
-                      <div className="relative group">
-                        <div className="absolute -left-[31px] top-0.5 w-[11px] h-[11px] rounded-full bg-orange-500 border-2 border-white group-hover:scale-125 transition-transform" />
-                        <div>
-                          <span className="text-[10px] font-bold text-orange-500 uppercase tracking-wider block">Chiến dịch AD mới</span>
-                          <h4 className="text-xs font-bold text-gray-800 mt-0.5">
-                            Banner Shopee đã bắt đầu chạy quảng cáo
-                          </h4>
-                          <span className="text-[10px] text-gray-400 font-bold block mt-1">15 phút trước &bull; tự động</span>
-                        </div>
-                      </div>
+                          const typeLabel = act.type === 'article' ? 'Bài viết mới' : act.type === 'ad' ? 'Quảng cáo mới' : 'Danh mục mới';
+                          const typeColor = act.type === 'article' ? '#E55956' : act.type === 'ad' ? 'orange' : 'purple';
+                          const typeBg = act.type === 'article' ? 'bg-[#E55956]' : act.type === 'ad' ? 'bg-orange-500' : 'bg-purple-500';
 
-                      <div className="relative group">
-                        <div className="absolute -left-[31px] top-0.5 w-[11px] h-[11px] rounded-full bg-purple-500 border-2 border-white group-hover:scale-125 transition-transform" />
-                        <div>
-                          <span className="text-[10px] font-bold text-purple-500 uppercase tracking-wider block">Hệ thống</span>
-                          <h4 className="text-xs font-bold text-gray-800 mt-0.5">
-                            Đã tối ưu hóa cơ sở dữ liệu bài viết
-                          </h4>
-                          <span className="text-[10px] text-gray-400 font-bold block mt-1">1 giờ trước &bull; bởi System</span>
-                        </div>
-                      </div>
-
-                      <div className="relative group">
-                        <div className="absolute -left-[31px] top-0.5 w-[11px] h-[11px] rounded-full bg-blue-500 border-2 border-white group-hover:scale-125 transition-transform" />
-                        <div>
-                          <span className="text-[10px] font-bold text-blue-500 uppercase tracking-wider block">Cập nhật danh mục</span>
-                          <h4 className="text-xs font-bold text-gray-800 mt-0.5">
-                            Anime/Manga được đổi thứ tự ưu tiên thành 2
-                          </h4>
-                          <span className="text-[10px] text-gray-400 font-bold block mt-1">2 giờ trước &bull; bởi Admin</span>
-                        </div>
-                      </div>
+                          return (
+                            <div key={idx} className="relative group">
+                              <div className={`absolute -left-[31px] top-0.5 w-[11px] h-[11px] rounded-full ${typeBg} border-2 border-white group-hover:scale-125 transition-transform`} />
+                              <div>
+                                <span className="text-[10px] font-bold uppercase tracking-wider block" style={{ color: typeColor }}>
+                                  {typeLabel}
+                                </span>
+                                <h4 className="text-xs font-bold text-gray-800 mt-0.5 truncate max-w-[280px]" title={act.title}>
+                                  {act.title}
+                                </h4>
+                                <span className="text-[10px] text-gray-400 font-bold block mt-1">
+                                  {timeStr} {act.status ? `• Trạng thái: ${act.status}` : ''}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <p className="text-xs text-gray-450 italic py-4">Chưa có hoạt động nào vừa diễn ra</p>
+                      )}
                     </div>
                   </div>
                 </div>
 
               </div>
             </>
+            )
           ) : activeTab === "logo-footer" ? (
             <div className="space-y-6">
               {/* CARD 1: Header action */}

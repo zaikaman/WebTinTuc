@@ -107,8 +107,9 @@ export default async function PostDetailPage({ params }: PageProps) {
                       </p>
                     );
                   } else if (block.type === "image") {
+                    const width = block.width || "100%";
                     return (
-                      <div key={index} className="my-4 space-y-1.5">
+                      <div key={index} className="my-4 space-y-1.5 mx-auto" style={{ maxWidth: width }}>
                         <div className="border border-gray-200 overflow-hidden bg-gray-50 rounded-md md:rounded-sm">
                           <img
                             src={block.src}
@@ -122,6 +123,22 @@ export default async function PostDetailPage({ params }: PageProps) {
                             {block.caption}
                           </p>
                         )}
+                      </div>
+                    );
+                  } else if (block.type === "video") {
+                    const width = block.width || "100%";
+                    return (
+                      <div key={index} className="my-4 mx-auto" style={{ maxWidth: width }}>
+                        <video controls src={block.src} className="w-full max-h-[500px] rounded border border-gray-200 bg-black shadow-sm" />
+                      </div>
+                    );
+                  } else if (block.type === "iframe") {
+                    const width = block.width || "100%";
+                    return (
+                      <div key={index} className="my-4 mx-auto" style={{ maxWidth: width }}>
+                        <div className="aspect-video w-full">
+                          <iframe src={block.src} className="w-full h-full rounded border border-gray-200 shadow-sm" allowFullScreen />
+                        </div>
                       </div>
                     );
                   } else if (block.type === "ad") {

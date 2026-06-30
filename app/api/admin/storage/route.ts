@@ -9,7 +9,8 @@ export async function GET(request: NextRequest) {
   try {
     await requireAdmin(request)
     const { prefix } = parseQuery(request, storagePrefixQuerySchema)
-    return ok(await getStorageTree(prefix))
+    const recursive = request.nextUrl.searchParams.get('recursive') === 'true'
+    return ok(await getStorageTree(prefix, recursive))
   } catch (error) {
     return fail(error)
   }
