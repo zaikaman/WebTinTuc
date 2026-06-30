@@ -12,7 +12,7 @@ async function fetchAdmin<T>(path: string, options: RequestInit = {}): Promise<T
     ...(options.headers || {}),
   };
 
-  const response = await fetch(url, { ...options, headers });
+  const response = await fetch(url, { cache: "no-store", ...options, headers });
   
   if (!response.ok) {
     let message = `API Error: ${response.statusText}`;
@@ -84,3 +84,7 @@ export async function uploadAdminMedia(formData: FormData) {
 }
 
 export const deleteAdminMedia = (key: string) => fetchAdmin<any>(`/storage?key=${encodeURIComponent(key)}`, { method: "DELETE" });
+
+export const moveAdminMedia = (fromKey: string, toKey: string) => fetchAdmin<any>("/storage/move", { method: "POST", body: JSON.stringify({ fromKey, toKey }) });
+
+export const createAdminFolder = (folderName: string, parentPrefix: string = "") => fetchAdmin<any>("/storage/folder", { method: "POST", body: JSON.stringify({ folderName, parentPrefix }) });

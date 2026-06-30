@@ -46,7 +46,7 @@ import {
   Globe,
   RotateCcw
 } from "lucide-react";
-import { getAdminSettings, updateAdminSettings, getAdminMedia, uploadAdminMedia, deleteAdminMedia, getAdminCategories, createAdminCategory, updateAdminCategory, deleteAdminCategory, getAdminArticles, createAdminArticle, updateAdminArticle, deleteAdminArticle, restoreAdminArticle, getAdminAds, createAdminAd, updateAdminAd, deleteAdminAd } from "@/lib/api/adminClient";
+import { getAdminSettings, updateAdminSettings, getAdminMedia, uploadAdminMedia, deleteAdminMedia, moveAdminMedia, createAdminFolder, getAdminCategories, createAdminCategory, updateAdminCategory, deleteAdminCategory, getAdminArticles, createAdminArticle, updateAdminArticle, deleteAdminArticle, restoreAdminArticle, getAdminAds, createAdminAd, updateAdminAd, deleteAdminAd } from "@/lib/api/adminClient";
 import { Toaster, toast } from "sonner";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -204,6 +204,7 @@ export default function AdminPage() {
   // ==========================================
   interface MediaItem {
     id: number;
+    key: string;
     title: string;
     type: "image" | "video";
     url: string;
@@ -234,8 +235,10 @@ export default function AdminPage() {
   const [mediaPreviewItem, setMediaPreviewItem] = useState<MediaItem | null>(null);
   const [mediaSearchQuery, setMediaSearchQuery] = useState("");
   const [mediaTypeFilter, setMediaTypeFilter] = useState<"all" | "image" | "video">("all");
-  const [activeFolder, setActiveFolder] = useState<string>("Thumbnails");
-  const [folders, setFolders] = useState<string[]>(["MP3", "Public", "Thumbnails", "Videos"]);
+  const [activeFolder, setActiveFolder] = useState<string>("");
+  const [folders, setFolders] = useState<string[]>([]);
+  const [folderDialogOpen, setFolderDialogOpen] = useState(false);
+  const [newFolderName, setNewFolderName] = useState("");
 
   const [timeFilter, setTimeFilter] = useState<"today" | "week" | "month" | "year">("month");
   const [dashboardDay, setDashboardDay] = useState("");
@@ -248,12 +251,13 @@ export default function AdminPage() {
       if (res && res.files) {
         setMediaItems(res.files.map((f: any, idx: number) => ({
           id: idx + 1,
+          key: f.key,
           title: f.name,
           type: f.type,
           url: f.url,
           size: (f.size / 1024).toFixed(2) + " KB",
           createdAt: f.lastModified ? new Date(f.lastModified).toISOString().split("T")[0] : "",
-          folder: f.key.split('/')[0] || "Public"
+          folder: f.key.includes('/') ? f.key.split('/')[0] : ""
         })));
       }
     } catch (err) {}
@@ -348,6 +352,15 @@ export default function AdminPage() {
     }
     if (activeTab === "media") {
       loadMedia();
+      getAdminMedia("").then(res => {
+        if (res && res.subFolders) {
+          const uniqueFolders = Array.from(new Set([
+            ...res.subFolders.map((sf) => sf.name),
+            "articles", "ads", "categories" // default folders
+          ]));
+          setFolders(uniqueFolders);
+        }
+      }).catch(() => {});
     }
     if (activeTab === "ads") {
       loadAds();
@@ -2353,11 +2366,8 @@ export default function AdminPage() {
                     <button
                       type="button"
                       onClick={() => {
-                        const name = prompt("Nhập tên thư mục mới:");
-                        if (name && name.trim()) {
-                          setFolders(prev => [...prev, name.trim()]);
-                          toast.success(`Đã thêm thư mục: ${name.trim()}`);
-                        }
+                        setNewFolderName("");
+                        setFolderDialogOpen(true);
                       }}
                       className="p-1 border border-gray-300 hover:border-gray-400 rounded transition-colors hover:bg-gray-50 flex items-center justify-center"
                     >
@@ -2384,15 +2394,35 @@ export default function AdminPage() {
                         return (
                           <div
                             key={folderName}
-                            onClick={() => setActiveFolder(folderName)}
-                            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all ${
+                            className={`group/folder flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all ${
                               isActive
                                 ? "bg-[#ffe4e4] text-[#eb5757]"
                                 : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
                             }`}
                           >
-                            <ChevronRight size={12} className={isActive ? "text-[#eb5757]" : "text-gray-400"} />
-                            <span>{folderName}</span>
+                            <div 
+                              onClick={() => setActiveFolder(folderName)}
+                              className="flex items-center gap-1.5 flex-1"
+                            >
+                              <ChevronRight size={12} className={isActive ? "text-[#eb5757]" : "text-gray-400"} />
+                              <span>{folderName}</span>
+                            </div>
+                            
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (confirm(`Bạn có chắc chắn muốn xóa thư mục "${folderName}" khỏi danh sách hiển thị?`)) {
+                                  setFolders(prev => prev.filter(f => f !== folderName));
+                                  if (activeFolder === folderName) setActiveFolder("");
+                                  toast.success(`Đã xóa thư mục: ${folderName}`);
+                                }
+                              }}
+                              className="opacity-0 group-hover/folder:opacity-100 p-0.5 hover:text-red-650 transition-opacity flex items-center justify-center"
+                              title="Ẩn thư mục"
+                            >
+                              <X size={10} className="font-bold text-gray-500 hover:text-red-650" />
+                            </button>
                           </div>
                         );
                       })}
@@ -2516,10 +2546,16 @@ export default function AdminPage() {
                                   </button>
                                   <button
                                     type="button"
-                                    onClick={() => {
+                                    onClick={async () => {
                                       if (confirm("Bạn có chắc chắn muốn xóa file media này không?")) {
-                                        setMediaItems(mediaItems.filter((m) => m.id !== item.id));
-                                        toast.success("Đã xóa file media thành công!");
+                                        try {
+                                          toast.loading("Đang xóa...", { id: "media-delete" });
+                                          await deleteAdminMedia(item.key);
+                                          toast.success("Đã xóa file media thành công!", { id: "media-delete" });
+                                          loadMedia();
+                                        } catch (err) {
+                                          toast.error("Lỗi khi xóa file media!", { id: "media-delete" });
+                                        }
                                       }
                                     }}
                                     className="w-8 h-8 rounded-full bg-white hover:bg-red-50 text-red-650 flex items-center justify-center shadow transition-all active:scale-95"
@@ -3550,7 +3586,82 @@ export default function AdminPage() {
         </DialogContent>
       </Dialog>
 
-        {/* ==========================================
+      {/* ==========================================
+        MODAL: CREATE FOLDER DIALOG
+        ========================================== */}
+      <Dialog open={folderDialogOpen} onOpenChange={setFolderDialogOpen}>
+        <DialogContent className="max-w-[460px] w-[95%] max-h-[90vh] overflow-y-auto rounded-[24px] p-6 border border-gray-100 shadow-2xl bg-white text-[#2c3e50] outline-none [&>button]:hidden">
+          <DialogHeader className="border-b border-gray-150 pb-3 -mx-6 px-6">
+            <DialogTitle className="text-xl font-bold text-gray-900 text-left">
+              Tạo thư mục mới
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-5 pt-4">
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-gray-900">
+                Tên thư mục
+              </label>
+              <input
+                type="text"
+                value={newFolderName}
+                onChange={(e) => setNewFolderName(e.target.value)}
+                placeholder="Nhập tên thư mục..."
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white shadow-sm font-medium"
+              />
+            </div>
+
+            {activeFolder && (
+              <p className="text-xs font-semibold text-gray-400">
+                Thư mục mới sẽ được tạo bên trong: <strong className="text-gray-700">{activeFolder}</strong>
+              </p>
+            )}
+
+            <div className="flex gap-3 justify-end pt-3">
+              <button
+                type="button"
+                onClick={() => setFolderDialogOpen(false)}
+                className="px-5 py-2.5 border border-gray-200 hover:bg-gray-50 text-gray-700 text-xs font-bold rounded-xl transition-all"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!newFolderName.trim()) {
+                    toast.error("Vui lòng nhập tên thư mục!");
+                    return;
+                  }
+                  try {
+                    toast.loading("Đang tạo thư mục...", { id: "media-folder" });
+                    await createAdminFolder(newFolderName.trim(), activeFolder);
+                    toast.success(`Đã thêm thư mục: ${newFolderName.trim()}`, { id: "media-folder" });
+                    setFolderDialogOpen(false);
+                    setNewFolderName("");
+
+                    // Reload folders list
+                    const res = await getAdminMedia("");
+                    if (res && res.subFolders) {
+                      const uniqueFolders = Array.from(new Set([
+                        ...res.subFolders.map((sf) => sf.name),
+                        "articles", "ads", "categories"
+                      ]));
+                      setFolders(uniqueFolders);
+                    }
+                  } catch (err) {
+                    toast.error("Lỗi khi tạo thư mục!", { id: "media-folder" });
+                  }
+                }}
+                className="px-5 py-2.5 bg-[#E55956] hover:bg-[#d44e4b] text-white text-xs font-bold rounded-xl transition-all shadow-md"
+              >
+                Tạo
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+              {/* ==========================================
           MODAL: MEDIA PREVIEW DIALOG
           ========================================== */}
       <Dialog open={mediaPreviewItem !== null} onOpenChange={(open) => {

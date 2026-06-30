@@ -2,7 +2,8 @@
 
 import { requireAdminAccess } from '@/server/auth'
 import { storageKeySchema, storageMoveSchema } from '@/server/validations/storage.schema'
-import { copyFileInR2, deleteFileFromR2, moveFileInR2, uploadFileToR2 } from '@/server/services/storage.service'
+import { copyFileInR2, deleteFileFromR2, moveFileInR2, uploadFileToR2, createFolderInR2 } from '@/server/services/storage.service'
+import { z } from 'zod'
 import { runAction } from './action-result'
 
 export async function uploadFileAction(formData: FormData, adminSecret?: string | null) {
@@ -43,3 +44,14 @@ export async function copyFileAction(input: unknown, adminSecret?: string | null
   })
 }
 
+
+export async function createFolderAction(input: unknown, adminSecret?: string | null) {
+  return runAction(async () => {
+    await requireAdminAccess(adminSecret)
+    const { folderName, parentPrefix } = z.object({
+      folderName: z.string().min(1),
+      parentPrefix: z.string().default('')
+    }).parse(input)
+    return createFolderInR2(folderName, parentPrefix)
+  })
+}

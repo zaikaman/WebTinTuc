@@ -25,10 +25,11 @@ export async function uploadFileToR2(file: File, folder: string = 'articles'): P
 
     await s3Client.send(command)
 
+    const r2Url = process.env.R2_PUBLIC_URL || process.env.NEXT_PUBLIC_R2_PUBLIC_URL || '';
     return {
       success: true,
       key: fileKey, 
-      url: `${process.env.R2_PUBLIC_URL}/${fileKey}`
+      url: `${r2Url}/${fileKey}`
     }
   } catch (error) {
     console.error('R2 Upload Error:', error)
@@ -67,13 +68,14 @@ export async function getStorageTree(prefix: string = '') {
         if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) type = 'image'
         if (['mp4', 'webm', 'ogg', 'mov'].includes(ext)) type = 'video'
 
+        const r2Url = process.env.R2_PUBLIC_URL || process.env.NEXT_PUBLIC_R2_PUBLIC_URL || '';
         return {
           key,
           name: key.split('/').pop() || '',
           size: file.Size || 0,
           lastModified: file.LastModified,
           type,
-          url: `${process.env.R2_PUBLIC_URL}/${key}`
+          url: `${r2Url}/${key}`
         }
       }) || []
 
@@ -114,4 +116,27 @@ export async function moveFileInR2(fromKey: string, toKey: string) {
   await copyFileInR2(fromKey, toKey)
   await deleteFileFromR2(fromKey)
   return { success: true, fromKey, toKey }
+}
+
+export async function createFolderInR2(folderName: string, parentPrefix: string = ''): Promise<{ success: boolean; key: string }> {
+  try {
+    const cleanParent = parentPrefix && !parentPrefix.endsWith('/') ? `${parentPrefix}/` : parentPrefix;
+    const folderKey = `${cleanParent}${folderName}/`;
+
+    const command = new PutObjectCommand({
+      Bucket: process.env.R2_BUCKET_NAME,
+      Key: folderKey,
+      Body: '',
+    });
+
+    await s3Client.send(command);
+
+    return {
+      success: true,
+      key: folderKey
+    };
+  } catch (error) {
+    console.error('R2 Create Folder Error:', error);
+    throw new Error('Failed to create folder on Cloudflare R2');
+  }
 }
