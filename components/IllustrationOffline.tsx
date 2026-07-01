@@ -2,6 +2,7 @@
 
 import React from "react";
 import { motion } from "framer-motion";
+import { OFFLINE_IMAGE_BASE64 } from "./offlineImage";
 
 export function IllustrationOffline() {
   return (
@@ -61,7 +62,7 @@ export function IllustrationOffline() {
         transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
       >
         <img
-          src="/screen-3.png"
+          src={OFFLINE_IMAGE_BASE64}
           alt="Offline"
           className="w-full h-full object-cover rounded-[22px]"
         />
