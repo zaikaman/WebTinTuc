@@ -61,7 +61,7 @@ export function IllustrationOffline() {
         transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
       >
         <img
-          src="/screen 3.png"
+          src="/screen-3.png"
           alt="Offline"
           className="w-full h-full object-cover rounded-[22px]"
         />
