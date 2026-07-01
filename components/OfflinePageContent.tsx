@@ -1,38 +1,52 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { Home, RotateCw } from "lucide-react";
-import { Illustration404 } from "@/components/Illustration404";
+import { IllustrationOffline } from "./IllustrationOffline";
 
-export default function NotFound() {
-  const pathname = usePathname();
-  const [isRetrying, setIsRetrying] = useState(false);
+interface OfflinePageContentProps {
+  onCheckConnection?: () => void;
+}
 
-  useEffect(() => {
-    console.error("404 Error: Page not found at", pathname);
-  }, [pathname]);
+export function OfflinePageContent({ onCheckConnection }: OfflinePageContentProps) {
+  const [isChecking, setIsChecking] = useState(false);
 
   const handleRetry = () => {
-    setIsRetrying(true);
+    setIsChecking(true);
+    
+    // Simulate a brief check
     setTimeout(() => {
-      window.location.reload();
-    }, 600);
+      setIsChecking(false);
+      
+      if (typeof window !== "undefined") {
+        if (navigator.onLine) {
+          // If online, either call the callback to clear the state or reload
+          if (onCheckConnection) {
+            onCheckConnection();
+          } else {
+            window.location.reload();
+          }
+        } else {
+          // Still offline, we can show a small console notice or visual indicator
+          console.log("Check connection: Still offline.");
+        }
+      }
+    }, 800);
   };
 
   return (
     <div className="flex flex-col items-center justify-center py-10 md:py-16 px-4 text-center select-none overflow-hidden relative min-h-[500px]">
-      {/* 404 Illustration */}
-      <Illustration404 />
+      {/* Offline Illustration with concentric circles background */}
+      <IllustrationOffline />
 
       {/* Content */}
       <div className="max-w-[580px] mt-6 z-10">
         <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-4 tracking-tight">
-          Không tìm thấy nội dung
+          Mất kết nối Internet
         </h1>
         <p className="text-xs md:text-[13px] text-gray-600 leading-relaxed mb-8">
-          Chúng tôi xin lỗi vì sự bất tiện này. Trang bạn đang tìm kiếm hiện không khả dụng hoặc đã được di chuyển. Quý khách vui lòng kiểm tra lại đường dẫn hoặc sử dụng công cụ tìm kiếm để tiếp tục.
+          Không thể kết nối với máy chủ. Vui lòng kiểm tra lại kết nối internet của bạn để tiếp tục cập nhật tin tức.
         </p>
 
         {/* Action Buttons */}
@@ -46,11 +60,11 @@ export default function NotFound() {
           </Link>
           <button
             onClick={handleRetry}
-            disabled={isRetrying}
+            disabled={isChecking}
             className="flex items-center justify-center gap-2 w-full sm:w-auto bg-white hover:bg-gray-50 text-gray-900 border border-gray-900 font-bold text-xs md:text-[13px] px-6 py-2.5 rounded-lg shadow-sm hover:shadow transition-all duration-200 active:scale-[0.98]"
           >
-            <RotateCw className={`w-4 h-4 ${isRetrying ? "animate-spin" : ""}`} />
-            <span>{isRetrying ? "Đang thử lại..." : "Thử lại"}</span>
+            <RotateCw className={`w-4 h-4 ${isChecking ? "animate-spin" : ""}`} />
+            <span>{isChecking ? "Đang kiểm tra..." : "Thử lại"}</span>
           </button>
         </div>
       </div>
