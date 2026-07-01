@@ -34,6 +34,8 @@
     "lib/**/*.ts",
     "lib/**/*.tsx",
     "server/**/*.ts",
+    "tests/**/*.ts",
+    "tests/**/*.tsx",
     ".next/types/**/*.ts",
     ".next-dev/types/**/*.ts"
   ],

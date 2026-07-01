@@ -39,8 +39,8 @@ describe('runAction', () => {
     })
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.code).toBe('BAD_REQUEST')
-      expect(result.message).toBe('Dữ liệu không hợp lệ')
+      expect((result as any).code).toBe('BAD_REQUEST')
+      expect((result as any).message).toBe('Dữ liệu không hợp lệ')
     }
   })
 

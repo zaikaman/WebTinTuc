@@ -14,7 +14,7 @@ describe('storageService', () => {
   })
 
   it('uploadFileToR2 uploads file and returns URL', async () => {
-    vi.mocked(s3Client.send).mockResolvedValue({})
+    vi.mocked(s3Client.send as any).mockResolvedValue({})
 
     const { uploadFileToR2 } = await import('@/server/services/storage.service')
     const file = new File(['test content'], 'test.jpg', { type: 'image/jpeg' })
@@ -28,7 +28,7 @@ describe('storageService', () => {
   })
 
   it('deleteFileFromR2 deletes file', async () => {
-    vi.mocked(s3Client.send).mockResolvedValue({})
+    vi.mocked(s3Client.send as any).mockResolvedValue({})
 
     const { deleteFileFromR2 } = await import('@/server/services/storage.service')
     const result = await deleteFileFromR2('articles/test.jpg')
@@ -38,7 +38,7 @@ describe('storageService', () => {
   })
 
   it('copyFileInR2 copies file', async () => {
-    vi.mocked(s3Client.send).mockResolvedValue({})
+    vi.mocked(s3Client.send as any).mockResolvedValue({})
 
     const { copyFileInR2 } = await import('@/server/services/storage.service')
     const result = await copyFileInR2('source.jpg', 'dest.jpg')
@@ -49,7 +49,7 @@ describe('storageService', () => {
   })
 
   it('moveFileInR2 copies then deletes', async () => {
-    vi.mocked(s3Client.send).mockResolvedValue({})
+    vi.mocked(s3Client.send as any).mockResolvedValue({})
 
     const { moveFileInR2 } = await import('@/server/services/storage.service')
     const result = await moveFileInR2('source.jpg', 'dest.jpg')
@@ -60,7 +60,7 @@ describe('storageService', () => {
   })
 
   it('createFolderInR2 creates folder (empty object)', async () => {
-    vi.mocked(s3Client.send).mockResolvedValue({})
+    vi.mocked(s3Client.send as any).mockResolvedValue({})
 
     const { createFolderInR2 } = await import('@/server/services/storage.service')
     const result = await createFolderInR2('new-folder', 'articles')

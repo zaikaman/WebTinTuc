@@ -19,7 +19,7 @@ describe('dashboardService', () => {
       totalViews: 5000,
       totalClicks: 200,
     }
-    vi.mocked(dashboardRepository.getDashboardStats).mockResolvedValue(mockStats)
+    vi.mocked(dashboardRepository.getDashboardStats).mockResolvedValue(mockStats as any)
 
     const result = await dashboardService.getDashboardStats()
     expect(result).toEqual(mockStats)

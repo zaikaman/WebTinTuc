@@ -1,4 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { clearMemoryCache } from '@/lib/api/news'
+
+beforeEach(() => {
+  clearMemoryCache()
+})
 
 // Mock all server services used by news.ts
 vi.mock('@/server/services/site-settings.service', () => ({
@@ -13,6 +18,8 @@ vi.mock('@/server/services/category.service', () => ({
 vi.mock('@/server/services/article.service', () => ({
   listPublicArticles: vi.fn(),
   getArticleBySlug: vi.fn(),
+  getRelatedArticles: vi.fn(),
+  getTrendingArticles: vi.fn(),
 }))
 
 vi.mock('@/server/services/ad.service', () => ({
@@ -223,22 +230,24 @@ describe('getPostRecommendations', () => {
 
   it('returns related and like posts', async () => {
     const articleService = await import('@/server/services/article.service')
-    const mockResult = {
-      items: [{ id: 1, slug: 'rec-1', title: 'Rec 1', category: {}, published_at: '2024-01-01', thumbnail_key: '' }],
-      meta: { page: 1, limit: 4, total: 1, totalPages: 1 },
-    }
-
-    vi.mocked(articleService.listPublicArticles).mockResolvedValue(mockResult as any)
+    
+    vi.mocked(articleService.getArticleBySlug).mockResolvedValue({ id: 1, title: 'Current' } as any)
+    vi.mocked(articleService.getRelatedArticles).mockResolvedValue([{ id: 2, slug: 'rec-1', title: 'Rec 1', category: {}, published_at: '2024-01-01', thumbnail_key: '' }] as any)
+    vi.mocked(articleService.getTrendingArticles).mockResolvedValue([{ id: 3, slug: 'rec-2', title: 'Rec 2', category: {}, published_at: '2024-01-01', thumbnail_key: '' }] as any)
+    vi.mocked(articleService.listPublicArticles).mockResolvedValue({ items: [] } as any)
 
     const { getPostRecommendations } = await import('@/lib/api/news')
     const result = await getPostRecommendations('some-article')
 
     expect(result.relatedPosts).toHaveLength(1)
+    expect(result.relatedPosts[0].id).toBe('rec-1')
     expect(result.likePosts).toHaveLength(1)
+    expect(result.likePosts[0].id).toBe('rec-2')
   })
 
   it('returns empty arrays on error', async () => {
     const articleService = await import('@/server/services/article.service')
+    vi.mocked(articleService.getArticleBySlug).mockRejectedValue(new Error('Failed'))
     vi.mocked(articleService.listPublicArticles).mockRejectedValue(new Error('Failed'))
 
     const { getPostRecommendations } = await import('@/lib/api/news')

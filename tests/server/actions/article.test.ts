@@ -10,8 +10,8 @@ vi.mock('@/server/services/article.service', () => ({
 
 const mockParse = vi.fn((input) => input)
 vi.mock('@/server/validations/article.schema', () => ({
-  createArticleSchema: { parse: (...args: any[]) => mockParse(...args) },
-  updateArticleSchema: { parse: (...args: any[]) => mockParse(...args) },
+  createArticleSchema: { parse: (val: any) => mockParse(val) },
+  updateArticleSchema: { parse: (val: any) => mockParse(val) },
 }))
 
 describe('articleActions', () => {
@@ -42,7 +42,7 @@ describe('articleActions', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.code).toBe('INTERNAL_ERROR')
+      expect((result as any).code).toBe('INTERNAL_ERROR')
     }
   })
 

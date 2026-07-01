@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
       Key: key
     })
 
-    const downloadUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 })
+    const downloadUrl = await getSignedUrl(s3Client as any, command, { expiresIn: 3600 })
 
     return ok({ downloadUrl, key, expiresIn: 3600 })
   } catch (error) {

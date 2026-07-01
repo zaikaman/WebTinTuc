@@ -149,20 +149,48 @@ export const getArticleById = withMemoryCache(getArticleByIdCached, 'getArticleB
 const getPostRecommendationsCached = unstable_cache(
   async (articleId: string): Promise<PostRecommendations> => {
     try {
-      // Just fetching 4 latest articles for now as related/like
-      const [relatedData, likeData] = await Promise.all([
-        articleService.listPublicArticles({ limit: 4 }),
-        articleService.listPublicArticles({ limit: 4 }),
-      ]);
+      let relatedItems: any[] = [];
+      let likeItems: any[] = [];
 
-      const relatedItems = relatedData?.items || [];
-      const likeItems = likeData?.items || [];
+      const currentArticle = await articleService.getArticleBySlug(articleId);
+      if (currentArticle) {
+        // Fetch related articles (same category)
+        relatedItems = await articleService.getRelatedArticles(articleId, 4);
+
+        // Fetch trending articles (max 10) as "You May Also Like" candidate pool
+        const trending = await articleService.getTrendingArticles(10);
+        const relatedIds = new Set(relatedItems.map((a: any) => a.id));
+        
+        likeItems = trending
+          .filter((a: any) => a.id !== currentArticle.id && !relatedIds.has(a.id))
+          .slice(0, 4);
+
+        // If not enough, fill the rest with latest articles
+        if (likeItems.length < 4) {
+          const latest = await articleService.listPublicArticles({ limit: 20 });
+          const latestItems = latest?.items || [];
+          const remainingCount = 4 - likeItems.length;
+          const additional = latestItems
+            .filter((a: any) => a.id !== currentArticle.id && !relatedIds.has(a.id) && !likeItems.some((l: any) => l.id === a.id))
+            .slice(0, remainingCount);
+          likeItems = [...likeItems, ...additional];
+        }
+      } else {
+        // Fallback if current article is not found
+        const [relatedData, likeData] = await Promise.all([
+          articleService.listPublicArticles({ limit: 4 }),
+          articleService.listPublicArticles({ limit: 4 }),
+        ]);
+        relatedItems = relatedData?.items || [];
+        likeItems = likeData?.items || [];
+      }
 
       return {
         relatedPosts: relatedItems.map(mapBackendArticleToFrontend),
         likePosts: likeItems.map(mapBackendArticleToFrontend),
       };
     } catch (error) {
+      console.error("Failed to fetch recommendations:", error);
       return { relatedPosts: [], likePosts: [] };
     }
   },
