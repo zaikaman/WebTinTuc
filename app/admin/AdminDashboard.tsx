@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  Loader2,
   FileText,
   Folder,
   Image as ImageIcon,
@@ -242,6 +243,272 @@ interface Ad {
 }
 
 type TabType = "dashboard" | "posts" | "categories" | "ads" | "logo-footer" | "media";
+
+// ==========================================
+// SKELETON LOADERS
+// ==========================================
+const DashboardSkeleton = () => (
+  <div className="space-y-6 animate-pulse">
+    {/* HEADER ACTION BANNER */}
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden">
+      <div className="absolute top-0 left-0 w-2.5 h-full bg-gray-250" />
+      <div className="space-y-2 w-full max-w-[300px]">
+        <div className="h-6 bg-gray-200 rounded-lg w-3/4"></div>
+        <div className="h-3 bg-gray-100 rounded w-full"></div>
+      </div>
+      <div className="h-10 bg-gray-200 rounded-xl w-32"></div>
+    </div>
+
+    {/* FILTER BAR SECTION */}
+    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
+      <div className="flex gap-2 p-1 bg-gray-50 rounded-xl border border-gray-100 w-fit">
+        <div className="h-8 bg-gray-200 rounded-lg w-20"></div>
+        <div className="h-8 bg-gray-100 rounded-lg w-20"></div>
+        <div className="h-8 bg-gray-100 rounded-lg w-20"></div>
+      </div>
+      <div className="flex gap-2">
+        <div className="h-9 bg-gray-100 rounded-xl w-24"></div>
+        <div className="h-9 bg-gray-100 rounded-xl w-24"></div>
+        <div className="h-9 bg-gray-200 rounded-xl w-16"></div>
+      </div>
+    </div>
+
+    {/* METRICS CARDS SECTION */}
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {[...Array(3)].map((_, i) => (
+        <div key={i} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="h-3 bg-gray-200 rounded w-1/3"></div>
+            <div className="w-10 h-10 rounded-xl bg-gray-150"></div>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <div className="h-8 bg-gray-200 rounded-lg w-2/5"></div>
+            <div className="h-4 bg-gray-100 rounded w-1/5"></div>
+          </div>
+          <div className="h-3 bg-gray-100 rounded w-3/5"></div>
+        </div>
+      ))}
+    </div>
+
+    {/* CATEGORIES PROGRESS SECTION */}
+    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-5">
+      <div className="space-y-2">
+        <div className="h-5 bg-gray-200 rounded-lg w-1/5"></div>
+        <div className="h-3 bg-gray-100 rounded w-1/4"></div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {[...Array(6)].map((_, i) => (
+          <div key={i} className="p-4.5 rounded-xl border border-gray-100 space-y-4 bg-slate-50/25">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-gray-200"></div>
+                <div className="h-4 bg-gray-200 rounded w-20"></div>
+              </div>
+              <div className="h-4 bg-gray-200 rounded w-8"></div>
+            </div>
+            <div className="w-full h-2 bg-gray-100 rounded-full"></div>
+            <div className="h-3 bg-gray-100 rounded w-12 ml-auto"></div>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    {/* BOTTOM COLUMNS */}
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="lg:col-span-7 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-4">
+        <div className="flex items-center justify-between pb-4 border-b border-gray-100">
+          <div className="space-y-2 w-1/2">
+            <div className="h-5 bg-gray-200 rounded-lg w-1/2"></div>
+            <div className="h-3 bg-gray-100 rounded w-3/4"></div>
+          </div>
+          <div className="h-6 bg-gray-200 rounded-lg w-16"></div>
+        </div>
+        <div className="space-y-4">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="flex items-center justify-between py-2">
+              <div className="flex items-center gap-3.5 flex-1">
+                <div className="w-6.5 h-6.5 rounded-full bg-gray-250 flex-shrink-0"></div>
+                <div className="space-y-2 flex-1">
+                  <div className="h-3.5 bg-gray-200 rounded w-3/4"></div>
+                  <div className="h-2.5 bg-gray-100 rounded w-1/5"></div>
+                </div>
+              </div>
+              <div className="h-4 bg-gray-200 rounded w-12"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="lg:col-span-5 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-4">
+        <div className="flex items-center justify-between pb-4 border-b border-gray-100">
+          <div className="space-y-2 w-1/2">
+            <div className="h-5 bg-gray-250 rounded-lg w-1/2"></div>
+            <div className="h-3 bg-gray-100 rounded w-3/4"></div>
+          </div>
+          <div className="w-2.5 h-2.5 rounded-full bg-gray-200"></div>
+        </div>
+        <div className="pl-6 border-l-2 border-gray-100 space-y-5 py-2">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="relative space-y-2">
+              <div className="absolute -left-[31px] top-1.5 w-3 h-3 rounded-full bg-gray-200 border-2 border-white"></div>
+              <div className="h-3.5 bg-gray-200 rounded w-3/4"></div>
+              <div className="h-2.5 bg-gray-100 rounded w-1/4"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+const LogoFooterSkeleton = () => (
+  <div className="space-y-6 animate-pulse">
+    {/* CARD 1: Header action */}
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-150 shadow-sm">
+      <div className="space-y-2 w-full max-w-[300px]">
+        <div className="h-6 bg-gray-200 rounded-lg w-3/4"></div>
+        <div className="h-3 bg-gray-100 rounded w-full"></div>
+      </div>
+      <div className="h-10 bg-gray-200 rounded-xl w-32"></div>
+    </div>
+
+    {/* CARD 2: Logo Website */}
+    <div className="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm space-y-4">
+      <div className="h-5 bg-gray-200 rounded-lg w-1/4"></div>
+      <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+        <div className="w-[90px] h-[90px] bg-gray-200 rounded-xl flex-shrink-0"></div>
+        <div className="space-y-3 flex-1 w-full">
+          <div className="h-4 bg-gray-200 rounded w-1/5"></div>
+          <div className="h-10 bg-gray-100 rounded-xl w-full"></div>
+        </div>
+      </div>
+    </div>
+
+    {/* CARD 3: Footer settings tabs */}
+    <div className="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm space-y-6">
+      <div className="flex gap-2 overflow-x-auto pb-2 border-b border-gray-100">
+        <div className="h-9 bg-gray-200 rounded-xl w-28 flex-shrink-0"></div>
+        <div className="h-9 bg-gray-100 rounded-xl w-28 flex-shrink-0"></div>
+        <div className="h-9 bg-gray-100 rounded-xl w-28 flex-shrink-0"></div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="space-y-2">
+            <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+            <div className="h-10 bg-gray-100 rounded-xl w-full"></div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+);
+
+const PostsTableSkeleton = () => (
+  <>
+    {[...Array(6)].map((_, i) => (
+      <tr key={i} className="animate-pulse">
+        <td className="py-4 px-6 text-center">
+          <div className="h-4 bg-gray-200 rounded w-6 mx-auto"></div>
+        </td>
+        <td className="py-4 px-4">
+          <div className="space-y-2">
+            <div className="h-4 bg-gray-200 rounded w-4/5"></div>
+            <div className="h-3 bg-gray-100 rounded w-1/4"></div>
+          </div>
+        </td>
+        <td className="py-4 px-4">
+          <div className="h-4 bg-gray-200 rounded w-16"></div>
+        </td>
+        <td className="py-4 px-4 text-right">
+          <div className="h-4 bg-gray-200 rounded w-12 ml-auto"></div>
+        </td>
+        <td className="py-4 px-4 text-center">
+          <div className="h-6 bg-gray-150 rounded-full w-16 mx-auto"></div>
+        </td>
+        <td className="py-4 px-4 text-center">
+          <div className="h-4 bg-gray-100 rounded w-20 mx-auto"></div>
+        </td>
+        <td className="py-4 px-6 text-center">
+          <div className="flex items-center justify-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-gray-200"></div>
+            <div className="w-8 h-8 rounded-lg bg-gray-200"></div>
+          </div>
+        </td>
+      </tr>
+    ))}
+  </>
+);
+
+const CategoriesTableSkeleton = () => (
+  <>
+    {[...Array(6)].map((_, i) => (
+      <tr key={i} className="animate-pulse">
+        <td className="py-4 px-6 text-center">
+          <div className="h-4 bg-gray-200 rounded w-6 mx-auto"></div>
+        </td>
+        <td className="py-4 px-4">
+          <div className="h-4 bg-gray-200 rounded w-32"></div>
+        </td>
+        <td className="py-4 px-4 text-right">
+          <div className="h-4 bg-gray-200 rounded w-12 ml-auto"></div>
+        </td>
+        <td className="py-4 px-4 text-center">
+          <div className="h-4 bg-gray-200 rounded w-8 mx-auto"></div>
+        </td>
+        <td className="py-4 px-4 text-center">
+          <div className="h-6 bg-gray-150 rounded-full w-16 mx-auto"></div>
+        </td>
+        <td className="py-4 px-6 text-center">
+          <div className="flex items-center justify-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-gray-200"></div>
+            <div className="w-8 h-8 rounded-lg bg-gray-200"></div>
+          </div>
+        </td>
+      </tr>
+    ))}
+  </>
+);
+
+const AdsTableSkeleton = () => (
+  <>
+    {[...Array(6)].map((_, i) => (
+      <tr key={i} className="animate-pulse">
+        <td className="py-4 px-6 text-center">
+          <div className="h-4 bg-gray-200 rounded w-6 mx-auto"></div>
+        </td>
+        <td className="py-4 px-4">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-7 rounded bg-gray-200 flex-shrink-0"></div>
+            <div className="space-y-1.5 flex-1">
+              <div className="h-4 bg-gray-200 rounded w-24"></div>
+              <div className="h-3 bg-gray-100 rounded w-32"></div>
+            </div>
+          </div>
+        </td>
+        <td className="py-4 px-4">
+          <div className="h-4 bg-gray-200 rounded w-16"></div>
+        </td>
+        <td className="py-4 px-4 text-right">
+          <div className="h-4 bg-gray-200 rounded w-12 ml-auto"></div>
+        </td>
+        <td className="py-4 px-4 text-center">
+          <div className="h-4 bg-gray-100 rounded w-16 mx-auto"></div>
+        </td>
+        <td className="py-4 px-4 text-center">
+          <div className="h-4 bg-gray-100 rounded w-16 mx-auto"></div>
+        </td>
+        <td className="py-4 px-4 text-center">
+          <div className="h-6 bg-gray-150 rounded-full w-16 mx-auto"></div>
+        </td>
+        <td className="py-4 px-6 text-center">
+          <div className="flex items-center justify-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-gray-200"></div>
+            <div className="w-8 h-8 rounded-lg bg-gray-200"></div>
+          </div>
+        </td>
+      </tr>
+    ))}
+  </>
+);
 
 export default function AdminDashboard() {
   // ==========================================
@@ -521,6 +788,7 @@ export default function AdminDashboard() {
 
   const loadCategories = async () => {
     try {
+      setCategoriesLoading(true);
       const res = await getAdminCategories("?limit=100");
       if (res && res.items) {
         setCategories(res.items.map((c: any) => ({
@@ -533,6 +801,8 @@ export default function AdminDashboard() {
       }
     } catch (err) {
       toast.error("Không thể tải danh sách danh mục");
+    } finally {
+      setCategoriesLoading(false);
     }
   };
 
@@ -579,6 +849,7 @@ export default function AdminDashboard() {
 
   const loadPosts = async () => {
     try {
+      setPostsLoading(true);
       const res = await getAdminArticles("?limit=1000&includeDeleted=true");
       if (res && res.items) {
         setPosts(res.items.map((a: any) => ({
@@ -595,6 +866,8 @@ export default function AdminDashboard() {
       }
     } catch (err) {
       toast.error("Không thể tải danh sách bài viết");
+    } finally {
+      setPostsLoading(false);
     }
   };
 
@@ -617,6 +890,7 @@ export default function AdminDashboard() {
       loadDashboardStats();
     }
     if (activeTab === "logo-footer" || activeTab === "dashboard") {
+      setSettingsLoading(true);
       getAdminSettings().then(res => {
         if (res) {
           setSiteSettings(res as any);
@@ -633,7 +907,9 @@ export default function AdminDashboard() {
             setFooterResponsible(res.footer.responsible || "");
           }
         }
-      }).catch(() => {});
+      }).catch(() => {}).finally(() => {
+        setSettingsLoading(false);
+      });
     }
   }, [activeTab]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -670,7 +946,20 @@ export default function AdminDashboard() {
   const [categories, setCategories] = useState<Category[]>([]);
 
   const [ads, setAds] = useState<Ad[]>([]);
-  const [adsLoading, setAdsLoading] = useState(false);
+  const [adsLoading, setAdsLoading] = useState(true);
+  const [postsLoading, setPostsLoading] = useState(true);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [settingsLoading, setSettingsLoading] = useState(true);
+  const [isPostSaving, setIsPostSaving] = useState(false);
+  const [isCategorySaving, setIsCategorySaving] = useState(false);
+  const [isAdSaving, setIsAdSaving] = useState(false);
+  const [isSettingsSaving, setIsSettingsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isFolderCreating, setIsFolderCreating] = useState(false);
+  const [isMediaUploading, setIsMediaUploading] = useState(false);
+  const [restoringPostId, setRestoringPostId] = useState<number | null>(null);
+  const [deletingMediaKey, setDeletingMediaKey] = useState<string | null>(null);
+
 
   // Pagination states
   const [postsPage, setPostsPage] = useState(1);
@@ -1171,12 +1460,15 @@ export default function AdminDashboard() {
 
   const executeRestore = async (id: number) => {
     try {
+      setRestoringPostId(id);
       toast.loading("Đang khôi phục...", { id: "restore-post" });
       await restoreAdminArticle(id);
       toast.success("Khôi phục bài viết thành công!", { id: "restore-post" });
       loadPosts();
     } catch (err) {
       toast.error("Lỗi khi khôi phục bài viết!", { id: "restore-post" });
+    } finally {
+      setRestoringPostId(null);
     }
   };
 
@@ -1188,33 +1480,28 @@ export default function AdminDashboard() {
   const executeDelete = async () => {
     if (targetIdToDelete === null) return;
 
-    if (activeTab === "posts") {
-      try {
+    try {
+      setIsDeleting(true);
+      if (activeTab === "posts") {
         await deleteAdminArticle(targetIdToDelete);
         toast.success("Xóa bài viết thành công!");
         loadPosts();
-      } catch (err) {
-        toast.error("Lỗi khi xóa bài viết!");
-      }
-    } else if (activeTab === "categories") {
-      try {
+      } else if (activeTab === "categories") {
         await deleteAdminCategory(targetIdToDelete);
         toast.success("Xóa danh mục thành công!");
         loadCategories();
-      } catch (err) {
-        toast.error("Lỗi khi xóa danh mục!");
-      }
-    } else if (activeTab === "ads") {
-      try {
+      } else if (activeTab === "ads") {
         await deleteAdminAd(targetIdToDelete);
         toast.success("Xóa quảng cáo thành công!");
         loadAds();
-      } catch (err) {
-        toast.error("Lỗi khi xóa quảng cáo!");
       }
+    } catch (err) {
+      toast.error("Lỗi khi xóa!");
+    } finally {
+      setIsDeleting(false);
+      setDeleteConfirmOpen(false);
+      setTargetIdToDelete(null);
     }
-    setDeleteConfirmOpen(false);
-    setTargetIdToDelete(null);
   };
 
   const handleFormSubmit = async (e: React.FormEvent) => {
@@ -1225,6 +1512,7 @@ export default function AdminDashboard() {
         return;
       }
       try {
+        setIsPostSaving(true);
         toast.loading(dialogMode === "add" ? "Đang thêm bài viết..." : "Đang cập nhật...", { id: "post-submit" });
         const targetCategory = categories.find(c => c.name === postForm.category);
         const payload = {
@@ -1249,6 +1537,8 @@ export default function AdminDashboard() {
         setCurrentView("list");
       } catch (err) {
         toast.error("Có lỗi xảy ra, vui lòng thử lại!", { id: "post-submit" });
+      } finally {
+        setIsPostSaving(false);
       }
     } else if (activeTab === "categories") {
       if (!categoryForm.name?.trim()) {
@@ -1256,6 +1546,7 @@ export default function AdminDashboard() {
         return;
       }
       try {
+        setIsCategorySaving(true);
         toast.loading(dialogMode === "add" ? "Đang thêm danh mục..." : "Đang cập nhật...", { id: "cat-submit" });
         const payload = {
           name: categoryForm.name,
@@ -1276,6 +1567,8 @@ export default function AdminDashboard() {
         setCategoryDialogOpen(false);
       } catch (err) {
         toast.error("Có lỗi xảy ra, vui lòng thử lại!", { id: "cat-submit" });
+      } finally {
+        setIsCategorySaving(false);
       }
     } else if (activeTab === "ads") {
       if (!adForm.name?.trim()) {
@@ -1283,6 +1576,7 @@ export default function AdminDashboard() {
         return;
       }
       try {
+        setIsAdSaving(true);
         toast.loading(dialogMode === "add" ? "Đang thêm quảng cáo..." : "Đang cập nhật...", { id: "ad-submit" });
         const payload = {
           name: adForm.name,
@@ -1308,6 +1602,8 @@ export default function AdminDashboard() {
         setAdDialogOpen(false);
       } catch (err) {
         toast.error("Có lỗi xảy ra, vui lòng thử lại!", { id: "ad-submit" });
+      } finally {
+        setIsAdSaving(false);
       }
     }
     setDialogOpen(false);
@@ -1338,6 +1634,7 @@ export default function AdminDashboard() {
     }
 
     try {
+      setIsPostSaving(true);
       toast.loading(dialogMode === "add" ? "Đang thêm bài viết..." : "Đang cập nhật...", { id: "post-submit" });
       const targetCategory = categories.find(c => c.name === postForm.category);
       const payload = {
@@ -1362,6 +1659,8 @@ export default function AdminDashboard() {
       setCurrentView("list");
     } catch (err) {
       toast.error("Có lỗi xảy ra, vui lòng thử lại!", { id: "post-submit" });
+    } finally {
+      setIsPostSaving(false);
     }
   };
 
@@ -1474,31 +1773,35 @@ export default function AdminDashboard() {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      const isVideo = file.type.startsWith("video/");
-      const isImage = file.type.startsWith("image/");
-      
-      if (!isImage && !isVideo) {
-        toast.error(`File "${file.name}" không hợp lệ!`);
-        continue;
-      }
+    try {
+      setIsMediaUploading(true);
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const isVideo = file.type.startsWith("video/");
+        const isImage = file.type.startsWith("image/");
+        
+        if (!isImage && !isVideo) {
+          toast.error(`File "${file.name}" không hợp lệ!`);
+          continue;
+        }
 
-      toast.loading(`Đang tải lên ${file.name}...`, { id: `upload-${file.name}` });
-      try {
-        const formData = new FormData();
-        formData.append("file", file);
-        if (activeFolder) formData.append("folder", activeFolder);
+        toast.loading(`Đang tải lên ${file.name}...`, { id: `upload-${file.name}` });
+        try {
+          const formData = new FormData();
+          formData.append("file", file);
+          if (activeFolder) formData.append("folder", activeFolder);
 
-        await uploadAdminMedia(formData);
-        toast.success(`Tải lên thành công: ${file.name}`, { id: `upload-${file.name}` });
-      } catch (err: any) {
-        toast.error(`Lỗi tải lên ${file.name}: ${err.message}`, { id: `upload-${file.name}` });
+          await uploadAdminMedia(formData);
+          toast.success(`Tải lên thành công: ${file.name}`, { id: `upload-${file.name}` });
+        } catch (err: any) {
+          toast.error(`Lỗi tải lên ${file.name}: ${err.message}`, { id: `upload-${file.name}` });
+        }
       }
+    } finally {
+      setIsMediaUploading(false);
+      loadMedia();
+      e.target.value = "";
     }
-    
-    loadMedia();
-    e.target.value = "";
   };
 
   const insertHtmlToEditor = (html: string) => {
@@ -1768,9 +2071,14 @@ export default function AdminDashboard() {
           <button
             type="button"
             onClick={handleSavePost}
-            className="flex items-center gap-2 px-5 py-2.5 bg-[#E55956] hover:bg-[#cb4643] text-white text-sm font-bold rounded-xl transition-all shadow-md active:scale-[0.98]"
+            disabled={isPostSaving}
+            className="flex items-center gap-2 px-5 py-2.5 bg-[#E55956] hover:bg-[#cb4643] text-white text-sm font-bold rounded-xl transition-all shadow-md active:scale-[0.98] disabled:opacity-75 disabled:cursor-not-allowed"
           >
-            <Save size={16} />
+            {isPostSaving ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <Save size={16} />
+            )}
             <span>Lưu bài viết</span>
           </button>
         </header>
@@ -2917,10 +3225,7 @@ export default function AdminDashboard() {
         <main className="flex-1 p-6 md:p-8 max-w-7xl w-full mx-auto space-y-6">
           {activeTab === "dashboard" ? (
             dashboardLoading ? (
-              <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
-                <div className="w-8 h-8 border-4 border-[#E55956] border-t-transparent rounded-full animate-spin" />
-                <p className="text-sm font-bold text-gray-500">Đang tải dữ liệu thống kê...</p>
-              </div>
+              <DashboardSkeleton />
             ) : (
             <>
               {/* HEADER ACTION BANNER */}
@@ -3256,47 +3561,59 @@ export default function AdminDashboard() {
             </>
             )
           ) : activeTab === "logo-footer" ? (
-            <div className="space-y-6">
-              {/* CARD 1: Header action */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-150 shadow-sm">
-                <div>
-                  <h2 className="text-xl font-bold text-gray-900">
-                    Quản lý Footer & Nhận diện
-                  </h2>
-                  <p className="text-xs text-gray-500 mt-1 font-medium">
-                    Chỉnh sửa thông tin hiển thị cuối trang và logo website
-                  </p>
-                </div>
+            settingsLoading ? (
+              <LogoFooterSkeleton />
+            ) : (
+              <div className="space-y-6">
+                {/* CARD 1: Header action */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-150 shadow-sm">
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-900">
+                      Quản lý Footer & Nhận diện
+                    </h2>
+                    <p className="text-xs text-gray-500 mt-1 font-medium">
+                      Chỉnh sửa thông tin hiển thị cuối trang và logo website
+                    </p>
+                  </div>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    toast.loading("Đang lưu cấu hình...", { id: "save-logo-footer" });
-                    updateAdminSettings({
-                      brand: {
-                        name: logoWebsiteName,
-                        logo_url: logoUrl,
-                        copyright: footerOperator,
-                      },
-                      footer: {
-                        address: footerAddress,
-                        phone: footerPhone,
-                        email: footerEmail,
-                        license: footerLicense,
-                        responsible: footerResponsible
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        setIsSettingsSaving(true);
+                        toast.loading("Đang lưu cấu hình...", { id: "save-logo-footer" });
+                        await updateAdminSettings({
+                          brand: {
+                            name: logoWebsiteName,
+                            logo_url: logoUrl,
+                            copyright: footerOperator,
+                          },
+                          footer: {
+                            address: footerAddress,
+                            phone: footerPhone,
+                            email: footerEmail,
+                            license: footerLicense,
+                            responsible: footerResponsible
+                          }
+                        });
+                        toast.success("Lưu thay đổi thành công!", { id: "save-logo-footer" });
+                      } catch (err) {
+                        toast.error("Lỗi khi lưu cấu hình!", { id: "save-logo-footer" });
+                      } finally {
+                        setIsSettingsSaving(false);
                       }
-                    }).then(() => {
-                      toast.success("Lưu thay đổi thành công!", { id: "save-logo-footer" });
-                    }).catch(() => {
-                      toast.error("Lỗi khi lưu cấu hình!", { id: "save-logo-footer" });
-                    });
-                  }}
-                  className="flex items-center justify-center gap-2 px-5 py-2.5 bg-[#E55956] hover:bg-[#cb4643] active:scale-[0.98] text-white text-sm font-bold rounded-xl shadow-md transition-all self-start sm:self-center"
-                >
-                  <Download size={16} />
-                  <span>Lưu thay đổi</span>
-                </button>
-              </div>
+                    }}
+                    disabled={isSettingsSaving}
+                    className="flex items-center justify-center gap-2 px-5 py-2.5 bg-[#E55956] hover:bg-[#cb4643] active:scale-[0.98] text-white text-sm font-bold rounded-xl shadow-md transition-all self-start sm:self-center disabled:opacity-70 disabled:cursor-not-allowed"
+                  >
+                    {isSettingsSaving ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Download size={16} />
+                    )}
+                    <span>Lưu thay đổi</span>
+                  </button>
+                </div>
 
               {/* CARD 2: Logo Website */}
               <div className="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm space-y-4">
@@ -3461,6 +3778,7 @@ export default function AdminDashboard() {
                 </div>
               </div>
             </div>
+            )
           ) : activeTab === "media" ? (
             <div className="space-y-5 animate-fade-in">
               {/* Header Panel */}
@@ -3475,10 +3793,15 @@ export default function AdminDashboard() {
                   onClick={() => {
                     document.getElementById("media-direct-upload")?.click();
                   }}
-                  className="flex items-center justify-center gap-2 px-5 py-2.5 bg-[#eb5757] hover:bg-[#d94848] text-white text-xs font-bold rounded-xl shadow-sm transition-all self-start sm:self-center"
+                  disabled={isMediaUploading}
+                  className="flex items-center justify-center gap-2 px-5 py-2.5 bg-[#eb5757] hover:bg-[#d94848] text-white text-xs font-bold rounded-xl shadow-sm transition-all self-start sm:self-center disabled:opacity-75 disabled:cursor-not-allowed"
                 >
-                  <Upload size={14} />
-                  <span>Thêm media</span>
+                  {isMediaUploading ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <Upload size={14} />
+                  )}
+                  <span>{isMediaUploading ? "Đang tải lên..." : "Thêm media"}</span>
                 </button>
                 <input
                   type="file"
@@ -3740,19 +4063,27 @@ export default function AdminDashboard() {
                                     onClick={async () => {
                                       if (confirm("Bạn có chắc chắn muốn xóa file media này không?")) {
                                         try {
+                                          setDeletingMediaKey(item.key);
                                           toast.loading("Đang xóa...", { id: "media-delete" });
                                           await deleteAdminMedia(item.key);
                                           toast.success("Đã xóa file media thành công!", { id: "media-delete" });
                                           loadMedia();
                                         } catch (err) {
                                           toast.error("Lỗi khi xóa file media!", { id: "media-delete" });
+                                        } finally {
+                                          setDeletingMediaKey(null);
                                         }
                                       }
                                     }}
-                                    className="w-8 h-8 rounded-full bg-white hover:bg-red-50 text-red-650 flex items-center justify-center shadow transition-all active:scale-95"
+                                    disabled={deletingMediaKey === item.key}
+                                    className="w-8 h-8 rounded-full bg-white hover:bg-red-50 text-red-650 flex items-center justify-center shadow transition-all active:scale-95 disabled:opacity-75 disabled:cursor-not-allowed"
                                     title="Xóa media"
                                   >
-                                    <Trash2 size={13} />
+                                    {deletingMediaKey === item.key ? (
+                                      <Loader2 size={13} className="animate-spin" />
+                                    ) : (
+                                      <Trash2 size={13} />
+                                    )}
                                   </button>
                                 </div>
                               </div>
@@ -3985,7 +4316,9 @@ export default function AdminDashboard() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-150">
-                        {paginatedPosts.length > 0 ? (
+                        {postsLoading ? (
+                          <PostsTableSkeleton />
+                        ) : paginatedPosts.length > 0 ? (
                           paginatedPosts.map((post) => (
                             <tr key={post.id} className={`transition-colors text-sm font-medium whitespace-nowrap ${post.isDeleted ? 'opacity-50 bg-red-50/20' : 'hover:bg-gray-50/50'}`}>
                               <td className="py-4 px-6 text-center text-gray-400 font-bold">{post.id}</td>
@@ -4026,10 +4359,15 @@ export default function AdminDashboard() {
                                     <button
                                       type="button"
                                       onClick={() => executeRestore(post.id)}
-                                      className="p-1.5 border border-emerald-200 text-emerald-600 rounded-lg hover:bg-emerald-50 transition-colors"
+                                      disabled={restoringPostId === post.id}
+                                      className="p-1.5 border border-emerald-200 text-emerald-600 rounded-lg hover:bg-emerald-50 transition-colors disabled:opacity-75 disabled:cursor-not-allowed"
                                       title="Khôi phục bài viết"
                                     >
-                                      <RotateCcw size={15} />
+                                      {restoringPostId === post.id ? (
+                                        <Loader2 size={15} className="animate-spin" />
+                                      ) : (
+                                        <RotateCcw size={15} />
+                                      )}
                                     </button>
                                   ) : (
                                     <button
@@ -4070,7 +4408,9 @@ export default function AdminDashboard() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-150">
-                        {paginatedCategories.length > 0 ? (
+                        {categoriesLoading ? (
+                          <CategoriesTableSkeleton />
+                        ) : paginatedCategories.length > 0 ? (
                           paginatedCategories.map((cat) => (
                             <tr key={cat.id} className="hover:bg-gray-50/50 transition-colors text-sm font-medium whitespace-nowrap">
                               <td className="py-4 px-6 text-center text-gray-400 font-bold">{cat.id}</td>
@@ -4137,7 +4477,9 @@ export default function AdminDashboard() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-150">
-                        {paginatedAds.length > 0 ? (
+                        {adsLoading ? (
+                          <AdsTableSkeleton />
+                        ) : paginatedAds.length > 0 ? (
                           paginatedAds.map((ad) => (
                             <tr key={ad.id} className="hover:bg-gray-50/50 transition-colors text-sm font-medium whitespace-nowrap">
                               <td className="py-4 px-6 text-center text-gray-400 font-bold">{ad.id}</td>
@@ -4434,15 +4776,18 @@ export default function AdminDashboard() {
               <button
                 type="button"
                 onClick={() => setDialogOpen(false)}
-                className="px-4.5 py-2 border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-bold rounded-xl transition-all"
+                disabled={isPostSaving}
+                className="px-4.5 py-2 border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-bold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Hủy bỏ
               </button>
               <button
                 type="submit"
-                className="px-5 py-2 bg-[#E55956] hover:bg-[#cb4643] text-white text-sm font-bold rounded-xl transition-all shadow-md"
+                disabled={isPostSaving}
+                className="px-5 py-2 bg-[#E55956] hover:bg-[#cb4643] text-white text-sm font-bold rounded-xl transition-all shadow-md disabled:opacity-75 disabled:cursor-not-allowed flex items-center gap-1.5"
               >
-                {dialogMode === "add" ? "Thêm mới" : "Lưu thay đổi"}
+                {isPostSaving && <Loader2 className="w-4 h-4 animate-spin" />}
+                <span>{dialogMode === "add" ? "Thêm mới" : "Lưu thay đổi"}</span>
               </button>
             </DialogFooter>
           </form>
@@ -4516,15 +4861,18 @@ export default function AdminDashboard() {
               <button
                 type="button"
                 onClick={() => setCategoryDialogOpen(false)}
-                className="flex-1 max-w-[144px] py-3 border border-gray-200 hover:bg-gray-50 text-gray-900 text-lg font-bold rounded-xl transition-all shadow-sm flex items-center justify-center"
+                disabled={isCategorySaving}
+                className="flex-1 max-w-[144px] py-3 border border-gray-200 hover:bg-gray-50 text-gray-900 text-lg font-bold rounded-xl transition-all shadow-sm flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Hủy
               </button>
               <button
                 type="submit"
-                className="flex-1 max-w-[144px] py-3 bg-[#e86b6b] hover:bg-[#e55956] text-white text-lg font-bold rounded-xl transition-all shadow-md flex items-center justify-center"
+                disabled={isCategorySaving}
+                className="flex-1 max-w-[144px] py-3 bg-[#e86b6b] hover:bg-[#e55956] text-white text-lg font-bold rounded-xl transition-all shadow-md flex items-center justify-center disabled:opacity-75 disabled:cursor-not-allowed gap-2"
               >
-                {dialogMode === "add" ? "Thêm" : "Sửa"}
+                {isCategorySaving && <Loader2 className="w-5 h-5 animate-spin" />}
+                <span>{dialogMode === "add" ? "Thêm" : "Sửa"}</span>
               </button>
             </div>
           </form>
@@ -4723,15 +5071,18 @@ export default function AdminDashboard() {
               <button
                 type="button"
                 onClick={() => setAdDialogOpen(false)}
-                className="flex-1 max-w-[144px] py-3 border border-gray-200 hover:bg-gray-50 text-gray-900 text-lg font-bold rounded-xl transition-all shadow-sm flex items-center justify-center"
+                disabled={isAdSaving}
+                className="flex-1 max-w-[144px] py-3 border border-gray-200 hover:bg-gray-50 text-gray-900 text-lg font-bold rounded-xl transition-all shadow-sm flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Hủy
               </button>
               <button
                 type="submit"
-                className="flex-1 max-w-[144px] py-3 bg-[#e86b6b] hover:bg-[#e55956] text-white text-lg font-bold rounded-xl transition-all shadow-md flex items-center justify-center"
+                disabled={isAdSaving}
+                className="flex-1 max-w-[144px] py-3 bg-[#e86b6b] hover:bg-[#e55956] text-white text-lg font-bold rounded-xl transition-all shadow-md flex items-center justify-center disabled:opacity-75 disabled:cursor-not-allowed gap-2"
               >
-                {dialogMode === "add" ? "Thêm" : "Sửa"}
+                {isAdSaving && <Loader2 className="w-5 h-5 animate-spin" />}
+                <span>{dialogMode === "add" ? "Thêm" : "Sửa"}</span>
               </button>
             </div>
           </form>
@@ -4765,15 +5116,18 @@ export default function AdminDashboard() {
           <div className="flex items-center justify-center gap-4 pb-2">
             <button
               onClick={() => setDeleteConfirmOpen(false)}
-              className="flex-1 max-w-[144px] py-3 border border-gray-200 hover:bg-gray-50 text-gray-900 text-lg font-bold rounded-xl transition-all shadow-sm flex items-center justify-center"
+              disabled={isDeleting}
+              className="flex-1 max-w-[144px] py-3 border border-gray-200 hover:bg-gray-50 text-gray-900 text-lg font-bold rounded-xl transition-all shadow-sm flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Không
             </button>
             <button
               onClick={executeDelete}
-              className="flex-1 max-w-[144px] py-3 bg-[#e86b6b] hover:bg-[#e55956] text-white text-lg font-bold rounded-xl transition-all shadow-md flex items-center justify-center"
+              disabled={isDeleting}
+              className="flex-1 max-w-[144px] py-3 bg-[#e86b6b] hover:bg-[#e55956] text-white text-lg font-bold rounded-xl transition-all shadow-md flex items-center justify-center disabled:opacity-75 disabled:cursor-not-allowed gap-2"
             >
-              Có
+              {isDeleting && <Loader2 className="w-5 h-5 animate-spin" />}
+              <span>Có</span>
             </button>
           </div>
         </DialogContent>
