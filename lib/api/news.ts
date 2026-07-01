@@ -12,6 +12,33 @@ import type {
   NavigationItem,
 } from "@/lib/types/news";
 
+// High-performance in-memory cache to serve reads under 1ms
+const memoryCache = new Map<string, { data: any; expiry: number }>();
+
+export function clearMemoryCache() {
+  memoryCache.clear();
+}
+
+function withMemoryCache<T extends (...args: any[]) => Promise<any>>(
+  fn: T,
+  keyPrefix: string,
+  ttlMs = 30000 // 30 seconds default
+): T {
+  return (async (...args: any[]) => {
+    const key = `${keyPrefix}:${JSON.stringify(args)}`;
+    const now = Date.now();
+    const cached = memoryCache.get(key);
+
+    if (cached && cached.expiry > now) {
+      return cached.data;
+    }
+
+    const result = await fn(...args);
+    memoryCache.set(key, { data: result, expiry: Date.now() + ttlMs });
+    return result;
+  }) as unknown as T;
+}
+
 export function mapBackendArticleToFrontend(data: any): Article {
   return {
     id: data.slug || data.id?.toString() || "",
@@ -25,7 +52,7 @@ export function mapBackendArticleToFrontend(data: any): Article {
   };
 }
 
-export const getSiteSettings = unstable_cache(
+const getSiteSettingsCached = unstable_cache(
   async (): Promise<{ settings: SiteSettings, categories: NavigationItem[] }> => {
     try {
       const [settingsData, categoriesData] = await Promise.all([
@@ -75,7 +102,9 @@ export const getSiteSettings = unstable_cache(
   { revalidate: 60, tags: ['settings', 'categories'] }
 );
 
-export const getHomeFeed = unstable_cache(
+export const getSiteSettings = withMemoryCache(getSiteSettingsCached, 'getSiteSettings', 60000);
+
+const getHomeFeedCached = unstable_cache(
   async (): Promise<HomeFeed> => {
     try {
       const [featuredData, latestData] = await Promise.all([
@@ -99,7 +128,9 @@ export const getHomeFeed = unstable_cache(
   { revalidate: 60, tags: ['articles'] }
 );
 
-export const getArticleById = unstable_cache(
+export const getHomeFeed = withMemoryCache(getHomeFeedCached, 'getHomeFeed', 15000);
+
+const getArticleByIdCached = unstable_cache(
   async (slug: string): Promise<Article | undefined> => {
     try {
       const data = await articleService.getArticleBySlug(slug);
@@ -113,7 +144,9 @@ export const getArticleById = unstable_cache(
   { revalidate: 60, tags: ['articles'] }
 );
 
-export const getPostRecommendations = unstable_cache(
+export const getArticleById = withMemoryCache(getArticleByIdCached, 'getArticleById', 30000);
+
+const getPostRecommendationsCached = unstable_cache(
   async (articleId: string): Promise<PostRecommendations> => {
     try {
       // Just fetching 4 latest articles for now as related/like
@@ -137,14 +170,18 @@ export const getPostRecommendations = unstable_cache(
   { revalidate: 60, tags: ['articles'] }
 );
 
-export const getCategoryFeed = unstable_cache(
+export const getPostRecommendations = withMemoryCache(getPostRecommendationsCached, 'getPostRecommendations', 30000);
+
+const getCategoryFeedCached = unstable_cache(
   async (categorySlug: string): Promise<CategoryFeed | undefined> => {
     try {
-      // Find category first
-      const categoryData = await categoryService.getCategoryBySlug(categorySlug);
+      const [categoryData, articlesData] = await Promise.all([
+        categoryService.getCategoryBySlug(categorySlug),
+        articleService.listPublicArticles({ category: categorySlug, limit: 50 }),
+      ]);
+
       if (!categoryData) return undefined;
 
-      const articlesData = await articleService.listPublicArticles({ categoryId: categoryData.id, limit: 50 });
       const items = articlesData?.items || [];
       
       return {
@@ -160,7 +197,9 @@ export const getCategoryFeed = unstable_cache(
   { revalidate: 60, tags: ['categories', 'articles'] }
 );
 
-export const getKnownCategorySlugs = unstable_cache(
+export const getCategoryFeed = withMemoryCache(getCategoryFeedCached, 'getCategoryFeed', 15000);
+
+const getKnownCategorySlugsCached = unstable_cache(
   async () => {
     try {
       const categoriesData = await categoryService.listPublicCategories(100);
@@ -174,14 +213,14 @@ export const getKnownCategorySlugs = unstable_cache(
   { revalidate: 60, tags: ['categories'] }
 );
 
+export const getKnownCategorySlugs = withMemoryCache(getKnownCategorySlugsCached, 'getKnownCategorySlugs', 60000);
 
-/**
- * Lấy danh sách quảng cáo công khai
- */
-export const getPublicAds = unstable_cache(
+const getPublicAdsCached = unstable_cache(
   async () => {
     return await adService.listPublicAds();
   },
   ['public_ads'],
   { revalidate: 60, tags: ['ads'] }
 );
+
+export const getPublicAds = withMemoryCache(getPublicAdsCached, 'getPublicAds', 30000);

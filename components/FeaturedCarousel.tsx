@@ -69,6 +69,7 @@ export function FeaturedCarousel({ articles }: FeaturedCarouselProps) {
             <Link
               key={article.id}
               href={`/posts/${article.id}`}
+              prefetch={true}
               className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
                 isActive ? "opacity-100 z-10 pointer-events-auto" : "opacity-0 z-0 pointer-events-none"
               }`}
@@ -136,6 +137,7 @@ export function FeaturedCarousel({ articles }: FeaturedCarouselProps) {
         <div className="flex items-center gap-2 mb-2 text-[10px] sm:text-[11px] text-gray-500 font-sans font-medium">
           <Link
             href={`/${categorySlug}`}
+            prefetch={true}
             className="text-[#df3232] hover:text-[#df3232]/80 font-bold tracking-wide transition-colors duration-150 uppercase"
           >
             {formatCategory(currentArticle.category)}
@@ -151,7 +153,7 @@ export function FeaturedCarousel({ articles }: FeaturedCarouselProps) {
         </div>
 
         {/* Title Link */}
-        <Link href={`/posts/${currentArticle.id}`} className="group/title block">
+        <Link href={`/posts/${currentArticle.id}`} prefetch={true} className="group/title block">
           <h2 className="text-gray-900 font-bold text-[15px] sm:text-[19px] leading-snug tracking-tight group-hover/title:text-[#e24a48] transition-colors duration-200 font-sans line-clamp-none sm:line-clamp-2">
             {currentArticle.title}
           </h2>

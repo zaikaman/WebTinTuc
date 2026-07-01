@@ -57,14 +57,15 @@ export async function listAdminArticles(options: ArticleListOptions = {}) {
 }
 
 export async function listPublicArticles(options: ArticleListOptions = {}) {
-  const page = options.page ?? 1
+  const page = options.page
   const limit = options.limit ?? 20
-  const { from, to } = toRange(page, limit)
+  const { from, to } = toRange(page ?? 1, limit)
   const categorySelect = options.category ? 'categories!inner(*)' : 'categories(*)'
+  const countOption = page !== undefined ? 'exact' : undefined
 
   let query = supabaseAdmin
     .from('articles')
-    .select(`*, ${categorySelect}, profiles(*)`, { count: 'exact' })
+    .select(`*, ${categorySelect}, profiles(*)`, { count: countOption })
     .eq('status', 'published')
     .is('deleted_at', null)
     .range(from, to)
@@ -77,7 +78,7 @@ export async function listPublicArticles(options: ArticleListOptions = {}) {
   const { data, error, count } = await query
   if (error) throw error
 
-  return { items: data ?? [], meta: pageMeta(count, page, limit) }
+  return { items: data ?? [], meta: pageMeta(count, page ?? 1, limit) }
 }
 
 export async function getAdminArticleById(id: number) {

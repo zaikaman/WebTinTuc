@@ -5,8 +5,8 @@ interface RedirectEntry {
   status_code: number;
 }
 
-const redirectCache = new Map<string, { data: RedirectEntry; cachedAt: number }>();
-const CACHE_TTL_MS = 60_000;
+const redirectCache = new Map<string, { data: RedirectEntry | null; cachedAt: number }>();
+const CACHE_TTL_MS = 300_000; // 5 minutes cache
 
 async function lookupRedirect(path: string): Promise<RedirectEntry | null> {
   const now = Date.now();
@@ -37,9 +37,8 @@ async function lookupRedirect(path: string): Promise<RedirectEntry | null> {
     const data: RedirectEntry[] = await response.json();
     const entry = data[0] ?? null;
 
-    if (entry) {
-      redirectCache.set(path, { data: entry, cachedAt: now });
-    }
+    // Cache the result (including null for valid pages without redirect)
+    redirectCache.set(path, { data: entry, cachedAt: now });
 
     return entry;
   } catch {
@@ -72,6 +71,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|gif|webp|avif|svg|ico|css|js|woff2?)).*)",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|gif|webp|avif|svg|ico|css|js|woff2?|wav|mp3|mp4|json|txt)).*)",
   ],
 };

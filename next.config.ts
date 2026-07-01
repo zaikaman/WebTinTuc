@@ -12,6 +12,10 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   experimental: {
+    staleTimes: {
+      dynamic: 120,
+      static: 300,
+    },
     optimizePackageImports: [
       "framer-motion",
       "@radix-ui/react-accordion",

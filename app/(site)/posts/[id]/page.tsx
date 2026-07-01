@@ -81,8 +81,11 @@ export default async function PostDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  const { relatedPosts, likePosts } = await getPostRecommendations(id);
-  const ads = await getPublicAds();
+  const [recommendations, ads] = await Promise.all([
+    getPostRecommendations(id),
+    getPublicAds()
+  ]);
+  const { relatedPosts, likePosts } = recommendations;
 
   const articleJsonLd = {
     "@context": "https://schema.org",
@@ -176,6 +179,7 @@ export default async function PostDetailPage({ params }: PageProps) {
             <div className="flex items-center gap-1.5 text-gray-500 font-semibold mb-2">
               <Link
                 href={`/${article.categorySlug || article.category}`}
+                prefetch={true}
                 className="text-[#df3232] font-bold text-[11px] hover:underline"
               >
                 {formatCategory(article.category)}
@@ -329,7 +333,7 @@ export default async function PostDetailPage({ params }: PageProps) {
                         key={item.id}
                         className="group block space-y-1.5 pb-3 border-b border-gray-100 last:border-b-0 last:pb-0"
                       >
-                        <Link href={`/posts/${item.id}`} className="block">
+                        <Link href={`/posts/${item.id}`} prefetch={true} className="block">
                           <div className="relative aspect-video w-full overflow-hidden bg-gray-100 rounded-md md:rounded-sm border border-gray-200">
                             <Image
                               src={item.image}
@@ -340,7 +344,7 @@ export default async function PostDetailPage({ params }: PageProps) {
                             />
                           </div>
                         </Link>
-                        <Link href={`/posts/${item.id}`} className="block">
+                        <Link href={`/posts/${item.id}`} prefetch={true} className="block">
                           <h3 className="text-gray-900 font-bold text-[11px] sm:text-xs leading-snug group-hover:text-brand-red transition-colors line-clamp-2">
                             {item.title}
                           </h3>
@@ -348,6 +352,7 @@ export default async function PostDetailPage({ params }: PageProps) {
                         <div className="flex items-center gap-1 text-[9px] sm:text-[10px] text-gray-500 font-semibold">
                           <Link
                             href={`/${catSlug}`}
+                            prefetch={true}
                             className="text-[#df3232] font-bold hover:underline"
                           >
                             {formatCategory(item.category)}
@@ -382,7 +387,7 @@ export default async function PostDetailPage({ params }: PageProps) {
                         key={item.id}
                         className="group block space-y-1.5 pb-3 border-b border-gray-100 last:border-b-0 last:pb-0"
                       >
-                        <Link href={`/posts/${item.id}`} className="block">
+                        <Link href={`/posts/${item.id}`} prefetch={true} className="block">
                           <div className="relative aspect-video w-full overflow-hidden bg-gray-100 rounded-md md:rounded-sm border border-gray-200">
                             <Image
                               src={item.image}
@@ -393,7 +398,7 @@ export default async function PostDetailPage({ params }: PageProps) {
                             />
                           </div>
                         </Link>
-                        <Link href={`/posts/${item.id}`} className="block">
+                        <Link href={`/posts/${item.id}`} prefetch={true} className="block">
                           <h3 className="text-gray-900 font-bold text-[11px] sm:text-xs leading-snug group-hover:text-brand-red transition-colors line-clamp-2">
                             {item.title}
                           </h3>
@@ -401,6 +406,7 @@ export default async function PostDetailPage({ params }: PageProps) {
                         <div className="flex items-center gap-1 text-[9px] sm:text-[10px] text-gray-500 font-semibold">
                           <Link
                             href={`/${catSlug}`}
+                            prefetch={true}
                             className="text-[#df3232] font-bold hover:underline"
                           >
                             {formatCategory(item.category)}

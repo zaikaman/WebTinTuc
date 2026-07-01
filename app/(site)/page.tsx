@@ -130,6 +130,7 @@ export default async function HomePage() {
                       {/* Thumbnail Left */}
                       <Link
                         href={`/posts/${article.id}`}
+                        prefetch={true}
                         className="relative w-[130px] h-[82px] sm:w-[220px] sm:h-[138px] flex-shrink-0 overflow-hidden border border-gray-200 bg-gray-50 rounded-md md:rounded-sm block"
                       >
                         <Image
@@ -144,7 +145,7 @@ export default async function HomePage() {
                       {/* Title & Metadata Right */}
                       <div className="flex flex-col justify-between py-0.5 flex-1 min-h-[82px] sm:min-h-[138px]">
                         <div>
-                          <Link href={`/posts/${article.id}`} className="block">
+                          <Link href={`/posts/${article.id}`} prefetch={true} className="block">
                             <h3 className="text-gray-900 font-bold text-[14px] sm:text-[16px] leading-snug tracking-tight group-hover:text-[#e24a48] transition-colors line-clamp-2 font-sans">
                               {article.title}
                             </h3>
@@ -158,6 +159,7 @@ export default async function HomePage() {
                         <div className="flex items-center gap-2 mt-2 text-[10px] sm:text-[11px] text-gray-500 font-sans font-medium">
                           <Link
                             href={`/${categorySlug}`}
+                            prefetch={true}
                             className="text-[#df3232] hover:text-[#df3232]/80 font-bold text-[10px] sm:text-[11px] tracking-wide transition-colors duration-150 hover:underline"
                           >
                             {formatCategory(article.category)}

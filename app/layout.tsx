@@ -82,6 +82,8 @@ const jsonLd = {
   },
 };
 
+import { HoverPreloader } from "@/components/HoverPreloader";
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="vi" className={inter.variable}>
@@ -96,8 +98,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="min-h-screen bg-[#f4f6f8] text-[#333] font-sans antialiased">
+        <HoverPreloader />
         {children}
       </body>
     </html>
   );
 }
+

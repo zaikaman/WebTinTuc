@@ -64,7 +64,7 @@ export function Header({ brand, categories }: HeaderProps) {
         </button>
 
         {/* Center: Brand Logo */}
-        <Link href="/" className="flex items-center gap-2">
+        <Link href="/" prefetch={true} className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center font-extrabold text-[#df3232] text-sm shadow-sm">
             {brand.name.slice(0, 1).toUpperCase()}
           </div>
@@ -112,6 +112,7 @@ export function Header({ brand, categories }: HeaderProps) {
       <div className="hidden md:flex items-stretch h-auto">
         <Link
           href="/"
+          prefetch={true}
           className="bg-[#df3232] text-white flex items-center gap-2 md:gap-3 px-3 md:px-5 py-2 md:py-3.5 min-w-[115px] md:min-w-[220px] flex-shrink-0"
         >
           <div className="w-6 h-6 md:w-9 md:h-9 rounded-full bg-white flex-shrink-0" />
@@ -141,6 +142,7 @@ export function Header({ brand, categories }: HeaderProps) {
               {utilityLink && utilityLink.href ? (
                 <Link
                   href={utilityLink.href}
+                  prefetch={true}
                   className="whitespace-nowrap text-sm font-bold text-white transition-colors hover:text-[#ffebeb] lg:text-[15px]"
                 >
                   {utilityLink.label}
@@ -164,6 +166,7 @@ export function Header({ brand, categories }: HeaderProps) {
       <div className="hidden md:flex h-[38px] items-center text-white bg-[#404040] border-b border-[#2d2d2d] relative">
         <Link
           href="/"
+          prefetch={true}
           className={`bg-[#333333] h-full w-[48px] flex items-center justify-center hover:bg-[#df3232] transition-colors border-r border-[#2d2d2d] flex-shrink-0 ${
             pathname === "/" ? "text-[#df3232]" : "text-white"
           }`}
@@ -181,6 +184,7 @@ export function Header({ brand, categories }: HeaderProps) {
               <Link
                 key={`${item.label}-${item.href}`}
                 href={item.href}
+                prefetch={true}
                 className={`flex-1 h-full flex items-center justify-center transition-colors border-r border-[#2d2d2d] last:border-r-0 text-center whitespace-nowrap relative ${
                   isActive
                     ? "text-[#df3232] bg-[#333333]"
@@ -267,6 +271,7 @@ export function Header({ brand, categories }: HeaderProps) {
                   <Link
                     key={`drawer-${item.label}`}
                     href={item.href}
+                    prefetch={true}
                     onClick={() => setMobileMenuOpen(false)}
                     className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-bold transition-all ${
                       isActive
@@ -288,6 +293,7 @@ export function Header({ brand, categories }: HeaderProps) {
               utilityLink.href ? (
                 <Link
                   href={utilityLink.href}
+                  prefetch={true}
                   onClick={() => setMobileMenuOpen(false)}
                   className="w-full py-2.5 rounded-lg bg-gradient-to-r from-[#df3232] to-[#e24a48] text-white font-extrabold text-[11px] text-center shadow-lg shadow-[#df3232]/20 hover:opacity-95 active:scale-98 transition-all"
                 >

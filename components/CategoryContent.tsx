@@ -122,6 +122,7 @@ export function CategoryContent({ category, label, featured, initialList, ads = 
               <Link
                 key={item.id}
                 href={`/posts/${item.id}`}
+                prefetch={true}
                 className="group flex gap-3.5 cursor-pointer pb-4 border-b border-gray-100 last:border-b-0 last:pb-0 transition-colors"
               >                <div className="relative w-[110px] h-[75px] sm:w-[130px] sm:h-[88px] flex-shrink-0 overflow-hidden border border-gray-200 bg-gray-50 rounded-md md:rounded-sm">
                   <Image
@@ -166,6 +167,7 @@ export function CategoryContent({ category, label, featured, initialList, ads = 
               <Link
                 key={item.id}
                 href={`/posts/${item.id}`}
+                prefetch={true}
                 className="group flex gap-3.5 cursor-pointer pb-4 border-b border-gray-100 last:border-b-0 last:pb-0 transition-colors"
               >                <div className="relative w-[110px] h-[75px] sm:w-[130px] sm:h-[88px] flex-shrink-0 overflow-hidden border border-gray-200 bg-gray-50 rounded-md md:rounded-sm">
                   <Image
