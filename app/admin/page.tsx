@@ -344,12 +344,115 @@ export default function AdminPage() {
   const [imageDialogOpen, setImageDialogOpen] = useState(false);
   const [imageUrl, setImageUrl] = useState("");
   const [imageCaption, setImageCaption] = useState("");
-  const [imageTab, setImageTab] = useState<"link" | "library">("link");
+  const [imageTab, setImageTab] = useState<"link" | "upload" | "library">("link");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageFileName, setImageFileName] = useState<string>("");
   const [videoTab, setVideoTab] = useState<"link" | "upload" | "library">("link");
   const [cropDialogOpen, setCropDialogOpen] = useState(false);
   const [cropImageUrl, setCropImageUrl] = useState("");
   const [cropImageElementId, setCropImageElementId] = useState("");
   const [cropArea, setCropArea] = useState({ x: 10, y: 10, width: 80, height: 80 });
+  const cropContainerRef = useRef<HTMLDivElement>(null);
+  const [dragState, setDragState] = useState<{
+    type: 'drag' | 'resize';
+    handle?: string;
+    startX: number;
+    startY: number;
+    startArea: { x: number; y: number; width: number; height: number };
+  } | null>(null);
+
+  useEffect(() => {
+    if (!dragState || !cropContainerRef.current) return;
+
+    const handleMouseMove = (e: MouseEvent | TouchEvent) => {
+      const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+      const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+
+      const rect = cropContainerRef.current!.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return;
+
+      const deltaXPercent = ((clientX - dragState.startX) / rect.width) * 100;
+      const deltaYPercent = ((clientY - dragState.startY) / rect.height) * 100;
+
+      if (dragState.type === 'drag') {
+        let newX = dragState.startArea.x + deltaXPercent;
+        let newY = dragState.startArea.y + deltaYPercent;
+
+        // Constraint check: stay within 0 - 100%
+        if (newX < 0) newX = 0;
+        if (newY < 0) newY = 0;
+        if (newX + dragState.startArea.width > 100) newX = 100 - dragState.startArea.width;
+        if (newY + dragState.startArea.height > 100) newY = 100 - dragState.startArea.height;
+
+        setCropArea(prev => ({
+          ...prev,
+          x: Math.round(newX),
+          y: Math.round(newY)
+        }));
+      } else if (dragState.type === 'resize' && dragState.handle) {
+        let newX = dragState.startArea.x;
+        let newY = dragState.startArea.y;
+        let newW = dragState.startArea.width;
+        let newH = dragState.startArea.height;
+
+        const handle = dragState.handle;
+
+        if (handle.includes('e')) {
+          newW = dragState.startArea.width + deltaXPercent;
+        }
+        if (handle.includes('w')) {
+          const possibleX = dragState.startArea.x + deltaXPercent;
+          if (possibleX >= 0) {
+            newX = possibleX;
+            newW = dragState.startArea.width - deltaXPercent;
+          }
+        }
+        if (handle.includes('s')) {
+          newH = dragState.startArea.height + deltaYPercent;
+        }
+        if (handle.includes('n')) {
+          const possibleY = dragState.startArea.y + deltaYPercent;
+          if (possibleY >= 0) {
+            newY = possibleY;
+            newH = dragState.startArea.height - deltaYPercent;
+          }
+        }
+
+        // Min size constraints (e.g. 10%)
+        if (newW < 10) newW = 10;
+        if (newH < 10) newH = 10;
+
+        // Boundary constraints
+        if (newX < 0) newX = 0;
+        if (newY < 0) newY = 0;
+        if (newX + newW > 100) newW = 100 - newX;
+        if (newY + newH > 100) newH = 100 - newY;
+
+        setCropArea({
+          x: Math.round(newX),
+          y: Math.round(newY),
+          width: Math.round(newW),
+          height: Math.round(newH)
+        });
+      }
+    };
+
+    const handleMouseUp = () => {
+      setDragState(null);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('touchmove', handleMouseMove, { passive: false });
+    window.addEventListener('touchend', handleMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('touchmove', handleMouseMove);
+      window.removeEventListener('touchend', handleMouseUp);
+    };
+  }, [dragState]);
 
   const [timeFilter, setTimeFilter] = useState<"today" | "week" | "month" | "year">("month");
   const [dashboardDay, setDashboardDay] = useState("");
@@ -1209,6 +1312,83 @@ export default function AdminPage() {
     }
   };
 
+  const handleTriggerInsertImageUpload = () => {
+    document.getElementById("insert-image-upload-input")?.click();
+  };
+
+  const handleInsertImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      setImageFileName(file.name);
+      setImageUrl("");
+    }
+  };
+
+  const handleInsertImage = async () => {
+    if (!imageFile && !imageUrl.trim()) {
+      toast.error("Vui lòng chọn file ảnh hoặc nhập link ảnh!");
+      return;
+    }
+
+    let finalImageUrl = imageUrl.trim();
+
+    if (imageFile) {
+      toast.loading("Đang tải hình ảnh lên Cloudflare R2...", { id: "upload-image" });
+      try {
+        const formData = new FormData();
+        formData.append("file", imageFile);
+        formData.append("folder", "articles");
+
+        const res = await uploadAdminMedia(formData);
+        if (res && res.url) {
+          finalImageUrl = res.url;
+          toast.success("Đã tải lên hình ảnh thành công!", { id: "upload-image" });
+        } else {
+          throw new Error("Không nhận được URL từ server");
+        }
+      } catch (err: any) {
+        toast.error("Tải lên hình ảnh thất bại: " + (err.message || err), { id: "upload-image" });
+        return;
+      }
+    }
+
+    if (!finalImageUrl) {
+      toast.error("Đường dẫn hình ảnh không hợp lệ!");
+      return;
+    }
+
+    const wrapperId = "img-" + Math.random().toString(36).substring(2, 9);
+    const imgHtml = `<p><br></p><div id="${wrapperId}" class="my-4 relative group" contenteditable="false" style="max-width: 100%; margin: 0 auto;">
+  <img src="${finalImageUrl}" alt="${imageCaption}" class="w-full rounded-xl border border-gray-200 shadow-sm" />
+  ${imageCaption ? `<p class="text-center text-xs italic text-gray-500 mt-1.5">${imageCaption}</p>` : ''}
+  <button type="button" onclick="const p=this.parentElement; const ed=p.closest('[contenteditable]'); p.remove(); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="absolute top-2 right-2 hidden group-hover:flex items-center justify-center w-8 h-8 rounded-full bg-red-600 hover:bg-red-700 text-white shadow-md active:scale-95 transition-all z-30" title="Xóa hình ảnh">
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+  </button>
+  <div class="absolute bottom-2 left-1/2 -translate-x-1/2 hidden group-hover:flex items-center gap-1.5 bg-black/85 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 shadow-lg text-[11px] text-white font-bold select-none z-30 whitespace-nowrap w-max min-w-max">
+    <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='25%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">25%</button>
+    <span class="w-[1px] h-3 bg-white/20"></span>
+    <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='50%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">50%</button>
+    <span class="w-[1px] h-3 bg-white/20"></span>
+    <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='75%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">75%</button>
+    <span class="w-[1px] h-3 bg-white/20"></span>
+    <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='100%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">100%</button>
+    <span class="w-[1px] h-3 bg-white/20"></span>
+    <button type="button" onclick="const p=this.closest('[contenteditable=false]'); const img=p.querySelector('img'); if(img) { window.dispatchEvent(new CustomEvent('editor-crop-image', { detail: { src: img.src, id: p.id } })); }" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5 flex items-center gap-1">
+      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6.13 1L6 16a2 2 0 0 0 2 2h15"/><path d="M1 6.13L16 6a2 2 0 0 1 2 2v15"/></svg>
+      Cắt ảnh
+    </button>
+  </div>
+</div><p><br></p>`;
+
+    insertHtmlToEditor(imgHtml);
+    setImageDialogOpen(false);
+    setImageUrl("");
+    setImageCaption("");
+    setImageFile(null);
+    setImageFileName("");
+  };
+
   const handleMediaDirectUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -1293,7 +1473,7 @@ export default function AdminPage() {
   <button type="button" onclick="const p=this.parentElement; const ed=p.closest('[contenteditable]'); p.remove(); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="absolute top-2 right-2 hidden group-hover:flex items-center justify-center w-8 h-8 rounded-full bg-red-600 hover:bg-red-700 text-white shadow-md active:scale-95 transition-all z-30" title="Xóa video">
     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
   </button>
-  <div class="absolute bottom-2 left-1/2 -translate-x-1/2 hidden group-hover:flex items-center gap-1.5 bg-black/85 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 shadow-lg text-[11px] text-white font-bold select-none z-30">
+  <div class="absolute bottom-2 left-1/2 -translate-x-1/2 hidden group-hover:flex items-center gap-1.5 bg-black/85 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 shadow-lg text-[11px] text-white font-bold select-none z-30 whitespace-nowrap w-max min-w-max">
     <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='25%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">25%</button>
     <span class="w-[1px] h-3 bg-white/20"></span>
     <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='50%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">50%</button>
@@ -1331,7 +1511,7 @@ export default function AdminPage() {
   <button type="button" onclick="const p=this.parentElement; const ed=p.closest('[contenteditable]'); p.remove(); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="absolute top-2 right-2 hidden group-hover:flex items-center justify-center w-8 h-8 rounded-full bg-red-600 hover:bg-red-700 text-white shadow-md active:scale-95 transition-all z-30" title="Xóa video nhúng">
     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
   </button>
-  <div class="absolute bottom-2 left-1/2 -translate-x-1/2 hidden group-hover:flex items-center gap-1.5 bg-black/85 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 shadow-lg text-[11px] text-white font-bold select-none z-30">
+  <div class="absolute bottom-2 left-1/2 -translate-x-1/2 hidden group-hover:flex items-center gap-1.5 bg-black/85 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 shadow-lg text-[11px] text-white font-bold select-none z-30 whitespace-nowrap w-max min-w-max">
     <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='25%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">25%</button>
     <span class="w-[1px] h-3 bg-white/20"></span>
     <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='50%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">50%</button>
@@ -1347,7 +1527,7 @@ export default function AdminPage() {
   <button type="button" onclick="const p=this.parentElement; const ed=p.closest('[contenteditable]'); p.remove(); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="absolute top-2 right-2 hidden group-hover:flex items-center justify-center w-8 h-8 rounded-full bg-red-600 hover:bg-red-700 text-white shadow-md active:scale-95 transition-all z-30" title="Xóa video nhúng">
     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
   </button>
-  <div class="absolute bottom-2 left-1/2 -translate-x-1/2 hidden group-hover:flex items-center gap-1.5 bg-black/85 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 shadow-lg text-[11px] text-white font-bold select-none z-30">
+  <div class="absolute bottom-2 left-1/2 -translate-x-1/2 hidden group-hover:flex items-center gap-1.5 bg-black/85 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 shadow-lg text-[11px] text-white font-bold select-none z-30 whitespace-nowrap w-max min-w-max">
     <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='25%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">25%</button>
     <span class="w-[1px] h-3 bg-white/20"></span>
     <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='50%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">50%</button>
@@ -1364,7 +1544,7 @@ export default function AdminPage() {
   <button type="button" onclick="const p=this.parentElement; const ed=p.closest('[contenteditable]'); p.remove(); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="absolute top-2 right-2 hidden group-hover:flex items-center justify-center w-8 h-8 rounded-full bg-red-600 hover:bg-red-700 text-white shadow-md active:scale-95 transition-all z-30" title="Xóa video">
     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
   </button>
-  <div class="absolute bottom-2 left-1/2 -translate-x-1/2 hidden group-hover:flex items-center gap-1.5 bg-black/85 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 shadow-lg text-[11px] text-white font-bold select-none z-30">
+  <div class="absolute bottom-2 left-1/2 -translate-x-1/2 hidden group-hover:flex items-center gap-1.5 bg-black/85 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 shadow-lg text-[11px] text-white font-bold select-none z-30 whitespace-nowrap w-max min-w-max">
     <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='25%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">25%</button>
     <span class="w-[1px] h-3 bg-white/20"></span>
     <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='50%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">50%</button>
@@ -1785,6 +1965,8 @@ export default function AdminPage() {
           if (!open) {
             setImageUrl("");
             setImageCaption("");
+            setImageFile(null);
+            setImageFileName("");
           }
         }}>
           <DialogContent className="max-w-[640px] w-[95%] max-h-[90vh] overflow-y-auto rounded-3xl p-7 border-none shadow-2xl bg-white text-[#2c3e50] outline-none">
@@ -1809,6 +1991,17 @@ export default function AdminPage() {
                 }`}
               >
                 Dán liên kết (URL)
+              </button>
+              <button
+                type="button"
+                onClick={() => setImageTab("upload")}
+                className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${
+                  imageTab === "upload"
+                    ? "bg-[#E55956] text-white"
+                    : "text-gray-600 hover:bg-gray-50"
+                }`}
+              >
+                Tải lên từ máy tính
               </button>
               <button
                 type="button"
@@ -1840,6 +2033,44 @@ export default function AdminPage() {
                       placeholder="https://example.com/image.jpg"
                       className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white shadow-sm font-medium"
                     />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">
+                      Chú thích ảnh (Caption)
+                    </label>
+                    <input
+                      type="text"
+                      value={imageCaption}
+                      onChange={(e) => setImageCaption(e.target.value)}
+                      placeholder="Ví dụ: Quang cảnh buổi họp báo..."
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white shadow-sm font-medium"
+                    />
+                  </div>
+                </div>
+              ) : imageTab === "upload" ? (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">
+                      Từ máy tính
+                    </label>
+                    <div
+                      onClick={handleTriggerInsertImageUpload}
+                      className="border-2 border-dashed border-gray-200 hover:border-[#E55956] hover:bg-[#E55956]/5 transition-all duration-300 rounded-2xl p-7 flex flex-col items-center justify-center gap-3 cursor-pointer group bg-gray-50/20"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-gray-100 group-hover:bg-[#E55956]/10 flex items-center justify-center transition-all duration-300">
+                        <ImageIcon className="w-5 h-5 text-gray-400 group-hover:text-[#E55956] transition-colors" />
+                      </div>
+                      <span className="text-xs font-semibold text-gray-500 group-hover:text-[#E55956] transition-colors text-center max-w-[280px]">
+                        {imageFileName ? imageFileName : "Chọn file ảnh (PNG, JPG, JPEG, WEBP, ...)"}
+                      </span>
+                      <input
+                        type="file"
+                        id="insert-image-upload-input"
+                        className="hidden"
+                        accept="image/*"
+                        onChange={handleInsertImageFileChange}
+                      />
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">
@@ -1912,6 +2143,8 @@ export default function AdminPage() {
                   setImageDialogOpen(false);
                   setImageUrl("");
                   setImageCaption("");
+                  setImageFile(null);
+                  setImageFileName("");
                 }}
                 className="flex-1 max-w-[144px] py-3 border border-gray-200 hover:bg-gray-50 hover:border-gray-300 text-gray-700 text-sm font-bold rounded-xl transition-all active:scale-[0.98] flex items-center justify-center"
               >
@@ -1919,38 +2152,7 @@ export default function AdminPage() {
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  if (!imageUrl.trim()) {
-                    toast.error("Vui lòng chọn hoặc nhập đường dẫn hình ảnh!");
-                    return;
-                  }
-                  const wrapperId = "img-" + Math.random().toString(36).substring(2, 9);
-                  const imgHtml = `<p><br></p><div id="${wrapperId}" class="my-4 relative group" contenteditable="false" style="max-width: 100%; margin: 0 auto;">
-  <img src="${imageUrl}" alt="${imageCaption}" class="w-full rounded-xl border border-gray-200 shadow-sm" />
-  ${imageCaption ? `<p class="text-center text-xs italic text-gray-500 mt-1.5">	ext-gray-500 mt-1.5">${imageCaption}</p>` : ''}
-  <button type="button" onclick="const p=this.parentElement; const ed=p.closest('[contenteditable]'); p.remove(); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="absolute top-2 right-2 hidden group-hover:flex items-center justify-center w-8 h-8 rounded-full bg-red-600 hover:bg-red-700 text-white shadow-md active:scale-95 transition-all z-30" title="Xóa hình ảnh">
-    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-  </button>
-  <div class="absolute bottom-2 left-1/2 -translate-x-1/2 hidden group-hover:flex items-center gap-1.5 bg-black/85 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 shadow-lg text-[11px] text-white font-bold select-none z-30">
-    <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='25%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">25%</button>
-    <span class="w-[1px] h-3 bg-white/20"></span>
-    <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='50%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">50%</button>
-    <span class="w-[1px] h-3 bg-white/20"></span>
-    <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='75%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">75%</button>
-    <span class="w-[1px] h-3 bg-white/20"></span>
-    <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='100%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">100%</button>
-    <span class="w-[1px] h-3 bg-white/20"></span>
-    <button type="button" onclick="const p=this.closest('[contenteditable=false]'); const img=p.querySelector('img'); if(img) { window.dispatchEvent(new CustomEvent('editor-crop-image', { detail: { src: img.src, id: p.id } })); }" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5 flex items-center gap-1">
-      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6.13 1L6 16a2 2 0 0 0 2 2h15"/><path d="M1 6.13L16 6a2 2 0 0 1 2 2v15"/></svg>
-      Cắt ảnh
-    </button>
-  </div>
-</div><p><br></p>`;
-                  insertHtmlToEditor(imgHtml);
-                  setImageDialogOpen(false);
-                  setImageUrl("");
-                  setImageCaption("");
-                }}
+                onClick={handleInsertImage}
                 className="flex-1 max-w-[144px] py-3 bg-[#E55956] hover:bg-[#cb4643] text-white text-sm font-bold rounded-xl transition-all shadow-md active:scale-[0.98] flex items-center justify-center"
               >
                 Chèn ảnh
@@ -2138,28 +2340,166 @@ export default function AdminPage() {
 
             <div className="space-y-6 py-4">
               {/* Preview Box */}
-              <div className="relative overflow-hidden max-w-full max-h-[300px] border border-gray-200 rounded-2xl bg-slate-50 flex items-center justify-center">
-                <div className="relative max-w-full max-h-[300px]">
+              <div className="relative overflow-hidden max-w-full max-h-[350px] border border-gray-200 rounded-2xl bg-slate-50 flex items-center justify-center p-4 select-none">
+                <div 
+                  ref={cropContainerRef} 
+                  className="relative max-w-full max-h-[300px] select-none"
+                >
                   <img 
                     src={cropImageUrl} 
                     alt="Source image to crop" 
-                    className="max-w-full max-h-[300px] object-contain select-none" 
+                    className="max-w-full max-h-[300px] object-contain select-none pointer-events-none" 
+                    draggable={false}
                   />
-                  {/* Dotted crop selection overlay */}
+                  {/* Draggable & Resizable crop selection overlay */}
                   <div 
-                    className="absolute border border-dashed border-[#E55956] bg-black/40 pointer-events-none"
+                    className="absolute border-2 border-dashed border-[#E55956] bg-black/25 cursor-move z-30 group"
                     style={{
                       left: `${cropArea.x}%`,
                       top: `${cropArea.y}%`,
                       width: `${cropArea.width}%`,
                       height: `${cropArea.height}%`,
                     }}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setDragState({
+                        type: 'drag',
+                        startX: e.clientX,
+                        startY: e.clientY,
+                        startArea: { ...cropArea }
+                      });
+                    }}
+                    onTouchStart={(e) => {
+                      e.stopPropagation();
+                      setDragState({
+                        type: 'drag',
+                        startX: e.touches[0].clientX,
+                        startY: e.touches[0].clientY,
+                        startArea: { ...cropArea }
+                      });
+                    }}
                   >
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="bg-black/75 px-2 py-0.5 rounded text-[10px] text-white font-bold select-none">
+                    {/* Visual Guideline Grid */}
+                    <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 pointer-events-none opacity-40">
+                      <div className="border-r border-b border-dashed border-white/50"></div>
+                      <div className="border-r border-b border-dashed border-white/50"></div>
+                      <div className="border-b border-dashed border-white/50"></div>
+                      <div className="border-r border-b border-dashed border-white/50"></div>
+                      <div className="border-r border-b border-dashed border-white/50"></div>
+                      <div className="border-b border-dashed border-white/50"></div>
+                      <div className="border-r border-white/50"></div>
+                      <div className="border-r border-white/50"></div>
+                      <div></div>
+                    </div>
+
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <span className="bg-black/75 px-2 py-0.5 rounded text-[9px] text-white font-bold select-none">
                         Vùng cắt
                       </span>
                     </div>
+
+                    {/* Drag resize handles (Corners) */}
+                    {/* NW (Top-Left) */}
+                    <div 
+                      className="absolute -top-1.5 -left-1.5 w-3.5 h-3.5 bg-white border-2 border-[#E55956] rounded-full cursor-nwse-resize z-40 shadow-sm active:scale-125 transition-transform"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setDragState({
+                          type: 'resize',
+                          handle: 'nw',
+                          startX: e.clientX,
+                          startY: e.clientY,
+                          startArea: { ...cropArea }
+                        });
+                      }}
+                      onTouchStart={(e) => {
+                        e.stopPropagation();
+                        setDragState({
+                          type: 'resize',
+                          handle: 'nw',
+                          startX: e.touches[0].clientX,
+                          startY: e.touches[0].clientY,
+                          startArea: { ...cropArea }
+                        });
+                      }}
+                    />
+                    {/* NE (Top-Right) */}
+                    <div 
+                      className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-white border-2 border-[#E55956] rounded-full cursor-nesw-resize z-40 shadow-sm active:scale-125 transition-transform"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setDragState({
+                          type: 'resize',
+                          handle: 'ne',
+                          startX: e.clientX,
+                          startY: e.clientY,
+                          startArea: { ...cropArea }
+                        });
+                      }}
+                      onTouchStart={(e) => {
+                        e.stopPropagation();
+                        setDragState({
+                          type: 'resize',
+                          handle: 'ne',
+                          startX: e.touches[0].clientX,
+                          startY: e.touches[0].clientY,
+                          startArea: { ...cropArea }
+                        });
+                      }}
+                    />
+                    {/* SW (Bottom-Left) */}
+                    <div 
+                      className="absolute -bottom-1.5 -left-1.5 w-3.5 h-3.5 bg-white border-2 border-[#E55956] rounded-full cursor-nesw-resize z-40 shadow-sm active:scale-125 transition-transform"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setDragState({
+                          type: 'resize',
+                          handle: 'sw',
+                          startX: e.clientX,
+                          startY: e.clientY,
+                          startArea: { ...cropArea }
+                        });
+                      }}
+                      onTouchStart={(e) => {
+                        e.stopPropagation();
+                        setDragState({
+                          type: 'resize',
+                          handle: 'sw',
+                          startX: e.touches[0].clientX,
+                          startY: e.touches[0].clientY,
+                          startArea: { ...cropArea }
+                        });
+                      }}
+                    />
+                    {/* SE (Bottom-Right) */}
+                    <div 
+                      className="absolute -bottom-1.5 -right-1.5 w-3.5 h-3.5 bg-white border-2 border-[#E55956] rounded-full cursor-nwse-resize z-40 shadow-sm active:scale-125 transition-transform"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setDragState({
+                          type: 'resize',
+                          handle: 'se',
+                          startX: e.clientX,
+                          startY: e.clientY,
+                          startArea: { ...cropArea }
+                        });
+                      }}
+                      onTouchStart={(e) => {
+                        e.stopPropagation();
+                        setDragState({
+                          type: 'resize',
+                          handle: 'se',
+                          startX: e.touches[0].clientX,
+                          startY: e.touches[0].clientY,
+                          startArea: { ...cropArea }
+                        });
+                      }}
+                    />
                   </div>
                 </div>
               </div>
