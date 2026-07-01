@@ -181,16 +181,25 @@ export async function listFeaturedArticles(limit = 6) {
   return data ?? []
 }
 
+function removeVietnameseTones(str: string) {
+  return str
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D');
+}
+
 export async function searchArticles(queryText: string, page = 1, limit = 10) {
   const { from, to } = toRange(page, limit)
 
   // Use PostgreSQL Full-Text Search via search_vector GIN index for queries >= 2 chars
   // Falls back to ilike for very short inputs where plainto_tsquery isn't effective
   if (queryText.trim().length >= 2) {
+    const normalizedQuery = removeVietnameseTones(queryText);
     const { data, error, count } = await supabaseAdmin
       .from('articles')
       .select(ARTICLE_SELECT, { count: 'exact' })
-      .textSearch('search_vector', queryText, { type: 'plain', config: 'simple' })
+      .textSearch('search_vector', normalizedQuery, { type: 'plain', config: 'simple' })
       .eq('status', 'published')
       .is('deleted_at', null)
       .range(from, to)

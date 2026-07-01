@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Mail, Menu, Search, X, ChevronRight } from "lucide-react";
 import type { SiteSettings, SocialLink, NavigationItem } from "@/lib/types/news";
 
@@ -49,6 +49,154 @@ export function Header({ brand, categories }: HeaderProps) {
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const pathname = usePathname();
   const utilityLink = brand.utilityLinks[0];
+
+  const router = useRouter();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchDropdownOpen, setSearchDropdownOpen] = useState(false);
+  const [activeInput, setActiveInput] = useState<"desktop" | "mobile" | "drawer" | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      setSearchDropdownOpen(false);
+      setMobileSearchOpen(false);
+      setMobileMenuOpen(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      setSearchDropdownOpen(false);
+      return;
+    }
+
+    const delayDebounce = setTimeout(async () => {
+      setSearchLoading(true);
+      setSearchDropdownOpen(true);
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(searchQuery.trim())}&limit=5`);
+        if (res.ok) {
+          const body = await res.json();
+          if (body?.success && body?.data?.items) {
+            setSearchResults(body.data.items.map((item: any) => ({
+              id: item.slug || item.id?.toString() || "",
+              title: item.title || "",
+              category: item.category?.name || item.category || "Tin tức",
+              image: item.thumbnail_key || "",
+            })));
+          } else {
+            setSearchResults([]);
+          }
+        }
+      } catch (err) {
+        console.error("Search fetch failed:", err);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(delayDebounce);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setSearchDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const renderSearchDropdown = (type: "desktop" | "mobile" | "drawer") => {
+    if (activeInput !== type || !searchDropdownOpen || !searchQuery.trim()) return null;
+
+    const isDrawer = type === "drawer";
+    const textTheme = isDrawer ? "text-white" : "text-gray-900";
+    const bgTheme = isDrawer ? "bg-[#b12220] border border-white/10 shadow-2xl" : "bg-white border border-gray-200/50 shadow-2xl";
+    const titleColor = isDrawer ? "text-white" : "text-gray-800";
+    const hoverBg = isDrawer ? "hover:bg-white/10" : "hover:bg-gray-50";
+
+    return (
+      <div 
+        ref={dropdownRef}
+        className={`absolute top-full left-0 right-0 mt-2 rounded-2xl p-4 z-50 max-h-[380px] overflow-y-auto ${bgTheme}`}
+        style={{ width: '100%' }}
+      >
+        <div className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-2.5 px-1 select-none text-left">
+          Kết quả gợi ý
+        </div>
+
+        {searchLoading ? (
+          <div className="space-y-3 py-2">
+            {[1, 2, 3].map((n) => (
+              <div key={n} className="flex gap-3 animate-pulse text-left">
+                <div className="w-[55px] h-[38px] bg-gray-200/50 rounded flex-shrink-0" />
+                <div className="flex-1 space-y-1.5 py-0.5">
+                  <div className="h-3 bg-gray-200/50 rounded w-5/6" />
+                  <div className="h-2.5 bg-gray-200/50 rounded w-1/3" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : searchResults.length > 0 ? (
+          <div className="flex flex-col gap-2.5">
+            {searchResults.map((item) => (
+              <Link
+                key={item.id}
+                href={`/posts/${item.id}`}
+                prefetch={true}
+                onClick={() => {
+                  setSearchDropdownOpen(false);
+                  setMobileSearchOpen(false);
+                  setMobileMenuOpen(false);
+                }}
+                className={`flex gap-3 rounded-lg p-1.5 transition-colors duration-150 text-left ${hoverBg}`}
+              >
+                <div className="relative w-[55px] h-[38px] rounded overflow-hidden flex-shrink-0 bg-gray-100 border border-gray-200/10">
+                  {item.image ? (
+                    <img src={item.image} alt={item.title} className="object-cover w-full h-full" />
+                  ) : (
+                    <div className="w-full h-full bg-gray-100 flex items-center justify-center text-[9px] text-gray-400">No Image</div>
+                  )}
+                </div>
+                <div className="flex flex-col justify-between py-0.5 flex-1 min-w-0">
+                  <h4 className={`font-bold text-[12px] leading-snug line-clamp-2 hover:text-[#df3232] transition-colors ${titleColor}`}>
+                    {item.title}
+                  </h4>
+                  <div className="flex items-center gap-1.5 text-[9px] text-gray-400 font-semibold mt-0.5">
+                    <span className="text-[#df3232] font-bold">{item.category}</span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+            <div className="border-t border-gray-100/50 pt-2.5 mt-1 text-center">
+              <Link
+                href={`/search?q=${encodeURIComponent(searchQuery.trim())}`}
+                onClick={() => {
+                  setSearchDropdownOpen(false);
+                  setMobileSearchOpen(false);
+                  setMobileMenuOpen(false);
+                }}
+                className="text-[#df3232] font-extrabold text-[11px] hover:underline"
+              >
+                Xem tất cả kết quả cho &ldquo;{searchQuery}&rdquo; &rarr;
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="py-6 text-center text-xs text-gray-400 font-semibold select-none">
+            Không tìm thấy bài viết nào phù hợp
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <header className="w-full select-none font-sans bg-white relative">
@@ -97,14 +245,28 @@ export function Header({ brand, categories }: HeaderProps) {
               : "opacity-0 -translate-y-2 pointer-events-none invisible"
           }`}
         >
-          <div className="flex h-[36px] items-center rounded-lg border border-white/20 bg-white/10 px-3 shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)] focus-within:bg-white focus-within:border-white focus-within:text-gray-900 group">
-            <Search size={14} className="mr-2 text-white/80 group-focus-within:text-gray-500" />
-            <input
-              type="text"
-              placeholder={brand.searchPlaceholder}
-              className="h-full w-full bg-transparent text-xs font-bold text-white group-focus-within:text-gray-900 outline-none placeholder:text-white/60 group-focus-within:placeholder:text-gray-400"
-            />
-          </div>
+          <form onSubmit={handleSearchSubmit} className="w-full relative">
+            <div className="flex h-[36px] items-center rounded-lg border border-white/20 bg-white/10 px-3 shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)] focus-within:bg-white focus-within:border-white focus-within:text-gray-900 group relative">
+              <Search size={14} className="mr-2 text-white/80 group-focus-within:text-gray-500" />
+              <input
+                type="text"
+                name="q"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setSearchDropdownOpen(true);
+                  setActiveInput("mobile");
+                }}
+                onFocus={() => {
+                  setSearchDropdownOpen(true);
+                  setActiveInput("mobile");
+                }}
+                placeholder={brand.searchPlaceholder}
+                className="h-full w-full bg-transparent text-xs font-bold text-white group-focus-within:text-gray-900 outline-none placeholder:text-white/60 group-focus-within:placeholder:text-gray-400"
+              />
+            </div>
+            {renderSearchDropdown("mobile")}
+          </form>
         </div>
       </div>
 
@@ -129,14 +291,28 @@ export function Header({ brand, categories }: HeaderProps) {
         <div className="flex-1 bg-[#e24a48] flex items-center justify-between px-2.5 md:px-6">
           <div className="w-full grid grid-cols-[minmax(260px,1fr)_auto] items-center gap-5 lg:gap-7">
             <div className="flex justify-center">
-              <div className="flex h-[34px] w-full max-w-[760px] items-center rounded-[17px] border border-[#d5d5d5] bg-[#f0eeee] px-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] transition-colors focus-within:border-white focus-within:bg-white">
-                <Search size={15} className="mr-2.5 flex-shrink-0 text-[#4c6281]" />
-                <input
-                  type="text"
-                  placeholder={brand.searchPlaceholder}
-                  className="h-full w-full bg-transparent text-[13px] font-bold text-[#4c6281] outline-none placeholder:text-[#4c6281]/70"
-                />
-              </div>
+              <form onSubmit={handleSearchSubmit} className="w-full max-w-[760px] relative">
+                <div className="flex h-[34px] w-full items-center rounded-[17px] border border-[#d5d5d5] bg-[#f0eeee] px-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] transition-colors focus-within:border-white focus-within:bg-white relative">
+                  <Search size={15} className="mr-2.5 flex-shrink-0 text-[#4c6281]" />
+                  <input
+                    type="text"
+                    name="q"
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setSearchDropdownOpen(true);
+                      setActiveInput("desktop");
+                    }}
+                    onFocus={() => {
+                      setSearchDropdownOpen(true);
+                      setActiveInput("desktop");
+                    }}
+                    placeholder={brand.searchPlaceholder}
+                    className="h-full w-full bg-transparent text-[13px] font-bold text-[#4c6281] outline-none placeholder:text-[#4c6281]/70"
+                  />
+                </div>
+                {renderSearchDropdown("desktop")}
+              </form>
             </div>
             <div className="flex shrink-0 items-center justify-end gap-3 lg:gap-4">
               {utilityLink && utilityLink.href ? (
@@ -251,14 +427,28 @@ export function Header({ brand, categories }: HeaderProps) {
             </div>
 
             {/* Quick Search */}
-            <div className="bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 flex items-center gap-2">
-              <Search size={14} className="text-gray-400 flex-shrink-0" />
-              <input
-                type="text"
-                placeholder={brand.searchPlaceholder}
-                className="bg-transparent text-xs text-white outline-none placeholder:text-gray-500 w-full font-medium"
-              />
-            </div>
+            <form onSubmit={handleSearchSubmit} className="w-full relative">
+              <div className="bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 flex items-center gap-2 relative">
+                <Search size={14} className="text-gray-400 flex-shrink-0" />
+                <input
+                  type="text"
+                  name="q"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setSearchDropdownOpen(true);
+                    setActiveInput("drawer");
+                  }}
+                  onFocus={() => {
+                    setSearchDropdownOpen(true);
+                    setActiveInput("drawer");
+                  }}
+                  placeholder={brand.searchPlaceholder}
+                  className="bg-transparent text-xs text-white outline-none placeholder:text-gray-500 w-full font-medium"
+                />
+              </div>
+              {renderSearchDropdown("drawer")}
+            </form>
 
             {/* Category Navigation Links */}
             <div className="flex flex-col gap-1">

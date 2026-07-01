@@ -252,3 +252,18 @@ const getPublicAdsCached = unstable_cache(
 );
 
 export const getPublicAds = withMemoryCache(getPublicAdsCached, 'getPublicAds', 30000);
+
+export async function searchPublicArticles(q: string, page = 1, limit = 10) {
+  try {
+    const res = await articleService.searchArticles(q, page, limit);
+    return {
+      items: (res?.items || []).map(mapBackendArticleToFrontend),
+      total: res?.meta?.total || 0,
+      totalPages: res?.meta?.totalPages || 1,
+    };
+  } catch (error) {
+    console.error("Failed to search public articles:", error);
+    return { items: [], total: 0, totalPages: 1 };
+  }
+}
+
