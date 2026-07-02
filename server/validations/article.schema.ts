@@ -1,6 +1,78 @@
 import { z } from 'zod'
 import { paginationSchema } from './common.schema'
 
+// ==========================================
+// Content Block Schemas (flat format matching app usage)
+// ==========================================
+
+const ParagraphBlockSchema = z.object({
+  type: z.literal('paragraph'),
+  text: z.string().optional()
+})
+
+const BoldParagraphBlockSchema = z.object({
+  type: z.literal('bold-paragraph'),
+  text: z.string().optional()
+})
+
+const ImageBlockSchema = z.object({
+  type: z.literal('image'),
+  src: z.string().optional(),
+  caption: z.string().optional(),
+  width: z.string().optional()
+})
+
+const VideoBlockSchema = z.object({
+  type: z.literal('video'),
+  src: z.string().optional(),
+  width: z.string().optional()
+})
+
+const IFrameBlockSchema = z.object({
+  type: z.literal('iframe'),
+  src: z.string().optional(),
+  width: z.string().optional()
+})
+
+const YoutubeEmbedBlockSchema = z.object({
+  type: z.literal('youtubeEmbed'),
+  url: z.string().url('Đường dẫn YouTube không hợp lệ'),
+  videoId: z.string().min(1, 'Video ID không được để trống'),
+  caption: z.string().optional()
+})
+
+const StorageMediaBlockSchema = z.object({
+  type: z.literal('storageMedia'),
+  mediaType: z.enum(['image', 'video', 'gif']),
+  key: z.string().min(1, 'Key của media không được để trống'),
+  url: z.string().url('Đường dẫn media không hợp lệ'),
+  mimeType: z.string().min(1, 'MimeType không được để trống'),
+  caption: z.string().optional()
+})
+
+/** Discriminated union of all known content block types (flat format) */
+const ArticleContentBlockSchema = z.discriminatedUnion('type', [
+  ParagraphBlockSchema,
+  BoldParagraphBlockSchema,
+  ImageBlockSchema,
+  VideoBlockSchema,
+  IFrameBlockSchema,
+  YoutubeEmbedBlockSchema,
+  StorageMediaBlockSchema
+])
+
+/** Schema for content stored as a blocks array (the format used by the app) */
+const ArticleContentArraySchema = z.array(ArticleContentBlockSchema)
+
+/**
+ * Schema for content that may be either a raw blocks array or
+ * wrapped in { blocks: [...] } (both formats appear in the codebase).
+ */
+const ArticleContentSchema = z.union([
+  ArticleContentArraySchema,
+  z.object({ blocks: ArticleContentArraySchema })
+])
+
 const articleStatusSchema = z.enum(['draft', 'published'])
 
 export const articleListQuerySchema = paginationSchema.extend({
@@ -26,7 +98,7 @@ export const createArticleSchema = z.object({
   slug: z.string().trim().min(3).max(255).optional(),
   summary: z.string().trim().nullable().optional(),
   thumbnail_key: z.string().trim().nullable().optional(),
-  content: z.unknown(),
+  content: ArticleContentSchema,
   category_id: z.coerce.number().int().positive().nullable().optional(),
   author_id: z.string().uuid().nullable().optional(),
   status: articleStatusSchema.default('draft'),

@@ -61,25 +61,25 @@ describe('createArticleSchema', () => {
   })
 
   it('rejects title shorter than 5 chars', () => {
-    expect(() => createArticleSchema.parse({ title: 'abc', content: {} })).toThrow()
+    expect(() => createArticleSchema.parse({ title: 'abc', content: [] })).toThrow()
   })
 
   it('rejects title longer than 255 chars', () => {
-    expect(() => createArticleSchema.parse({ title: 'x'.repeat(256), content: {} })).toThrow()
+    expect(() => createArticleSchema.parse({ title: 'x'.repeat(256), content: [] })).toThrow()
   })
 
   it('uses defaults for optional fields', () => {
-    const result = createArticleSchema.parse({ title: 'Valid Article Title', content: {} })
+    const result = createArticleSchema.parse({ title: 'Valid Article Title', content: [] })
     expect(result.status).toBe('draft')
     expect(result.featured).toBe(false)
   })
 
-  it('parses a valid full article payload', () => {
+  it('parses a valid full article payload with content as blocks array', () => {
     const result = createArticleSchema.parse({
       title: 'Valid Article Title',
       slug: 'valid-article',
       summary: 'A brief summary',
-      content: { blocks: [] },
+      content: [{ type: 'paragraph', text: 'Hello' }],
       category_id: '1',
       status: 'published',
       featured: true,
@@ -90,6 +90,23 @@ describe('createArticleSchema', () => {
     expect(result.category_id).toBe(1)
     expect(result.status).toBe('published')
     expect(result.featured).toBe(true)
+  })
+
+  it('accepts content wrapped in { blocks: [...] }', () => {
+    const result = createArticleSchema.parse({
+      title: 'Valid Article Title',
+      content: { blocks: [{ type: 'paragraph', text: 'Hello' }] },
+    })
+    expect(result.title).toBe('Valid Article Title')
+  })
+
+  it('rejects content with unknown block type', () => {
+    expect(() =>
+      createArticleSchema.parse({
+        title: 'Bad Blocks',
+        content: [{ type: 'unknown' }],
+      })
+    ).toThrow()
   })
 })
 
