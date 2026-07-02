@@ -66,6 +66,7 @@ export function mapBackendArticleToFrontend(data: Partial<BackendArticle>): Arti
 
   const result: Article = {
     id: data.slug || data.id?.toString() || "",
+    dbId: data.id ? Number(data.id) : undefined,
     title: data.title || "",
     category: catObj?.name || catStr || data.categories?.name || "Tin tức",
     time: data.published_at || data.created_at || new Date().toISOString(),

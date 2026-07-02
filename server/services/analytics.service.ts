@@ -31,7 +31,6 @@ async function redis(command: RedisCommand) {
 export async function recordArticleView(articleId: number) {
   const date = todayKey()
   const wroteRedis = await redis(['INCR', `views:article:${articleId}:${date}`])
-  await redis(['INCR', `views:article:${articleId}:total`])
 
   if (!wroteRedis) {
     await flushArticleViewsToPostgres(articleId, date, 1)

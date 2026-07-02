@@ -9,6 +9,7 @@ export interface ContentBlock {
 
 export interface Article {
   id: string;
+  dbId?: number;
   title: string;
   category: string;
   categorySlug?: string;

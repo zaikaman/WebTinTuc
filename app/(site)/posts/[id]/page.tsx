@@ -10,6 +10,7 @@ import {
 import { Clock, Link2, Star } from "lucide-react";
 import { formatCategory } from "@/lib/utils";
 import AdBanner from "@/components/AdBanner";
+import ViewTracker from "@/components/ViewTracker";
 
 export const revalidate = 60;
 
@@ -152,6 +153,7 @@ export default async function PostDetailPage({ params }: PageProps) {
 
   return (
     <>
+      <ViewTracker articleId={article.dbId} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
