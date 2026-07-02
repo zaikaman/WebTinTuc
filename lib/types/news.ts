@@ -17,6 +17,7 @@ export interface Article {
   badge?: string;
   intro?: string;
   content?: ContentBlock[];
+  views?: number;
 }
 
 export interface CategoryFeed {

@@ -184,13 +184,21 @@ export async function listFeaturedArticles(limit = 6) {
 export async function searchArticles(queryText: string, page = 1, limit = 10) {
   const { from, to } = toRange(page, limit)
 
+  // Normalize query to remove diacritics so it matches the accentless search_vector GIN index
+  const normalizedQuery = queryText
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .trim();
+
   // Use PostgreSQL Full-Text Search via search_vector GIN index for queries >= 2 chars
   // Falls back to ilike for very short inputs where plainto_tsquery isn't effective
-  if (queryText.trim().length >= 2) {
+  if (normalizedQuery.length >= 2) {
     const { data, error, count } = await supabaseAdmin
       .from('articles')
       .select(ARTICLE_SELECT, { count: 'exact' })
-      .textSearch('search_vector', queryText, { type: 'plain', config: 'simple' })
+      .textSearch('search_vector', normalizedQuery, { type: 'plain', config: 'simple' })
       .eq('status', 'published')
       .is('deleted_at', null)
       .range(from, to)
@@ -212,6 +220,7 @@ export async function searchArticles(queryText: string, page = 1, limit = 10) {
   if (error) throw error
   return { items: data ?? [], meta: pageMeta(count, page, limit) }
 }
+
 
 export async function listTrendingArticles(limit = 10, days = 7) {
   const since = new Date()

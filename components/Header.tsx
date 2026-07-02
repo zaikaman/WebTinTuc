@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Mail, Menu, Search, X, ChevronRight } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { Mail, Menu, Search, X, ChevronRight, Loader2 } from "lucide-react";
 import type { SiteSettings, SocialLink, NavigationItem } from "@/lib/types/news";
 
 interface HeaderProps {
@@ -45,10 +45,166 @@ function ZaloIcon({ className = "h-4 w-4" }: { className?: string }) {
 }
 
 export function Header({ brand, categories }: HeaderProps) {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const router = useRouter();
   const pathname = usePathname();
   const utilityLink = brand.utilityLinks[0];
+
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+
+  // Search States
+  const [query, setQuery] = useState("");
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showSuggestionsFor, setShowSuggestionsFor] = useState<"desktop" | "mobile-slide" | "mobile-drawer" | null>(null);
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
+
+  // Container refs for detecting clicks outside
+  const desktopSearchRef = useRef<HTMLDivElement>(null);
+  const mobileSearchRef = useRef<HTMLDivElement>(null);
+  const mobileDrawerRef = useRef<HTMLDivElement>(null);
+
+  // Highlight helper function for search suggestions (accent-insensitive)
+  const highlightText = (text: string, highlight: string) => {
+    if (!highlight.trim()) return <span>{text}</span>;
+    
+    // Build an accent-insensitive regex pattern mapping letters to their diacritic character classes
+    const pattern = escapeRegExp(highlight)
+      .replace(/[aàáảãạăằắẳẵặâầấẩẫậAÀÁẢÃẠĂẰẮẲẴẶÂẦẤẨẪẬ]/g, "[aàáảãạăằắẳẵặâầấẩẫậAÀÁẢÃẠĂẰẮẲẴẶÂẦẤẨẪẬ]")
+      .replace(/[eèéẻẽẹêềếểễệEÈÉẺẼẸÊỀẾỂỄỆ]/g, "[eèéẻẽẹêềếểễệEÈÉẺẼẸÊỀẾỂỄỆ]")
+      .replace(/[iìíỉĩịIÌÍỈĨỊ]/g, "[iìíỉĩịIÌÍỈĨỊ]")
+      .replace(/[oòóỏõọôồốổỗộơờớởỡợOÒÓỎÕỌÔỒỐỔỖỘƠỜỚỞỠỢ]/g, "[oòóỏõọôồốổỗộơờớởỡợOÒÓỎÕỌÔỒỐỔỖỘƠỜỚỞỠỢ]")
+      .replace(/[uùúủũụưừứửữựUÙÚỦŨỤƯỪỨỬỮỰ]/g, "[uùúủũụưừứửữựUÙÚỦŨỤƯỪỨỬỮỰ]")
+      .replace(/[yỳýỷỹỵYỲÝỶỸỴ]/g, "[yỳýỷỹỵYỲÝỶỸỴ]")
+      .replace(/[dđDĐ]/g, "[dđDĐ]");
+
+    try {
+      const regex = new RegExp(`(${pattern})`, "gi");
+      const parts = text.split(regex);
+      return (
+        <span>
+          {parts.map((part, i) =>
+            regex.test(part) ? (
+              <mark key={i} className="bg-yellow-100 text-gray-900 font-bold px-0.5 rounded-sm">
+                {part}
+              </mark>
+            ) : (
+              <span key={i}>{part}</span>
+            )
+          )}
+        </span>
+      );
+    } catch (e) {
+      return <span>{text}</span>;
+    }
+  };
+
+  function escapeRegExp(string: string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
+
+  // Click outside listener
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        showSuggestionsFor === "desktop" &&
+        desktopSearchRef.current &&
+        !desktopSearchRef.current.contains(event.target as Node)
+      ) {
+        setShowSuggestionsFor(null);
+      }
+      if (
+        showSuggestionsFor === "mobile-slide" &&
+        mobileSearchRef.current &&
+        !mobileSearchRef.current.contains(event.target as Node)
+      ) {
+        setShowSuggestionsFor(null);
+      }
+      if (
+        showSuggestionsFor === "mobile-drawer" &&
+        mobileDrawerRef.current &&
+        !mobileDrawerRef.current.contains(event.target as Node)
+      ) {
+        setShowSuggestionsFor(null);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showSuggestionsFor]);
+
+  // Debounced fetch search suggestions
+  useEffect(() => {
+    if (!query.trim()) {
+      setSuggestions([]);
+      return;
+    }
+
+    setIsLoading(true);
+    const delayDebounce = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(query.trim())}&limit=5`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.success && data.data && Array.isArray(data.data.items)) {
+            setSuggestions(data.data.items);
+          } else {
+            setSuggestions([]);
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching search suggestions:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    }, 250);
+
+    return () => clearTimeout(delayDebounce);
+  }, [query]);
+
+  // Handle click on suggestions or navigation completion
+  const handleSuggestionClick = () => {
+    setShowSuggestionsFor(null);
+    setQuery("");
+    setMobileSearchOpen(false);
+    setMobileMenuOpen(false);
+  };
+
+  // Keyboard navigation & enter to search
+  const handleKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    inputType: "desktop" | "mobile-slide" | "mobile-drawer"
+  ) => {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      if (suggestions.length > 0) {
+        setShowSuggestionsFor(inputType);
+        setActiveSuggestionIndex((prev) => (prev + 1) % suggestions.length);
+      }
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      if (suggestions.length > 0) {
+        setShowSuggestionsFor(inputType);
+        setActiveSuggestionIndex((prev) => (prev - 1 + suggestions.length) % suggestions.length);
+      }
+    } else if (e.key === "Escape") {
+      setShowSuggestionsFor(null);
+      setActiveSuggestionIndex(-1);
+    } else if (e.key === "Enter") {
+      if (activeSuggestionIndex >= 0 && activeSuggestionIndex < suggestions.length) {
+        e.preventDefault();
+        const selected = suggestions[activeSuggestionIndex];
+        router.push(`/posts/${selected.slug || selected.id}`);
+        handleSuggestionClick();
+      } else if (query.trim()) {
+        e.preventDefault();
+        router.push(`/search?q=${encodeURIComponent(query.trim())}`);
+        handleSuggestionClick();
+      }
+    }
+  };
 
   return (
     <header className="w-full select-none font-sans bg-white relative">
@@ -80,7 +236,14 @@ export function Header({ brand, categories }: HeaderProps) {
 
         {/* Right Side: Search toggle button */}
         <button
-          onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
+          onClick={() => {
+            setMobileSearchOpen(!mobileSearchOpen);
+            if (!mobileSearchOpen) {
+              setTimeout(() => {
+                setShowSuggestionsFor("mobile-slide");
+              }, 100);
+            }
+          }}
           className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
             mobileSearchOpen ? "bg-white/20 text-white" : "hover:bg-white/10 text-white"
           }`}
@@ -91,20 +254,79 @@ export function Header({ brand, categories }: HeaderProps) {
 
         {/* Sliding Search Overlay on Mobile */}
         <div 
+          ref={mobileSearchRef}
           className={`absolute top-full left-0 right-0 bg-[#e24a48] border-t border-white/15 shadow-lg px-4 py-3 transition-all duration-300 ease-in-out z-30 ${
             mobileSearchOpen 
               ? "opacity-100 translate-y-0 visible" 
               : "opacity-0 -translate-y-2 pointer-events-none invisible"
           }`}
         >
-          <div className="flex h-[36px] items-center rounded-lg border border-white/20 bg-white/10 px-3 shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)] focus-within:bg-white focus-within:border-white focus-within:text-gray-900 group">
-            <Search size={14} className="mr-2 text-white/80 group-focus-within:text-gray-500" />
+          <div className="flex h-[36px] items-center rounded-lg border border-white/20 bg-white/10 px-3 shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)] focus-within:bg-white focus-within:border-white focus-within:text-gray-900 group relative">
+            <Search 
+              size={14} 
+              className="mr-2 text-white/80 group-focus-within:text-gray-500 cursor-pointer hover:text-gray-600 transition-colors" 
+              onClick={() => {
+                if (query.trim()) {
+                  router.push(`/search?q=${encodeURIComponent(query.trim())}`);
+                  handleSuggestionClick();
+                }
+              }}
+            />
             <input
               type="text"
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setShowSuggestionsFor("mobile-slide");
+                setActiveSuggestionIndex(-1);
+              }}
+              onFocus={() => {
+                if (query.trim()) setShowSuggestionsFor("mobile-slide");
+              }}
+              onKeyDown={(e) => handleKeyDown(e, "mobile-slide")}
               placeholder={brand.searchPlaceholder}
               className="h-full w-full bg-transparent text-xs font-bold text-white group-focus-within:text-gray-900 outline-none placeholder:text-white/60 group-focus-within:placeholder:text-gray-400"
             />
           </div>
+
+          {/* Mobile slide suggestions dropdown */}
+          {showSuggestionsFor === "mobile-slide" && query.trim() && (
+            <div className="mt-2 bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden text-gray-800">
+              {isLoading && suggestions.length === 0 ? (
+                <div className="flex items-center justify-center py-3 px-4 text-[11px] text-gray-400 gap-2">
+                  <Loader2 className="animate-spin h-3 w-3 text-gray-400" />
+                  <span>Đang tìm...</span>
+                </div>
+              ) : suggestions.length === 0 ? (
+                <div className="py-2.5 px-3 text-[11px] text-gray-500 italic">
+                  Không tìm thấy kết quả.
+                </div>
+              ) : (
+                <ul className="divide-y divide-gray-100 max-h-[220px] overflow-y-auto">
+                  {suggestions.map((item, idx) => (
+                    <li key={item.id}>
+                      <Link
+                        href={`/posts/${item.slug || item.id}`}
+                        onClick={handleSuggestionClick}
+                        className={`flex items-center gap-2.5 px-3 py-2.5 hover:bg-gray-50 transition-colors text-left ${
+                          idx === activeSuggestionIndex ? "bg-gray-100" : ""
+                        }`}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <span className="block text-[11.5px] font-bold text-gray-900 truncate">
+                            {highlightText(item.title, query)}
+                          </span>
+                          <span className="block text-[9px] text-gray-400 font-semibold mt-0.5">
+                            {item.categories?.name || "Tin tức"}
+                          </span>
+                        </div>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -128,16 +350,84 @@ export function Header({ brand, categories }: HeaderProps) {
 
         <div className="flex-1 bg-[#e24a48] flex items-center justify-between px-2.5 md:px-6">
           <div className="w-full grid grid-cols-[minmax(260px,1fr)_auto] items-center gap-5 lg:gap-7">
-            <div className="flex justify-center">
-              <div className="flex h-[34px] w-full max-w-[760px] items-center rounded-[17px] border border-[#d5d5d5] bg-[#f0eeee] px-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] transition-colors focus-within:border-white focus-within:bg-white">
-                <Search size={15} className="mr-2.5 flex-shrink-0 text-[#4c6281]" />
+            <div ref={desktopSearchRef} className="flex justify-center relative w-full max-w-[760px]">
+              <div className="flex h-[34px] w-full items-center rounded-[17px] border border-[#d5d5d5] bg-[#f0eeee] px-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] transition-colors focus-within:border-white focus-within:bg-white relative z-10">
+                <Search 
+                  size={15} 
+                  className="mr-2.5 flex-shrink-0 text-[#4c6281] cursor-pointer hover:text-[#df3232] transition-colors" 
+                  onClick={() => {
+                    if (query.trim()) {
+                      router.push(`/search?q=${encodeURIComponent(query.trim())}`);
+                      handleSuggestionClick();
+                    }
+                  }}
+                />
                 <input
                   type="text"
+                  value={query}
+                  onChange={(e) => {
+                    setQuery(e.target.value);
+                    setShowSuggestionsFor("desktop");
+                    setActiveSuggestionIndex(-1);
+                  }}
+                  onFocus={() => {
+                    if (query.trim()) setShowSuggestionsFor("desktop");
+                  }}
+                  onKeyDown={(e) => handleKeyDown(e, "desktop")}
                   placeholder={brand.searchPlaceholder}
                   className="h-full w-full bg-transparent text-[13px] font-bold text-[#4c6281] outline-none placeholder:text-[#4c6281]/70"
                 />
               </div>
+
+              {/* Desktop Suggestions Dropdown */}
+              {showSuggestionsFor === "desktop" && query.trim() && (
+                <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden text-gray-800 max-w-[760px] mx-auto w-full">
+                  {isLoading && suggestions.length === 0 ? (
+                    <div className="flex items-center justify-center py-4 px-4 text-xs text-gray-400 gap-2">
+                      <Loader2 className="animate-spin h-3.5 w-3.5 text-gray-400" />
+                      <span>Đang tìm kiếm...</span>
+                    </div>
+                  ) : suggestions.length === 0 ? (
+                    <div className="py-3 px-4 text-xs text-gray-500 italic">
+                      Không tìm thấy bài viết nào phù hợp.
+                    </div>
+                  ) : (
+                    <ul className="divide-y divide-gray-100 max-h-[300px] overflow-y-auto">
+                      {suggestions.map((item, idx) => (
+                        <li key={item.id}>
+                          <Link
+                            href={`/posts/${item.slug || item.id}`}
+                            onClick={handleSuggestionClick}
+                            className={`flex items-center gap-3 px-3.5 py-2.5 hover:bg-gray-50 transition-colors text-left ${
+                              idx === activeSuggestionIndex ? "bg-gray-100" : ""
+                            }`}
+                          >
+                            {item.thumbnail_key ? (
+                              <div className="relative w-10 h-7 flex-shrink-0 rounded border border-gray-100 overflow-hidden bg-gray-50">
+                                <img src={item.thumbnail_key} alt="" className="w-full h-full object-cover" />
+                              </div>
+                            ) : (
+                              <div className="w-10 h-7 flex-shrink-0 rounded border border-gray-100 bg-gray-100 flex items-center justify-center">
+                                <Search size={10} className="text-gray-400" />
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <span className="block text-xs font-bold text-gray-900 truncate">
+                                {highlightText(item.title, query)}
+                              </span>
+                              <span className="block text-[10px] text-gray-400 font-semibold mt-0.5">
+                                {item.categories?.name || "Tin tức"}
+                              </span>
+                            </div>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
             </div>
+
             <div className="flex shrink-0 items-center justify-end gap-3 lg:gap-4">
               {utilityLink && utilityLink.href ? (
                 <Link
@@ -251,13 +541,66 @@ export function Header({ brand, categories }: HeaderProps) {
             </div>
 
             {/* Quick Search */}
-            <div className="bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 flex items-center gap-2">
-              <Search size={14} className="text-gray-400 flex-shrink-0" />
-              <input
-                type="text"
-                placeholder={brand.searchPlaceholder}
-                className="bg-transparent text-xs text-white outline-none placeholder:text-gray-500 w-full font-medium"
-              />
+            <div className="flex flex-col gap-1.5" ref={mobileDrawerRef}>
+              <div className="bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 flex items-center gap-2 focus-within:bg-white/10 transition-colors">
+                <Search 
+                  size={14} 
+                  className="text-gray-400 flex-shrink-0 cursor-pointer hover:text-white" 
+                  onClick={() => {
+                    if (query.trim()) {
+                      router.push(`/search?q=${encodeURIComponent(query.trim())}`);
+                      handleSuggestionClick();
+                    }
+                  }}
+                />
+                <input
+                  type="text"
+                  value={query}
+                  onChange={(e) => {
+                    setQuery(e.target.value);
+                    setShowSuggestionsFor("mobile-drawer");
+                    setActiveSuggestionIndex(-1);
+                  }}
+                  onFocus={() => {
+                    if (query.trim()) setShowSuggestionsFor("mobile-drawer");
+                  }}
+                  onKeyDown={(e) => handleKeyDown(e, "mobile-drawer")}
+                  placeholder={brand.searchPlaceholder}
+                  className="bg-transparent text-xs text-white outline-none placeholder:text-gray-500 w-full font-medium"
+                />
+              </div>
+
+              {/* Mobile Drawer suggestions dropdown */}
+              {showSuggestionsFor === "mobile-drawer" && query.trim() && (
+                <div className="bg-white/5 border border-white/10 rounded-lg overflow-hidden text-gray-200">
+                  {isLoading && suggestions.length === 0 ? (
+                    <div className="flex items-center justify-center py-2.5 px-3 text-[11px] text-gray-400 gap-2">
+                      <Loader2 className="animate-spin h-3 w-3 text-gray-400" />
+                      <span>Đang tìm...</span>
+                    </div>
+                  ) : suggestions.length === 0 ? (
+                    <div className="py-2 px-3 text-[11px] text-gray-400 italic">
+                      Không tìm thấy kết quả.
+                    </div>
+                  ) : (
+                    <ul className="divide-y divide-white/5 max-h-[200px] overflow-y-auto">
+                      {suggestions.map((item, idx) => (
+                        <li key={item.id}>
+                          <Link
+                            href={`/posts/${item.slug || item.id}`}
+                            onClick={handleSuggestionClick}
+                            className={`block w-full px-3 py-2 text-[11px] hover:bg-white/5 transition-colors text-left font-semibold ${
+                              idx === activeSuggestionIndex ? "bg-white/10 text-white" : "text-gray-300"
+                            }`}
+                          >
+                            <span className="block truncate">{item.title}</span>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Category Navigation Links */}

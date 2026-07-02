@@ -49,6 +49,7 @@ export function mapBackendArticleToFrontend(data: any): Article {
     image: data.thumbnail_key || "",
     intro: data.summary || undefined,
     content: data.content?.blocks || data.content || undefined,
+    views: typeof data.views === "number" ? data.views : 0,
   };
 }
 
