@@ -1,7 +1,15 @@
 import { generateSlug } from '@/lib/format/slug'
 import * as categoryRepository from '@/server/repositories/category.repository'
 
-function normalizeCategoryPayload(data: Record<string, any>) {
+type CategoryPayload = {
+  name?: string | undefined
+  slug?: string | undefined
+  priority?: number | undefined
+  description?: string | null | undefined
+  status?: 'active' | 'inactive' | undefined
+}
+
+function normalizeCategoryPayload(data: CategoryPayload) {
   return {
     ...data,
     slug: data.slug ?? (data.name ? generateSlug(data.name) : undefined)
@@ -24,11 +32,11 @@ export async function getCategoryBySlug(slug: string) {
   return categoryRepository.getPublicCategoryBySlug(slug)
 }
 
-export async function createCategory(data: Record<string, any>) {
+export async function createCategory(data: CategoryPayload) {
   return categoryRepository.createCategory(normalizeCategoryPayload(data))
 }
 
-export async function updateCategory(id: number, data: Record<string, any>) {
+export async function updateCategory(id: number, data: CategoryPayload) {
   return categoryRepository.updateCategory(id, normalizeCategoryPayload(data))
 }
 

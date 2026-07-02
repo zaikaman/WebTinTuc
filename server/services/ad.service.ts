@@ -12,11 +12,24 @@ export async function getAdById(id: number) {
   return adRepository.getAdById(id)
 }
 
-export async function createAd(data: Record<string, unknown>) {
+type AdPayload = {
+  name?: string | undefined
+  position?: string | undefined
+  type?: string | undefined
+  media_key?: string | null | undefined
+  html_code?: string | null | undefined
+  target_url?: string | null | undefined
+  starts_at?: string | null | undefined
+  ends_at?: string | null | undefined
+  status?: 'active' | 'inactive' | undefined
+  priority?: number | undefined
+}
+
+export async function createAd(data: AdPayload) {
   return adRepository.createAd(data)
 }
 
-export async function updateAd(id: number, data: Record<string, unknown>) {
+export async function updateAd(id: number, data: AdPayload) {
   return adRepository.updateAd(id, data)
 }
 

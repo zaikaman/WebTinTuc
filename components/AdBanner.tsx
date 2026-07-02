@@ -49,7 +49,6 @@ export default function AdBanner({
 
   const currentAd = activeAds.length > 0 ? activeAds[currentIndex] : null;
   const finalImg = currentAd?.media_key || fallbackImg;
-  const finalLink = currentAd?.target_url || fallbackLink;
   const adId = currentAd?.id;
 
   // Intersection Observer để kiểm tra xem Banner có nằm trong Viewport không

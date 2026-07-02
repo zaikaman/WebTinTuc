@@ -4,7 +4,7 @@ interface FooterProps {
   settings?: Pick<SiteSettings, "brand" | "footer">;
 }
 
-export function Footer({ settings }: FooterProps = {}) {
+export function Footer(_props: FooterProps = {}) {
   return (
     <footer className="mt-0 bg-[#2d2d2d] border-t-8 border-brand-red text-white">
       <div className="px-4 py-8 max-w-[970px] mx-auto text-center space-y-2 text-[12px] leading-relaxed text-gray-200">

@@ -32,7 +32,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const title = article.title;
   const description = article.intro || `Đọc bài viết ${article.title} trên WebTinTuc. Cập nhật tin tức mới nhất về ${article.category.toLowerCase()}.`;
   const imageUrl = article.image || `${siteUrl}/screen-3.webp`;
-  const categorySlug = article.categorySlug || article.category;
   const url = `/posts/${id}`;
 
   return {
@@ -143,7 +142,7 @@ export default async function PostDetailPage({ params }: PageProps) {
   
   // Filter out any existing ad blocks to ensure no duplicates, then insert one ad block in the middle of content
   let contentBlocks: any[] = [];
-  if (isBlocksArray) {
+  if (isBlocksArray && article.content) {
     contentBlocks = [...(article.content.filter((b: any) => b.type !== "ad") || [])];
     if (contentBlocks.length > 0) {
       const insertIndex = Math.max(1, Math.floor(contentBlocks.length / 2));

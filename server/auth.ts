@@ -1,16 +1,12 @@
 import { NextRequest } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { supabaseAdmin } from '@/lib/supabase/admin'
-import { ApiError } from './http'
 
 export async function requireAdmin(request: NextRequest) {
-  const configuredSecret = process.env.ADMIN_API_SECRET
   const providedSecret = request.headers.get('x-admin-secret')
 
   return requireAdminAccess(providedSecret)
 }
 
-export async function requireAdminAccess(providedSecret?: string | null) {
+export async function requireAdminAccess(_providedSecret?: string | null) {
   // ==========================================
   // ⚠️ TẠM THỜI VÔ HIỆU HÓA AUTH ĐỂ TEST TRIỆT ĐỂ:
   // Hãy comment dòng dưới đây lại khi muốn bật lại auth!

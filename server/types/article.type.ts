@@ -19,6 +19,17 @@ export type ContentBlock = {
   text?: string
 }
 
-export type CreateArticleDto = Record<string, unknown>
-export type UpdateArticleDto = Record<string, unknown>
+export type CreateArticleDto = {
+  title: string
+  slug?: string
+  summary?: string
+  content?: ArticleContent | string
+  thumbnail_key?: string
+  category_id?: number | null
+  featured?: boolean
+  status?: 'draft' | 'published'
+  published_at?: string | null
+}
+
+export type UpdateArticleDto = Partial<CreateArticleDto>
 

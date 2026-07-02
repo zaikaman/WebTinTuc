@@ -10,14 +10,12 @@ import { FeaturedCarousel } from "@/components/FeaturedCarousel";
 import AdBanner from "@/components/AdBanner";
 
 interface CategoryContentProps {
-  category: string;
-  label: string;
   featured: Article;
   initialList: Article[];
   ads?: any[];
 }
 
-export function CategoryContent({ category, label, featured, initialList, ads = [] }: CategoryContentProps) {
+export function CategoryContent({ featured, initialList, ads = [] }: CategoryContentProps) {
   // We display first 12 items (6 before ad, 6 after ad).
   // The rest (items 12 to 16) are loaded when clicking "Xem Thêm".
   const initialDisplayList = initialList.slice(0, 12);

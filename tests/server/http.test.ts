@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { ApiError, ok, created, noContent, fail, parseQuery, parseBody, actionResponse } from '@/server/http'
 import { z } from 'zod'
 import { NextRequest } from 'next/server'

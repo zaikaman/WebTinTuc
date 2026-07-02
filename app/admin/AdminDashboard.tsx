@@ -8,7 +8,6 @@ import {
   Folder,
   Image as ImageIcon,
   Search,
-  Calendar,
   SquarePen,
   Trash2,
   Plus,
@@ -40,16 +39,12 @@ import {
   Lock,
   EyeOff,
   LogOut,
-  Layout,
-  Film,
   Copy,
   ExternalLink,
-  Link2,
-  Globe,
   RotateCcw,
   Crop
 } from "lucide-react";
-import { getAdminSettings, updateAdminSettings, getAdminMedia, uploadAdminMedia, deleteAdminMedia, moveAdminMedia, createAdminFolder, getAdminDashboardStats, getAdminCategories, createAdminCategory, updateAdminCategory, deleteAdminCategory, getAdminArticles, createAdminArticle, updateAdminArticle, deleteAdminArticle, restoreAdminArticle, getAdminAds, createAdminAd, updateAdminAd, deleteAdminAd } from "@/lib/api/adminClient";
+import { getAdminSettings, updateAdminSettings, getAdminMedia, uploadAdminMedia, deleteAdminMedia, createAdminFolder, getAdminDashboardStats, getAdminCategories, createAdminCategory, updateAdminCategory, deleteAdminCategory, getAdminArticles, createAdminArticle, updateAdminArticle, deleteAdminArticle, restoreAdminArticle, getAdminAds, createAdminAd, updateAdminAd, deleteAdminAd } from "@/lib/api/adminClient";
 import { Toaster, toast } from "sonner";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -593,8 +588,7 @@ export default function AdminDashboard() {
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
   const [mediaLoading, setMediaLoading] = useState(false);
 
-  const [siteSettings, setSiteSettings] = useState(mockSiteSettings);
-  const [logoFooterActiveTab, setLogoFooterActiveTab] = useState<"general" | "footer" | "social" | "columns">("general");
+  const [, setSiteSettings] = useState(mockSiteSettings);
 
   // Simplified Logo & Footer states matching screenshot
   const [logoWebsiteName, setLogoWebsiteName] = useState("Tên Web");
@@ -762,7 +756,7 @@ export default function AdminDashboard() {
     } catch (err) {}
   };
 
-  const loadMedia = async (folderName?: string, recursive: boolean = true) => {
+  const loadMedia = async () => {
     try {
       setMediaLoading(true);
       // We always load recursively from root to keep a full cache of media files
@@ -880,7 +874,7 @@ export default function AdminDashboard() {
       loadCategories();
     }
     if (activeTab === "media") {
-      loadMedia("", true);
+      loadMedia();
       loadFolders();
     }
     if (activeTab === "ads") {
@@ -955,7 +949,7 @@ export default function AdminDashboard() {
   const [isAdSaving, setIsAdSaving] = useState(false);
   const [isSettingsSaving, setIsSettingsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isFolderCreating, setIsFolderCreating] = useState(false);
+
   const [isMediaUploading, setIsMediaUploading] = useState(false);
   const [restoringPostId, setRestoringPostId] = useState<number | null>(null);
   const [deletingMediaKey, setDeletingMediaKey] = useState<string | null>(null);
@@ -1432,7 +1426,6 @@ export default function AdminDashboard() {
         startDate: new Date().toISOString().split("T")[0],
         endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
         status: "Hoạt động",
-        image: undefined,
         link: ""
       });
       setAdDialogOpen(true);
@@ -1525,11 +1518,11 @@ export default function AdminDashboard() {
         };
         
         if (dialogMode === "add") {
-          await createAdminArticle(payload);
+          await createAdminArticle(payload as any);
           toast.success("Thêm bài viết mới thành công!", { id: "post-submit" });
         } else {
           if (editId) {
-            await updateAdminArticle(editId, payload);
+            await updateAdminArticle(editId, payload as any);
             toast.success("Cập nhật bài viết thành công!", { id: "post-submit" });
           }
         }
@@ -1555,11 +1548,11 @@ export default function AdminDashboard() {
         };
         
         if (dialogMode === "add") {
-          await createAdminCategory(payload);
+          await createAdminCategory(payload as any);
           toast.success("Thêm danh mục mới thành công!", { id: "cat-submit" });
         } else {
           if (editId) {
-            await updateAdminCategory(editId, payload);
+            await updateAdminCategory(editId, payload as any);
             toast.success("Cập nhật danh mục thành công!", { id: "cat-submit" });
           }
         }
@@ -1590,11 +1583,11 @@ export default function AdminDashboard() {
         };
         
         if (dialogMode === "add") {
-          await createAdminAd(payload);
+          await createAdminAd(payload as any);
           toast.success("Thêm quảng cáo mới thành công!", { id: "ad-submit" });
         } else {
           if (editId) {
-            await updateAdminAd(editId, payload);
+            await updateAdminAd(editId, payload as any);
             toast.success("Cập nhật quảng cáo thành công!", { id: "ad-submit" });
           }
         }
@@ -1647,11 +1640,11 @@ export default function AdminDashboard() {
       };
       
       if (dialogMode === "add") {
-        await createAdminArticle(payload);
+        await createAdminArticle(payload as any);
         toast.success("Thêm bài viết mới thành công!", { id: "post-submit" });
       } else {
         if (editId) {
-          await updateAdminArticle(editId, payload);
+          await updateAdminArticle(editId, payload as any);
           toast.success("Cập nhật bài viết thành công!", { id: "post-submit" });
         }
       }
@@ -1871,7 +1864,8 @@ export default function AdminDashboard() {
           throw new Error("Không nhận được URL từ server");
         }
       } catch (err) {
-        toast.error("Tải lên video thất bại: " + (err.message || err), { id: "upload-video" });
+        const e = err instanceof Error ? err : new Error(String(err));
+        toast.error("Tải lên video thất bại: " + e.message, { id: "upload-video" });
         return;
       }
     } else if (videoUrl.trim()) {
@@ -2222,7 +2216,7 @@ export default function AdminDashboard() {
                 type="button"
                 onClick={() => {
                   setImageDialogOpen(true);
-                  loadMedia("", true);
+                  loadMedia();
                 }}
                 className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900"
                 title="Insert Image"
@@ -2233,7 +2227,7 @@ export default function AdminDashboard() {
                 type="button"
                 onClick={() => {
                   setVideoDialogOpen(true);
-                  loadMedia("", true);
+                  loadMedia();
                 }}
                 className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900"
                 title="Insert Video"
@@ -2396,7 +2390,7 @@ export default function AdminDashboard() {
                 type="button"
                 onClick={() => {
                   setImageTab("library");
-                  loadMedia("", true);
+                  loadMedia();
                 }}
                 className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${
                   imageTab === "library"
@@ -2607,7 +2601,7 @@ export default function AdminDashboard() {
                 type="button"
                 onClick={() => {
                   setVideoTab("library");
-                  loadMedia("", true);
+                  loadMedia();
                 }}
                 className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${
                   videoTab === "library"
@@ -3026,7 +3020,8 @@ export default function AdminDashboard() {
                           setCropDialogOpen(false);
                         }
                       } catch (err) {
-                        toast.error("Lỗi tải ảnh cắt: " + (err.message || err), { id: "upload-cropped" });
+                        const e = err instanceof Error ? err : new Error(String(err));
+                        toast.error("Lỗi tải ảnh cắt: " + e.message, { id: "upload-cropped" });
                       }
                     }, "image/jpeg", 0.9);
                   };
@@ -3415,7 +3410,7 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {categoryStats.map((item) => {
+                  {categoryStats.map((item: { name: string; count: number; percentage: number }) => {
                     const style = getCategoryStyles(item.name);
                     const IconComponent = style.icon;
                     return (
@@ -3464,7 +3459,7 @@ export default function AdminDashboard() {
                     </div>
 
                     <div className="space-y-3">
-                      {topPosts.map((post, index) => {
+                      {topPosts.map((post: { title: string; views: number; category: string; id?: number }, index: number) => {
                         const badgeColors = [
                           "bg-gradient-to-br from-red-500 to-[#E55956] text-white shadow-sm",
                           "bg-gradient-to-br from-orange-400 to-orange-500 text-white shadow-sm",
@@ -5031,7 +5026,7 @@ export default function AdminDashboard() {
                     )}
                     <button
                       type="button"
-                      onClick={() => setAdForm({ ...adForm, image: undefined })}
+                      onClick={() => { const f = { ...adForm }; delete (f as any).image; setAdForm(f); }}
                       className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg transition-all shadow-md active:scale-95 pointer-events-auto"
                     >
                       Xóa ảnh

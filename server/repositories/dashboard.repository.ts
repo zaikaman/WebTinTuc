@@ -1,6 +1,13 @@
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { listTrendingArticles } from './article.repository'
 
+type ActivityRecord = {
+  type: 'article' | 'ad' | 'category'
+  title: string
+  status?: string
+  createdAt: string
+}
+
 async function countRows(table: 'articles' | 'categories' | 'ads', filters: (query: any) => any = (query) => query) {
   const { count, error } = await filters(supabaseAdmin.from(table).select('*', { count: 'exact', head: true }))
   if (error) throw error
@@ -176,7 +183,7 @@ export async function getDashboardStats() {
     supabaseAdmin.from('categories').select('id, name, created_at').is('deleted_at', null).order('created_at', { ascending: false }).limit(5)
   ])
 
-  const activities: any[] = []
+  const activities: ActivityRecord[] = []
   if (latestArticles.data) {
     latestArticles.data.forEach((a) => {
       activities.push({

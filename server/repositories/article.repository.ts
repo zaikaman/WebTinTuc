@@ -61,11 +61,11 @@ export async function listPublicArticles(options: ArticleListOptions = {}) {
   const limit = options.limit ?? 20
   const { from, to } = toRange(page ?? 1, limit)
   const categorySelect = options.category ? 'categories!inner(*)' : 'categories(*)'
-  const countOption = page !== undefined ? 'exact' : undefined
+  const countOption = page !== undefined ? ('exact' as const) : undefined
 
   let query = supabaseAdmin
     .from('articles')
-    .select(`*, ${categorySelect}, profiles(*)`, { count: countOption })
+    .select(`*, ${categorySelect}, profiles(*)`, countOption ? { count: countOption } : undefined)
     .eq('status', 'published')
     .is('deleted_at', null)
     .range(from, to)

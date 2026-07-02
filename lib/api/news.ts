@@ -10,19 +10,20 @@ import type {
   PostRecommendations,
   SiteSettings,
   NavigationItem,
+  ContentBlock,
 } from "@/lib/types/news";
 
 // High-performance in-memory cache to serve reads under 1ms
-const memoryCache = new Map<string, { data: any; expiry: number }>();
+const memoryCache = new Map<string, { data: unknown; expiry: number }>();
 
 export function clearMemoryCache() {
   memoryCache.clear();
 }
 
-function withMemoryCache<T extends (...args: any[]) => Promise<any>>(
+function withMemoryCache<T extends (...args: any[]) => Promise<unknown>>(
   fn: T,
   keyPrefix: string,
-  ttlMs = 30000 // 30 seconds default
+  ttlMs = 30000
 ): T {
   return (async (...args: any[]) => {
     const key = `${keyPrefix}:${JSON.stringify(args)}`;
@@ -30,7 +31,7 @@ function withMemoryCache<T extends (...args: any[]) => Promise<any>>(
     const cached = memoryCache.get(key);
 
     if (cached && cached.expiry > now) {
-      return cached.data;
+      return cached.data as Awaited<ReturnType<T>>;
     }
 
     const result = await fn(...args);
@@ -39,18 +40,45 @@ function withMemoryCache<T extends (...args: any[]) => Promise<any>>(
   }) as unknown as T;
 }
 
-export function mapBackendArticleToFrontend(data: any): Article {
-  return {
+interface BackendArticle {
+  id: number
+  slug: string
+  title: string
+  category?: string | { name: string; slug?: string }
+  categories?: { name: string; slug?: string }
+  published_at?: string
+  created_at: string
+  thumbnail_key?: string
+  summary?: string
+  content?: { blocks?: unknown[] } | unknown[]
+  views?: number
+}
+
+export function mapBackendArticleToFrontend(data: Partial<BackendArticle>): Article {
+  const catObj = typeof data.category === 'object' ? data.category : undefined
+  const catStr = typeof data.category === 'string' ? data.category : undefined
+
+  const contentBlocks = data.content
+    ? Array.isArray(data.content)
+      ? data.content
+      : data.content.blocks
+    : undefined
+
+  const result: Article = {
     id: data.slug || data.id?.toString() || "",
     title: data.title || "",
-    category: data.category?.name || data.category || data.categories?.name || "Tin tức",
-    categorySlug: data.category?.slug || data.categories?.slug || undefined,
+    category: catObj?.name || catStr || data.categories?.name || "Tin tức",
     time: data.published_at || data.created_at || new Date().toISOString(),
     image: data.thumbnail_key || "",
-    intro: data.summary || undefined,
-    content: data.content?.blocks || data.content || undefined,
     views: typeof data.views === "number" ? data.views : 0,
-  };
+  }
+
+  const catSlug = catObj?.slug || data.categories?.slug
+  if (catSlug) result.categorySlug = catSlug
+  if (data.summary) result.intro = data.summary
+  if (contentBlocks) result.content = contentBlocks as ContentBlock[]
+
+  return result
 }
 
 const getSiteSettingsCached = unstable_cache(
@@ -66,7 +94,7 @@ const getSiteSettingsCached = unstable_cache(
       
       const dynamicPrimaryLinks = categoriesItems
         .slice(0, 6)
-        .map((cat: any) => ({
+        .map((cat: { name: string; slug: string }) => ({
             label: cat.name.toUpperCase(),
             href: `/${cat.slug}`,
           }));
@@ -116,10 +144,9 @@ const getHomeFeedCached = unstable_cache(
       const featuredItems = featuredData?.items || [];
       const latestItems = latestData?.items || [];
 
-      return {
-        featuredArticle: featuredItems.length > 0 ? mapBackendArticleToFrontend(featuredItems[0]) : undefined,
-        latestArticles: latestItems.map(mapBackendArticleToFrontend),
-      };
+      const feed: HomeFeed = { latestArticles: latestItems.map(mapBackendArticleToFrontend) }
+      if (featuredItems.length > 0) feed.featuredArticle = mapBackendArticleToFrontend(featuredItems[0])
+      return feed
     } catch (error) {
       console.error("Failed to fetch home feed:", error);
       return { latestArticles: [] };
@@ -150,8 +177,8 @@ export const getArticleById = withMemoryCache(getArticleByIdCached, 'getArticleB
 const getPostRecommendationsCached = unstable_cache(
   async (articleId: string): Promise<PostRecommendations> => {
     try {
-      let relatedItems: any[] = [];
-      let likeItems: any[] = [];
+      let relatedItems: BackendArticle[] = [];
+      let likeItems: BackendArticle[] = [];
 
       const currentArticle = await articleService.getArticleBySlug(articleId);
       if (currentArticle) {
@@ -160,10 +187,10 @@ const getPostRecommendationsCached = unstable_cache(
 
         // Fetch trending articles (max 10) as "You May Also Like" candidate pool
         const trending = await articleService.getTrendingArticles(10);
-        const relatedIds = new Set(relatedItems.map((a: any) => a.id));
+        const relatedIds = new Set(relatedItems.map((a) => a.id));
         
         likeItems = trending
-          .filter((a: any) => a.id !== currentArticle.id && !relatedIds.has(a.id))
+          .filter((a) => a.id !== currentArticle.id && !relatedIds.has(a.id))
           .slice(0, 4);
 
         // If not enough, fill the rest with latest articles
@@ -172,7 +199,7 @@ const getPostRecommendationsCached = unstable_cache(
           const latestItems = latest?.items || [];
           const remainingCount = 4 - likeItems.length;
           const additional = latestItems
-            .filter((a: any) => a.id !== currentArticle.id && !relatedIds.has(a.id) && !likeItems.some((l: any) => l.id === a.id))
+            .filter((a) => a.id !== currentArticle.id && !relatedIds.has(a.id) && !likeItems.some((l) => l.id === a.id))
             .slice(0, remainingCount);
           likeItems = [...likeItems, ...additional];
         }
@@ -215,7 +242,7 @@ const getCategoryFeedCached = unstable_cache(
       
       return {
         label: categoryData.name,
-        featured: items.length > 0 ? mapBackendArticleToFrontend(items[0]) : mapBackendArticleToFrontend({}),
+        featured: items.length > 0 ? mapBackendArticleToFrontend(items[0]) : mapBackendArticleToFrontend({} as BackendArticle),
         list: items.slice(1).map(mapBackendArticleToFrontend),
       };
     } catch (error) {
@@ -233,7 +260,7 @@ const getKnownCategorySlugsCached = unstable_cache(
     try {
       const categoriesData = await categoryService.listPublicCategories(100);
       const items = Array.isArray(categoriesData) ? categoriesData : [];
-      return items.map((cat: any) => cat.slug).filter(Boolean);
+      return items.map((cat: { slug: string }) => cat.slug).filter(Boolean);
     } catch (error) {
       return [];
     }

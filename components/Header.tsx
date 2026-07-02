@@ -468,12 +468,12 @@ export function Header({ brand, categories }: HeaderProps) {
         {/* Divided categories navigation */}
         <nav className="flex-1 flex h-full text-xs font-bold tracking-wide">
           {categories.map((item) => {
-            const isActive = pathname === item.href;
+            const isActive = item.href ? pathname === item.href : false;
 
             return (
               <Link
-                key={`${item.label}-${item.href}`}
-                href={item.href}
+                key={item.label}
+                href={item.href ?? '/'}
                 prefetch={true}
                 className={`flex-1 h-full flex items-center justify-center transition-colors border-r border-[#2d2d2d] last:border-r-0 text-center whitespace-nowrap relative ${
                   isActive
@@ -609,11 +609,11 @@ export function Header({ brand, categories }: HeaderProps) {
                 Chuyên mục
               </span>
               {categories.map((item) => {
-                const isActive = pathname === item.href;
+                const isActive = item.href ? pathname === item.href : false;
                 return (
                   <Link
                     key={`drawer-${item.label}`}
-                    href={item.href}
+                    href={item.href ?? '/'}
                     prefetch={true}
                     onClick={() => setMobileMenuOpen(false)}
                     className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-bold transition-all ${
@@ -657,8 +657,8 @@ export function Header({ brand, categories }: HeaderProps) {
                 <a
                   key={`drawer-${item.label}-${item.href}`}
                   href={item.href}
-                  target={isExternalHref(item.href) ? "_blank" : undefined}
-                  rel={isExternalHref(item.href) ? "noopener noreferrer" : undefined}
+                  target={item.href && isExternalHref(item.href) ? "_blank" : undefined}
+                  rel={item.href && isExternalHref(item.href) ? "noopener noreferrer" : undefined}
                   className="flex-1 py-2 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center gap-1.5 text-[10px] font-bold text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
                 >
                   {getSocialIcon(item)}
@@ -687,9 +687,9 @@ function HeaderSocialLink({
 
   return (
     <a
-      href={item.href}
-      target={isExternalHref(item.href) ? "_blank" : undefined}
-      rel={isExternalHref(item.href) ? "noopener noreferrer" : undefined}
+      href={item.href ?? '#'}
+      target={item.href && isExternalHref(item.href) ? "_blank" : undefined}
+      rel={item.href && isExternalHref(item.href) ? "noopener noreferrer" : undefined}
       className={className}
       aria-label={item.label}
     >

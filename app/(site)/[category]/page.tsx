@@ -129,8 +129,6 @@ export default async function CategoryPage({ params }: PageProps) {
     <>
       <CategoryJsonLd data={data} category={category} label={data.label} />
       <CategoryContent
-        category={category}
-        label={data.label}
         featured={data.featured}
         initialList={data.list}
         ads={ads}

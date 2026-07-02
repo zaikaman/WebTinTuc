@@ -3,13 +3,26 @@ import * as articleRepository from '@/server/repositories/article.repository'
 import * as categoryRepository from '@/server/repositories/category.repository'
 import * as redirectRepository from '@/server/repositories/redirect.repository'
 
-type ArticlePayload = Record<string, any>
+type ArticlePayload = {
+  title?: string | undefined
+  slug?: string | undefined
+  summary?: string | null | undefined
+  content?: unknown
+  thumbnail_key?: string | null | undefined
+  category_id?: number | null | undefined
+  featured?: boolean | undefined
+  status?: 'draft' | 'published' | undefined
+  published?: boolean | undefined
+  published_at?: string | null | undefined
+  author_id?: string | null | undefined
+  seo_title?: string | null | undefined
+  seo_description?: string | null | undefined
+}
 
 function normalizeArticlePayload(data: ArticlePayload) {
   const status = data.status ?? (data.published === true ? 'published' : data.published === false ? 'draft' : undefined)
   const payload: ArticlePayload = { ...data, status }
-
-  delete payload.published
+  delete (payload as Record<string, unknown>).published
 
   if (!payload.slug && payload.title) payload.slug = generateSlug(payload.title)
   if (payload.status === 'published' && !payload.published_at) payload.published_at = new Date().toISOString()

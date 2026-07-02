@@ -29,7 +29,7 @@ export async function createRedirect(data: { from_path: string; to_path: string;
   })
 }
 
-export async function updateRedirect(id: number, data: Record<string, any>) {
+export async function updateRedirect(id: number, data: { from_path?: string | undefined; to_path?: string | undefined; status_code?: number | undefined }) {
   if (data.from_path && data.to_path) data.to_path = await flattenTarget(data.from_path, data.to_path)
   return redirectRepository.updateRedirect(id, data)
 }

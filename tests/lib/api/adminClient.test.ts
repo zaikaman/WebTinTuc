@@ -21,13 +21,13 @@ describe('adminClient', () => {
     it('makes a successful GET request', async () => {
       vi.mocked(globalThis.fetch).mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({ data: [{ id: 1 }], success: true }),
+        json: () => Promise.resolve({ items: [{ id: 1 }], meta: { page: 1, limit: 20, total: 1, totalPages: 1 } }),
       } as Response)
 
       const { getAdminArticles } = await import('@/lib/api/adminClient')
       const result = await getAdminArticles()
 
-      expect(result).toEqual([{ id: 1 }])
+      expect(result.items[0].id).toBe(1)
       expect(globalThis.fetch).toHaveBeenCalledWith(
         '/api/admin/articles',
         expect.objectContaining({
@@ -64,7 +64,7 @@ describe('adminClient', () => {
     it('appends query string to URL', async () => {
       vi.mocked(globalThis.fetch).mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({ data: [], success: true }),
+        json: () => Promise.resolve({ items: [], meta: { page: 1, limit: 20, total: 0, totalPages: 0 } }),
       } as Response)
 
       const { getAdminArticles } = await import('@/lib/api/adminClient')
@@ -142,14 +142,13 @@ describe('adminClient', () => {
     it('getAdminCategories fetches categories', async () => {
       vi.mocked(globalThis.fetch).mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({ data: [{ id: 1, name: 'News' }], success: true }),
+        json: () => Promise.resolve({ items: [{ id: 1, name: 'News' }], meta: { page: 1, limit: 100, total: 1, totalPages: 1 } }),
       } as Response)
 
       const { getAdminCategories } = await import('@/lib/api/adminClient')
       const result = await getAdminCategories()
 
-      expect(result).toHaveLength(1)
-      expect(result[0].name).toBe('News')
+      expect(result.items[0].name).toBe('News')
     })
 
     it('createAdminCategory sends POST', async () => {
@@ -216,7 +215,7 @@ describe('adminClient', () => {
     it('getAdminAds fetches with query string', async () => {
       vi.mocked(globalThis.fetch).mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({ data: [], success: true }),
+        json: () => Promise.resolve({ items: [], meta: { page: 1, limit: 20, total: 0, totalPages: 0 } }),
       } as Response)
 
       const { getAdminAds } = await import('@/lib/api/adminClient')
@@ -248,13 +247,13 @@ describe('adminClient', () => {
     it('getAdminSettings fetches settings', async () => {
       vi.mocked(globalThis.fetch).mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({ data: { brand: { name: 'Site' } }, success: true }),
+        json: () => Promise.resolve({ brand: { name: 'Site' }, footer: { columns: [] } }),
       } as Response)
 
       const { getAdminSettings } = await import('@/lib/api/adminClient')
       const result = await getAdminSettings()
 
-      expect(result.brand.name).toBe('Site')
+      expect(result.brand?.name).toBe('Site')
     })
 
     it('updateAdminSettings sends PATCH', async () => {
@@ -277,7 +276,7 @@ describe('adminClient', () => {
     it('getAdminMedia fetches with prefix', async () => {
       vi.mocked(globalThis.fetch).mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({ data: { files: [] }, success: true }),
+        json: () => Promise.resolve({ files: [], subFolders: [] }),
       } as Response)
 
       const { getAdminMedia } = await import('@/lib/api/adminClient')
@@ -333,7 +332,7 @@ describe('adminClient', () => {
     it('deleteAdminMedia sends DELETE', async () => {
       vi.mocked(globalThis.fetch).mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({ data: { success: true }, success: true }),
+        json: () => Promise.resolve({ success: true }),
       } as Response)
 
       const { deleteAdminMedia } = await import('@/lib/api/adminClient')
@@ -348,7 +347,7 @@ describe('adminClient', () => {
     it('moveAdminMedia sends POST to move', async () => {
       vi.mocked(globalThis.fetch).mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({ data: { success: true }, success: true }),
+        json: () => Promise.resolve({ success: true, fromKey: 'a.jpg', toKey: 'b.jpg' }),
       } as Response)
 
       const { moveAdminMedia } = await import('@/lib/api/adminClient')
@@ -363,7 +362,7 @@ describe('adminClient', () => {
     it('createAdminFolder sends POST to folder', async () => {
       vi.mocked(globalThis.fetch).mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({ data: { key: 'new-folder/' }, success: true }),
+        json: () => Promise.resolve({ success: true, key: 'new-folder/' }),
       } as Response)
 
       const { createAdminFolder } = await import('@/lib/api/adminClient')
@@ -380,7 +379,7 @@ describe('adminClient', () => {
     it('getAdminDashboardStats fetches stats', async () => {
       vi.mocked(globalThis.fetch).mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({ data: { totalArticles: 100 }, success: true }),
+        json: () => Promise.resolve({ totalArticles: 100, totalCategories: 0, totalAds: 0, totalViews: 0, totalClicks: 0, todayViews: 0, yesterdayViews: 0, todayClicks: 0, yesterdayClicks: 0, weekViews: 0, prevWeekViews: 0, weekClicks: 0, prevWeekClicks: 0, monthViews: 0, prevMonthViews: 0, monthClicks: 0, prevMonthClicks: 0, topArticles: [], topCategories: [], topAds: [], recentActivities: [] }),
       } as Response)
 
       const { getAdminDashboardStats } = await import('@/lib/api/adminClient')
