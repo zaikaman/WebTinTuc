@@ -19,12 +19,16 @@ type ArticlePayload = {
   seo_description?: string | null | undefined
 }
 
-function normalizeArticlePayload(data: ArticlePayload) {
+function normalizeArticlePayload(data: ArticlePayload, isUpdate = false) {
   const status = data.status ?? (data.published === true ? 'published' : data.published === false ? 'draft' : undefined)
   const payload: ArticlePayload = { ...data, status }
   delete (payload as Record<string, unknown>).published
 
-  if (!payload.slug && payload.title) payload.slug = generateSlug(payload.title)
+  // Only auto-generate slug on create if not provided
+  if (!isUpdate && !payload.slug && payload.title) {
+    payload.slug = generateSlug(payload.title)
+  }
+
   if (payload.status === 'published' && !payload.published_at) payload.published_at = new Date().toISOString()
   if (payload.status === 'draft') payload.published_at = payload.published_at ?? null
 
@@ -48,17 +52,36 @@ export async function getArticleBySlug(slug: string) {
 }
 
 export async function createNewArticle(data: ArticlePayload) {
-  return articleRepository.createArticle(normalizeArticlePayload(data))
+  return articleRepository.createArticle(normalizeArticlePayload(data, false))
 }
 
 export async function updateExistingArticle(id: number, data: ArticlePayload) {
   const before = await articleRepository.getAdminArticleById(id)
-  const updated = await articleRepository.updateArticle(id, normalizeArticlePayload(data))
+  if (!before) {
+    throw new Error('Article not found')
+  }
 
-  if (data.slug && before.slug !== data.slug) {
+  const updatePayload = { ...data }
+
+  // If title changed, generate a new slug. If slug was explicitly provided, use it.
+  if (data.title && before.title !== data.title) {
+    updatePayload.slug = data.slug || generateSlug(data.title)
+  } else if (data.slug && before.slug !== data.slug) {
+    updatePayload.slug = data.slug
+  } else {
+    // Prevent accidental slug change if slug wasn't explicitly provided/changed
+    delete updatePayload.slug
+  }
+
+  const normalized = normalizeArticlePayload(updatePayload, true)
+  const updated = await articleRepository.updateArticle(id, normalized)
+
+  // Create 301 redirect if slug actually changed
+  const finalSlug = normalized.slug
+  if (finalSlug && before.slug !== finalSlug) {
     await redirectRepository.upsertRedirect({
-      from_path: `/articles/${before.slug}`,
-      to_path: `/articles/${data.slug}`,
+      from_path: `/posts/${before.slug}`,
+      to_path: `/posts/${finalSlug}`,
       status_code: 301
     })
   }

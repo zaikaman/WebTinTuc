@@ -102,25 +102,25 @@ describe('articleService', () => {
     await articleService.updateExistingArticle(1, { slug: 'new-slug' })
 
     expect(redirectRepository.upsertRedirect).toHaveBeenCalledWith({
-      from_path: '/articles/old-slug',
-      to_path: '/articles/new-slug',
+      from_path: '/posts/old-slug',
+      to_path: '/posts/new-slug',
       status_code: 301,
     })
   })
 
-  it('updateExistingArticle does not create redirect when slug unchanged', async () => {
-    vi.mocked(articleRepository.getAdminArticleById).mockResolvedValue({ id: 1, slug: 'same-slug' } as any)
+  it('updateExistingArticle does not create redirect when title and slug unchanged', async () => {
+    vi.mocked(articleRepository.getAdminArticleById).mockResolvedValue({ id: 1, title: 'same-title', slug: 'same-slug' } as any)
     vi.mocked(articleRepository.updateArticle).mockResolvedValue({ id: 1 } as any)
 
-    await articleService.updateExistingArticle(1, { title: 'Updated' })
+    await articleService.updateExistingArticle(1, { title: 'same-title' })
 
     expect(redirectRepository.upsertRedirect).not.toHaveBeenCalled()
   })
 
-  it('updateExistingArticle does not create redirect when slug not in update data', async () => {
-    vi.mocked(articleRepository.getAdminArticleById).mockResolvedValue({ id: 1 } as any)
+  it('updateExistingArticle does not create redirect when slug not in update data and title unchanged', async () => {
+    vi.mocked(articleRepository.getAdminArticleById).mockResolvedValue({ id: 1, title: 'same-title', slug: 'same-slug' } as any)
 
-    await articleService.updateExistingArticle(1, { title: 'Updated' })
+    await articleService.updateExistingArticle(1, { title: 'same-title' })
 
     expect(redirectRepository.upsertRedirect).not.toHaveBeenCalled()
   })

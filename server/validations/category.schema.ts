@@ -18,5 +18,5 @@ export const createCategorySchema = z.object({
   status: z.enum(['active', 'inactive']).default('active')
 })
 
-export const updateCategorySchema = createCategorySchema.partial()
+export const updateCategorySchema = createCategorySchema.omit({ slug: true }).partial()
 

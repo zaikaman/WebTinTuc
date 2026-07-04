@@ -9,11 +9,14 @@ type CategoryPayload = {
   status?: 'active' | 'inactive' | undefined
 }
 
-function normalizeCategoryPayload(data: CategoryPayload) {
-  return {
-    ...data,
-    slug: data.slug ?? (data.name ? generateSlug(data.name) : undefined)
+function normalizeCategoryPayload(data: CategoryPayload, isUpdate = false) {
+  const payload = { ...data }
+  if (isUpdate) {
+    delete payload.slug
+  } else if (!payload.slug && payload.name) {
+    payload.slug = generateSlug(payload.name)
   }
+  return payload
 }
 
 export async function listAdminCategories(options = {}) {
@@ -33,11 +36,11 @@ export async function getCategoryBySlug(slug: string) {
 }
 
 export async function createCategory(data: CategoryPayload) {
-  return categoryRepository.createCategory(normalizeCategoryPayload(data))
+  return categoryRepository.createCategory(normalizeCategoryPayload(data, false))
 }
 
 export async function updateCategory(id: number, data: CategoryPayload) {
-  return categoryRepository.updateCategory(id, normalizeCategoryPayload(data))
+  return categoryRepository.updateCategory(id, normalizeCategoryPayload(data, true))
 }
 
 export async function deleteCategory(id: number) {
