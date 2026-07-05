@@ -44,7 +44,7 @@ import {
   Crop
 } from "lucide-react";
 import { getAdminSettings, updateAdminSettings, getAdminMedia, uploadAdminMedia, deleteAdminMedia, createAdminFolder, getAdminDashboardStats, getAdminCategories, createAdminCategory, updateAdminCategory, deleteAdminCategory, getAdminArticles, createAdminArticle, updateAdminArticle, deleteAdminArticle, restoreAdminArticle, getAdminAds, createAdminAd, updateAdminAd, deleteAdminAd, getAdminAccounts, createAdminAccount, updateAdminAccount, deleteAdminAccount } from "@/lib/api/adminClient";
-import { Toaster, toast } from "sonner";
+import { toast } from "sonner";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Dialog,

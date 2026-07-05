@@ -19,11 +19,9 @@ import {
   ChevronDown,
   Upload,
   X,
-  Crop,
   FileText,
-  Eye,
 } from "lucide-react";
-import { Toaster, toast } from "sonner";
+import { toast } from "sonner";
 import { uploadAdminMedia } from "@/lib/api/adminClient";
 import type { Post, Category } from "./AdminTypes";
 

@@ -11,16 +11,9 @@ import {
   ChevronRight,
   Eye,
 } from "lucide-react";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { PostsTableSkeleton } from "./Skeletons";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import type { Post, Category } from "./AdminTypes";
+import type { Post } from "./AdminTypes";
 
 interface PostsManagerProps {
   posts: Post[];

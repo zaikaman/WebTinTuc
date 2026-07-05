@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 
 interface ViewTrackerProps {
-  articleId?: number;
+  articleId?: number | undefined;
 }
 
 export default function ViewTracker({ articleId }: ViewTrackerProps) {

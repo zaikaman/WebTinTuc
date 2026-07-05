@@ -6,15 +6,13 @@ import {
   Upload,
   Trash2,
   Copy,
-  Download,
   ChevronLeft,
   ChevronRight,
   Plus,
   Image as ImageIcon,
   Video,
 } from "lucide-react";
-import { toast } from "sonner";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   Dialog,
   DialogContent,

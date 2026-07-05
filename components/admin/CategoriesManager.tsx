@@ -9,12 +9,11 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { CategoriesTableSkeleton } from "./Skeletons";
 import type { Category } from "./AdminTypes";
 
 interface CategoriesManagerProps {
-  categories: Category[];
   categoriesLoading: boolean;
   categoriesPage: number;
   categoriesTotalPages: number;
@@ -28,7 +27,6 @@ interface CategoriesManagerProps {
 }
 
 export default function CategoriesManager({
-  categories,
   categoriesLoading,
   categoriesPage,
   categoriesTotalPages,

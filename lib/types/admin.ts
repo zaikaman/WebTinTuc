@@ -197,9 +197,9 @@ export interface AdminAccount {
 
 export interface CreateAccountPayload {
   email: string
-  password?: string
+  password?: string | undefined
   username: string
   display_name: string
-  role?: string
+  role?: string | undefined
 }
 

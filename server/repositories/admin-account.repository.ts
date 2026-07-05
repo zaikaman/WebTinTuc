@@ -109,11 +109,11 @@ export async function createAdminAccount(data: any) {
   })
 
   if (authError) {
-    throw new ApiError(400, 'AUTH_ERROR', authError.message)
+    throw new ApiError(400, 'BAD_REQUEST', authError.message)
   }
 
   if (!authUser.user) {
-    throw new ApiError(500, 'SERVER_ERROR', 'Không thể tạo tài khoản auth')
+    throw new ApiError(500, 'INTERNAL_ERROR', 'Không thể tạo tài khoản auth')
   }
 
   // 2. Insert profile
@@ -166,7 +166,7 @@ export async function updateAdminAccount(id: string, data: any) {
   if (Object.keys(authUpdates).length > 0) {
     const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(id, authUpdates)
     if (authError) {
-      throw new ApiError(400, 'AUTH_ERROR', authError.message)
+      throw new ApiError(400, 'BAD_REQUEST', authError.message)
     }
   }
 
@@ -210,7 +210,7 @@ export async function deleteAdminAccount(id: string) {
   // 2. Delete auth user
   const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(id)
   if (authError) {
-    throw new ApiError(400, 'AUTH_ERROR', authError.message)
+    throw new ApiError(400, 'BAD_REQUEST', authError.message)
   }
 
   return { id }

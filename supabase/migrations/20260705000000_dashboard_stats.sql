@@ -17,22 +17,24 @@ CREATE OR REPLACE VIEW view_top_ads_7d AS
 SELECT 
   a.id,
   a.name,
-  a.status,
-  a.created_at,
-  a.deleted_at,
-  a.updated_at,
   a.type,
-  a.url,
-  a.image_url,
-  a.start_date,
-  a.end_date,
-  a.clicks,
-  a.views,
+  a.position,
+  a.media_key,
+  a.html_code,
+  a.target_url,
+  a.priority,
+  a.status,
+  a.starts_at,
+  a.ends_at,
+  a.created_at,
+  a.updated_at,
+  a.deleted_at,
   COALESCE(SUM(s.impressions), 0)::int AS impressions_7d
 FROM ads a
 LEFT JOIN ad_stats_daily s ON s.ad_id = a.id AND s.date >= (CURRENT_DATE - INTERVAL '7 days')::date
 WHERE a.deleted_at IS NULL
-GROUP BY a.id, a.name, a.status, a.created_at, a.deleted_at, a.updated_at, a.type, a.url, a.image_url, a.start_date, a.end_date, a.clicks, a.views;
+GROUP BY a.id;
+
 
 -- Create view for dashboard statistics
 CREATE OR REPLACE VIEW view_dashboard_metrics AS

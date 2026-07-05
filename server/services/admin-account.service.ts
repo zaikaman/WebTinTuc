@@ -1,11 +1,11 @@
 import * as adminAccountRepository from '@/server/repositories/admin-account.repository'
 
 type AccountPayload = {
-  email?: string
-  password?: string
-  username?: string
-  display_name?: string
-  role?: string
+  email?: string | undefined
+  password?: string | undefined
+  username?: string | undefined
+  display_name?: string | undefined
+  role?: string | undefined
 }
 
 export async function listAdminAccounts(options = {}) {

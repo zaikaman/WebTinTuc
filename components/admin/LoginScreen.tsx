@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Lock, Eye, EyeOff } from "lucide-react";
-import { Toaster, toast } from "sonner";
+import { toast } from "sonner";
 import { supabase } from "@/lib/supabase/client";
 
 interface LoginScreenProps {

@@ -9,16 +9,16 @@ export interface ContentBlock {
 
 export interface Article {
   id: string;
-  dbId?: number;
+  dbId?: number | undefined;
   title: string;
   category: string;
-  categorySlug?: string;
+  categorySlug?: string | undefined;
   time: string;
   image: string;
-  badge?: string;
-  intro?: string;
-  content?: ContentBlock[];
-  views?: number;
+  badge?: string | undefined;
+  intro?: string | undefined;
+  content?: ContentBlock[] | undefined;
+  views?: number | undefined;
 }
 
 export interface CategoryFeed {

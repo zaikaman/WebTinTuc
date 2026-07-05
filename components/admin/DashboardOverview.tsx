@@ -7,8 +7,6 @@ import {
   MousePointerClick,
   FileText,
   Download,
-  Folder,
-  Image as ImageIcon,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { DashboardSkeleton } from "./Skeletons";

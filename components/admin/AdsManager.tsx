@@ -10,12 +10,11 @@ import {
   ChevronRight,
   ExternalLink,
 } from "lucide-react";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { AdsTableSkeleton } from "./Skeletons";
 import type { Ad } from "./AdminTypes";
 
 interface AdsManagerProps {
-  ads: Ad[];
   adsLoading: boolean;
   adsPage: number;
   adsTotalPages: number;
@@ -26,12 +25,10 @@ interface AdsManagerProps {
   onAdd: () => void;
   onEdit: (ad: Ad) => void;
   onDelete: (id: number) => void;
-  getCategoryStyles: (name: string) => { color: string; bg: string; icon: React.ElementType };
   formatDateForDisplay: (dateStr: string) => string;
 }
 
 export default function AdsManager({
-  ads,
   adsLoading,
   adsPage,
   adsTotalPages,
@@ -42,7 +39,6 @@ export default function AdsManager({
   onAdd,
   onEdit,
   onDelete,
-  getCategoryStyles,
   formatDateForDisplay,
 }: AdsManagerProps) {
   return (
