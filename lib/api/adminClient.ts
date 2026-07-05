@@ -11,6 +11,8 @@ import type {
   CreateCategoryPayload,
   CreateAdPayload,
   UpdateSettingsPayload,
+  AdminAccount,
+  CreateAccountPayload,
 } from "@/lib/types/admin";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
@@ -99,3 +101,9 @@ export const moveAdminMedia = (fromKey: string, toKey: string) => fetchAdmin<{ s
 export const createAdminFolder = (folderName: string, parentPrefix: string = "") => fetchAdmin<{ success: boolean; key: string }>("/storage/folder", { method: "POST", body: JSON.stringify({ folderName, parentPrefix }) });
 
 export const getAdminDashboardStats = () => fetchAdmin<AdminDashboardStats>("/dashboard");
+
+// ACCOUNTS
+export const getAdminAccounts = (qs = "") => fetchAdmin<{ items: AdminAccount[] }>(`/accounts${qs}`);
+export const createAdminAccount = (data: CreateAccountPayload) => fetchAdmin<AdminAccount>("/accounts", { method: "POST", body: JSON.stringify(data) });
+export const updateAdminAccount = (id: string, data: Partial<CreateAccountPayload>) => fetchAdmin<AdminAccount>(`/accounts/${id}`, { method: "PATCH", body: JSON.stringify(data) });
+export const deleteAdminAccount = (id: string) => fetchAdmin<{ id: string }>(`/accounts/${id}`, { method: "DELETE" });

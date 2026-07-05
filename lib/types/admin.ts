@@ -183,3 +183,23 @@ export interface UpdateSettingsPayload {
   brand?: Record<string, unknown> | undefined
   footer?: Record<string, unknown> | undefined
 }
+
+export interface AdminAccount {
+  id: string
+  username: string
+  display_name: string
+  avatar_key?: string | null
+  role: string
+  email?: string | null
+  created_at: string
+  updated_at?: string
+}
+
+export interface CreateAccountPayload {
+  email: string
+  password?: string
+  username: string
+  display_name: string
+  role?: string
+}
+

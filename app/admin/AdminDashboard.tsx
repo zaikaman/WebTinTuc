@@ -43,7 +43,7 @@ import {
   RotateCcw,
   Crop
 } from "lucide-react";
-import { getAdminSettings, updateAdminSettings, getAdminMedia, uploadAdminMedia, deleteAdminMedia, createAdminFolder, getAdminDashboardStats, getAdminCategories, createAdminCategory, updateAdminCategory, deleteAdminCategory, getAdminArticles, createAdminArticle, updateAdminArticle, deleteAdminArticle, restoreAdminArticle, getAdminAds, createAdminAd, updateAdminAd, deleteAdminAd } from "@/lib/api/adminClient";
+import { getAdminSettings, updateAdminSettings, getAdminMedia, uploadAdminMedia, deleteAdminMedia, createAdminFolder, getAdminDashboardStats, getAdminCategories, createAdminCategory, updateAdminCategory, deleteAdminCategory, getAdminArticles, createAdminArticle, updateAdminArticle, deleteAdminArticle, restoreAdminArticle, getAdminAds, createAdminAd, updateAdminAd, deleteAdminAd, getAdminAccounts, createAdminAccount, updateAdminAccount, deleteAdminAccount } from "@/lib/api/adminClient";
 import { Toaster, toast } from "sonner";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -237,7 +237,18 @@ interface Ad {
   link?: string;
 }
 
-type TabType = "dashboard" | "posts" | "categories" | "ads" | "logo-footer" | "media";
+interface AdminAccount {
+  id: string;
+  username: string;
+  display_name: string;
+  avatar_key?: string | null;
+  role: string;
+  email?: string | null;
+  created_at: string;
+  updated_at?: string;
+}
+
+type TabType = "dashboard" | "posts" | "categories" | "ads" | "logo-footer" | "media" | "accounts";
 
 // ==========================================
 // SKELETON LOADERS
@@ -493,6 +504,39 @@ const AdsTableSkeleton = () => (
         </td>
         <td className="py-4 px-4 text-center">
           <div className="h-6 bg-gray-150 rounded-full w-16 mx-auto"></div>
+        </td>
+        <td className="py-4 px-6 text-center">
+          <div className="flex items-center justify-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-gray-200"></div>
+            <div className="w-8 h-8 rounded-lg bg-gray-200"></div>
+          </div>
+        </td>
+      </tr>
+    ))}
+  </>
+);
+
+const AccountsTableSkeleton = () => (
+  <>
+    {[...Array(6)].map((_, i) => (
+      <tr key={i} className="animate-pulse">
+        <td className="py-4 px-6 text-center">
+          <div className="h-4 bg-gray-200 rounded w-8 mx-auto"></div>
+        </td>
+        <td className="py-4 px-4">
+          <div className="h-4 bg-gray-200 rounded w-32"></div>
+        </td>
+        <td className="py-4 px-4">
+          <div className="h-4 bg-gray-200 rounded w-40"></div>
+        </td>
+        <td className="py-4 px-4">
+          <div className="h-4 bg-gray-205 rounded w-44"></div>
+        </td>
+        <td className="py-4 px-4 text-center">
+          <div className="h-6 bg-gray-150 rounded-full w-20 mx-auto"></div>
+        </td>
+        <td className="py-4 px-4 text-center">
+          <div className="h-4 bg-gray-100 rounded w-24 mx-auto"></div>
         </td>
         <td className="py-4 px-6 text-center">
           <div className="flex items-center justify-center gap-2.5">
@@ -864,6 +908,20 @@ export default function AdminDashboard() {
     }
   };
 
+  const loadAccounts = async () => {
+    try {
+      setAccountsLoading(true);
+      const res = await getAdminAccounts("?limit=100");
+      if (res && res.items) {
+        setAccounts(res.items);
+      }
+    } catch (err) {
+      toast.error("Không thể tải danh sách tài khoản");
+    } finally {
+      setAccountsLoading(false);
+    }
+  };
+
   const loadCategories = async () => {
     try {
       setCategoriesLoading(true);
@@ -966,6 +1024,9 @@ export default function AdminDashboard() {
     if (activeTab === "ads") {
       loadAds();
     }
+    if (activeTab === "accounts") {
+      loadAccounts();
+    }
     if (activeTab === "dashboard") {
       loadDashboardStats();
     }
@@ -1030,14 +1091,17 @@ export default function AdminDashboard() {
   const [categories, setCategories] = useState<Category[]>([]);
 
   const [ads, setAds] = useState<Ad[]>([]);
+  const [accounts, setAccounts] = useState<AdminAccount[]>([]);
   const [adsLoading, setAdsLoading] = useState(true);
   const [postsLoading, setPostsLoading] = useState(true);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [settingsLoading, setSettingsLoading] = useState(true);
+  const [accountsLoading, setAccountsLoading] = useState(true);
   const [isPostSaving, setIsPostSaving] = useState(false);
   const [isCategorySaving, setIsCategorySaving] = useState(false);
   const [isAdSaving, setIsAdSaving] = useState(false);
   const [isSettingsSaving, setIsSettingsSaving] = useState(false);
+  const [isAccountSaving, setIsAccountSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const [isMediaUploading, setIsMediaUploading] = useState(false);
@@ -1050,6 +1114,7 @@ export default function AdminDashboard() {
   const [categoriesPage, setCategoriesPage] = useState(1);
   const [adsPage, setAdsPage] = useState(1);
   const [mediaPage, setMediaPage] = useState(1);
+  const [accountsPage, setAccountsPage] = useState(1);
   const itemsPerPage = 6;
   const mediaItemsPerPage = 9;
 
@@ -1058,9 +1123,11 @@ export default function AdminDashboard() {
   const [dialogMode, setDialogMode] = useState<"add" | "edit">("add");
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [adDialogOpen, setAdDialogOpen] = useState(false);
+  const [accountDialogOpen, setAccountDialogOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const [targetIdToDelete, setTargetIdToDelete] = useState<number | null>(null);
+  const [targetAccountIdToDelete, setTargetAccountIdToDelete] = useState<string | null>(null);
 
   // Form states for Posts
   const [postForm, setPostForm] = useState<Partial<Post>>({
@@ -1090,7 +1157,17 @@ export default function AdminDashboard() {
     link: ""
   });
 
+  // Form states for Accounts
+  const [accountForm, setAccountForm] = useState<Partial<AdminAccount & { password?: string }>>({
+    username: "",
+    display_name: "",
+    email: "",
+    password: "",
+    role: "admin"
+  });
+
   const [editId, setEditId] = useState<number | null>(null);
+  const [editAccountId, setEditAccountId] = useState<string | null>(null);
 
   // Load draft editor state on mount
   useEffect(() => {
@@ -1217,10 +1294,25 @@ export default function AdminDashboard() {
     return filteredAds.slice(start, start + itemsPerPage);
   }, [filteredAds, adsPage]);
 
+  const filteredAccounts = useMemo(() => {
+    return accounts.filter(acc => {
+      const query = searchQuery.toLowerCase();
+      return (acc.username || "").toLowerCase().includes(query) ||
+             (acc.display_name || "").toLowerCase().includes(query) ||
+             (acc.email || "").toLowerCase().includes(query);
+    });
+  }, [accounts, searchQuery]);
+
+  const paginatedAccounts = useMemo(() => {
+    const start = (accountsPage - 1) * itemsPerPage;
+    return filteredAccounts.slice(start, start + itemsPerPage);
+  }, [filteredAccounts, accountsPage]);
+
   // Pages count
   const postsTotalPages = Math.ceil(filteredPosts.length / itemsPerPage) || 1;
   const categoriesTotalPages = Math.ceil(filteredCategories.length / itemsPerPage) || 1;
   const adsTotalPages = Math.ceil(filteredAds.length / itemsPerPage) || 1;
+  const accountsTotalPages = Math.ceil(filteredAccounts.length / itemsPerPage) || 1;
 
   const filteredMedia = useMemo(() => {
     const filtered = mediaItems.filter((item) => {
@@ -1509,6 +1601,16 @@ export default function AdminDashboard() {
         status: "Hoạt động"
       });
       setCategoryDialogOpen(true);
+    } else if (activeTab === "accounts") {
+      setAccountForm({
+        username: "",
+        display_name: "",
+        email: "",
+        password: "",
+        role: "admin"
+      });
+      setEditAccountId(null);
+      setAccountDialogOpen(true);
     } else {
       setAdForm({
         name: "",
@@ -1536,6 +1638,16 @@ export default function AdminDashboard() {
     } else if (activeTab === "categories") {
       setCategoryForm(item);
       setCategoryDialogOpen(true);
+    } else if (activeTab === "accounts") {
+      setEditAccountId(item.id);
+      setAccountForm({
+        username: item.username,
+        display_name: item.display_name,
+        email: item.email || "",
+        password: "",
+        role: item.role
+      });
+      setAccountDialogOpen(true);
     } else {
       setAdForm(item);
       setAdDialogOpen(true);
@@ -1561,23 +1673,33 @@ export default function AdminDashboard() {
     setDeleteConfirmOpen(true);
   };
 
+  const handleConfirmDeleteAccount = (id: string) => {
+    setTargetAccountIdToDelete(id);
+    setDeleteConfirmOpen(true);
+  };
+
   const executeDelete = async () => {
-    if (targetIdToDelete === null) return;
+    if (activeTab !== "accounts" && targetIdToDelete === null) return;
+    if (activeTab === "accounts" && targetAccountIdToDelete === null) return;
 
     try {
       setIsDeleting(true);
-      if (activeTab === "posts") {
+      if (activeTab === "posts" && targetIdToDelete !== null) {
         await deleteAdminArticle(targetIdToDelete);
         toast.success("Xóa bài viết thành công!");
         loadPosts();
-      } else if (activeTab === "categories") {
+      } else if (activeTab === "categories" && targetIdToDelete !== null) {
         await deleteAdminCategory(targetIdToDelete);
         toast.success("Xóa danh mục thành công!");
         loadCategories();
-      } else if (activeTab === "ads") {
+      } else if (activeTab === "ads" && targetIdToDelete !== null) {
         await deleteAdminAd(targetIdToDelete);
         toast.success("Xóa quảng cáo thành công!");
         loadAds();
+      } else if (activeTab === "accounts" && targetAccountIdToDelete !== null) {
+        await deleteAdminAccount(targetAccountIdToDelete);
+        toast.success("Xóa tài khoản thành công!");
+        loadAccounts();
       }
     } catch (err) {
       toast.error("Lỗi khi xóa!");
@@ -1585,6 +1707,7 @@ export default function AdminDashboard() {
       setIsDeleting(false);
       setDeleteConfirmOpen(false);
       setTargetIdToDelete(null);
+      setTargetAccountIdToDelete(null);
     }
   };
 
@@ -1653,6 +1776,59 @@ export default function AdminDashboard() {
         toast.error("Có lỗi xảy ra, vui lòng thử lại!", { id: "cat-submit" });
       } finally {
         setIsCategorySaving(false);
+      }
+    } else if (activeTab === "accounts") {
+      if (!accountForm.username?.trim()) {
+        toast.error("Vui lòng nhập tên đăng nhập!");
+        return;
+      }
+      if (!accountForm.display_name?.trim()) {
+        toast.error("Vui lòng nhập tên hiển thị!");
+        return;
+      }
+      if (!accountForm.email?.trim()) {
+        toast.error("Vui lòng nhập email!");
+        return;
+      }
+      if (dialogMode === "add" && !accountForm.password?.trim()) {
+        toast.error("Vui lòng nhập mật khẩu!");
+        return;
+      }
+      try {
+        setIsAccountSaving(true);
+        toast.loading(dialogMode === "add" ? "Đang thêm tài khoản..." : "Đang cập nhật...", { id: "account-submit" });
+        
+        if (dialogMode === "add") {
+          const payload = {
+            email: accountForm.email.trim(),
+            password: accountForm.password?.trim(),
+            username: accountForm.username.trim(),
+            display_name: accountForm.display_name.trim(),
+            role: accountForm.role || "admin"
+          };
+          await createAdminAccount(payload);
+          toast.success("Thêm tài khoản mới thành công!", { id: "account-submit" });
+        } else {
+          if (editAccountId) {
+            const payload: any = {
+              email: accountForm.email.trim(),
+              username: accountForm.username.trim(),
+              display_name: accountForm.display_name.trim(),
+              role: accountForm.role || "admin"
+            };
+            if (accountForm.password?.trim()) {
+              payload.password = accountForm.password.trim();
+            }
+            await updateAdminAccount(editAccountId, payload);
+            toast.success("Cập nhật tài khoản thành công!", { id: "account-submit" });
+          }
+        }
+        loadAccounts();
+        setAccountDialogOpen(false);
+      } catch (err: any) {
+        toast.error(err.message || "Có lỗi xảy ra, vui lòng thử lại!", { id: "account-submit" });
+      } finally {
+        setIsAccountSaving(false);
       }
     } else if (activeTab === "ads") {
       if (!adForm.name?.trim()) {
@@ -3238,6 +3414,18 @@ export default function AdminDashboard() {
               <ImageIcon size={18} className="flex-shrink-0" />
               <span>Quản lý Media</span>
             </button>
+
+            <button
+              onClick={() => handleTabChange("accounts")}
+              className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 group ${
+                activeTab === "accounts"
+                  ? "bg-[#cb4643] text-white shadow-md border-l-4 border-white"
+                  : "text-white/80 hover:text-white hover:bg-white/10"
+              }`}
+            >
+              <Lock size={18} className="flex-shrink-0" />
+              <span>Quản lý Tài khoản</span>
+            </button>
           </nav>
         </div>
 
@@ -3270,6 +3458,7 @@ export default function AdminDashboard() {
                 {activeTab === "ads" && "Quản lý AD"}
                 {activeTab === "logo-footer" && "Logo & Footer"}
                 {activeTab === "media" && "Quản lý Media"}
+                {activeTab === "accounts" && "Quản lý Tài khoản"}
               </span>
             </h1>
           </div>
@@ -4249,6 +4438,7 @@ export default function AdminDashboard() {
                     {activeTab === "posts" && "Danh sách tất cả bài viết trên hệ thống"}
                     {activeTab === "categories" && "Quản lý luồng chủ đề danh mục tin tức"}
                     {activeTab === "ads" && "Theo dõi hiệu suất và vị trí các banner quảng cáo"}
+                    {activeTab === "accounts" && "Danh sách tất cả tài khoản quản trị viên trên hệ thống"}
                   </h2>
                   <p className="text-xs text-gray-500 mt-1">
                     Dễ dàng tìm kiếm, lọc, thêm mới hoặc cập nhật các bản ghi theo thời gian thực.
@@ -4265,6 +4455,7 @@ export default function AdminDashboard() {
                     {activeTab === "posts" && "Thêm bài viết"}
                     {activeTab === "categories" && "Thêm danh mục"}
                     {activeTab === "ads" && "Thêm quảng cáo"}
+                    {activeTab === "accounts" && "Thêm tài khoản"}
                   </span>
                 </button>
               </div>
@@ -4289,7 +4480,9 @@ export default function AdminDashboard() {
                             ? "Tìm kiếm tiêu đề, ID bài viết..."
                             : activeTab === "categories"
                             ? "Tìm tên danh mục, ID..."
-                            : "Tìm kiếm tên AD, vị trí, ID..."
+                            : activeTab === "ads"
+                            ? "Tìm kiếm tên AD, vị trí, ID..."
+                            : "Tìm kiếm username, tên hiển thị, email..."
                         }
                         className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-gray-50/50"
                       />
@@ -4657,6 +4850,73 @@ export default function AdminDashboard() {
                     </table>
                   )}
 
+                  {/* VIEW: ACCOUNTS TABLE */}
+                  {activeTab === "accounts" && (
+                    <table className="w-full min-w-[800px] text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-gray-200 bg-gray-50/75 text-gray-500 font-bold text-xs uppercase tracking-wider whitespace-nowrap">
+                          <th className="py-4 px-6 w-16 text-center">STT</th>
+                          <th className="py-4 px-4 min-w-[200px]">Tên đăng nhập</th>
+                          <th className="py-4 px-4 min-w-[200px]">Tên hiển thị</th>
+                          <th className="py-4 px-4 w-44">Email</th>
+                          <th className="py-4 px-4 w-32 text-center">Vai trò</th>
+                          <th className="py-4 px-4 w-40 text-center">Ngày tạo</th>
+                          <th className="py-4 px-6 w-28 text-center">Thao tác</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-150">
+                        {accountsLoading ? (
+                          <AccountsTableSkeleton />
+                        ) : paginatedAccounts.length > 0 ? (
+                          paginatedAccounts.map((acc, index) => (
+                            <tr key={acc.id} className="hover:bg-gray-50/50 transition-colors text-sm font-medium whitespace-nowrap">
+                              <td className="py-4 px-6 text-center text-gray-400 font-bold">
+                                {(accountsPage - 1) * itemsPerPage + index + 1}
+                              </td>
+                              <td className="py-4 px-4 text-gray-900 font-semibold">{acc.username}</td>
+                              <td className="py-4 px-4 text-gray-750">{acc.display_name}</td>
+                              <td className="py-4 px-4 text-gray-600">{acc.email || "(Chưa cấu hình)"}</td>
+                              <td className="py-4 px-4 text-center">
+                                <span className="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800 uppercase tracking-wide">
+                                  {acc.role}
+                                </span>
+                              </td>
+                              <td className="py-4 px-4 text-center text-gray-500">
+                                {formatDateForDisplay(acc.created_at ? acc.created_at.split("T")[0] : "")}
+                              </td>
+                              <td className="py-4 px-6 text-center">
+                                <div className="flex items-center justify-center gap-2.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenEditDialog(acc)}
+                                    className="p-1.5 border border-amber-200 text-amber-600 rounded-lg hover:bg-amber-50 transition-colors"
+                                    title="Sửa tài khoản"
+                                  >
+                                    <SquarePen size={15} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleConfirmDeleteAccount(acc.id)}
+                                    className="p-1.5 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                                    title="Xóa tài khoản"
+                                  >
+                                    <Trash2 size={15} />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={7} className="py-12 text-center text-gray-400 font-bold">
+                              Không tìm thấy tài khoản nào tương ứng.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  )}
+
                 </div>
 
                 {/* PAGINATION CONTROLLER */}
@@ -4670,11 +4930,13 @@ export default function AdminDashboard() {
                         if (activeTab === "posts" && postsPage > 1) setPostsPage(postsPage - 1);
                         if (activeTab === "categories" && categoriesPage > 1) setCategoriesPage(categoriesPage - 1);
                         if (activeTab === "ads" && adsPage > 1) setAdsPage(adsPage - 1);
+                        if (activeTab === "accounts" && accountsPage > 1) setAccountsPage(accountsPage - 1);
                       }}
                       disabled={
                         (activeTab === "posts" && postsPage === 1) ||
                         (activeTab === "categories" && categoriesPage === 1) ||
-                        (activeTab === "ads" && adsPage === 1)
+                        (activeTab === "ads" && adsPage === 1) ||
+                        (activeTab === "accounts" && accountsPage === 1)
                       }
                       className="px-3 py-2 hover:bg-gray-50 text-gray-500 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
                     >
@@ -4688,7 +4950,9 @@ export default function AdminDashboard() {
                           ? postsTotalPages
                           : activeTab === "categories"
                           ? categoriesTotalPages
-                          : adsTotalPages
+                          : activeTab === "ads"
+                          ? adsTotalPages
+                          : accountsTotalPages
                     }).map((_, idx) => {
                       const pageNumber = idx + 1;
                       const isCurrent =
@@ -4696,7 +4960,9 @@ export default function AdminDashboard() {
                           ? postsPage === pageNumber
                           : activeTab === "categories"
                           ? categoriesPage === pageNumber
-                          : adsPage === pageNumber;
+                          : activeTab === "ads"
+                          ? adsPage === pageNumber
+                          : accountsPage === pageNumber;
 
                       return (
                         <button
@@ -4706,6 +4972,7 @@ export default function AdminDashboard() {
                             if (activeTab === "posts") setPostsPage(pageNumber);
                             if (activeTab === "categories") setCategoriesPage(pageNumber);
                             if (activeTab === "ads") setAdsPage(pageNumber);
+                            if (activeTab === "accounts") setAccountsPage(pageNumber);
                           }}
                           className={`px-4 py-2 text-xs font-bold transition-all ${
                             isCurrent
@@ -4725,11 +4992,13 @@ export default function AdminDashboard() {
                         if (activeTab === "posts" && postsPage < postsTotalPages) setPostsPage(postsPage + 1);
                         if (activeTab === "categories" && categoriesPage < categoriesTotalPages) setCategoriesPage(categoriesPage + 1);
                         if (activeTab === "ads" && adsPage < adsTotalPages) setAdsPage(adsPage + 1);
+                        if (activeTab === "accounts" && accountsPage < accountsTotalPages) setAccountsPage(accountsPage + 1);
                       }}
                       disabled={
                         (activeTab === "posts" && postsPage === postsTotalPages) ||
                         (activeTab === "categories" && categoriesPage === categoriesTotalPages) ||
-                        (activeTab === "ads" && adsPage === adsTotalPages)
+                        (activeTab === "ads" && adsPage === adsTotalPages) ||
+                        (activeTab === "accounts" && accountsPage === accountsTotalPages)
                       }
                       className="px-3 py-2 hover:bg-gray-50 text-gray-500 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
                     >
@@ -5167,6 +5436,113 @@ export default function AdminDashboard() {
       </Dialog>
 
       {/* ==========================================
+          MODAL: ADD / EDIT ACCOUNT DIALOG FORM
+          ========================================== */}
+      <Dialog open={accountDialogOpen} onOpenChange={setAccountDialogOpen}>
+        <DialogContent className="max-w-[460px] w-[95%] max-h-[90vh] overflow-y-auto rounded-[24px] p-6 border border-gray-100 shadow-2xl bg-white text-[#2c3e50] outline-none [&>button]:hidden">
+          <DialogHeader className="border-b border-gray-150 pb-3 -mx-6 px-6">
+            <DialogTitle className="text-xl font-bold text-gray-900 text-left">
+              {dialogMode === "add" ? "Thêm tài khoản" : "Sửa tài khoản"}
+            </DialogTitle>
+          </DialogHeader>
+
+          <form onSubmit={handleFormSubmit} className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-gray-900">
+                Tên đăng nhập
+              </label>
+              <input
+                type="text"
+                value={accountForm.username || ""}
+                onChange={(e) => setAccountForm({ ...accountForm, username: e.target.value })}
+                placeholder="Nhập tên đăng nhập (ví dụ: admin01)..."
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white shadow-sm font-medium"
+                required
+                disabled={dialogMode === "edit"}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-gray-900">
+                Tên hiển thị
+              </label>
+              <input
+                type="text"
+                value={accountForm.display_name || ""}
+                onChange={(e) => setAccountForm({ ...accountForm, display_name: e.target.value })}
+                placeholder="Nhập tên hiển thị..."
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white shadow-sm font-medium"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-gray-900">
+                Email
+              </label>
+              <input
+                type="email"
+                value={accountForm.email || ""}
+                onChange={(e) => setAccountForm({ ...accountForm, email: e.target.value })}
+                placeholder="Nhập địa chỉ email..."
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white shadow-sm font-medium"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-gray-900">
+                Mật khẩu {dialogMode === "edit" && "(Để trống nếu không muốn đổi)"}
+              </label>
+              <input
+                type="password"
+                value={accountForm.password || ""}
+                onChange={(e) => setAccountForm({ ...accountForm, password: e.target.value })}
+                placeholder={dialogMode === "add" ? "Nhập mật khẩu (tối thiểu 6 ký tự)..." : "Nhập mật khẩu mới..."}
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white shadow-sm font-medium"
+                required={dialogMode === "add"}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-gray-900">
+                Vai trò
+              </label>
+              <div className="relative">
+                <select
+                  value={accountForm.role || "admin"}
+                  onChange={(e) => setAccountForm({ ...accountForm, role: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white shadow-sm font-semibold text-gray-800 appearance-none cursor-pointer"
+                >
+                  <option value="admin">Administrator</option>
+                </select>
+                <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-center gap-4 pt-6 pb-2">
+              <button
+                type="button"
+                onClick={() => setAccountDialogOpen(false)}
+                disabled={isAccountSaving}
+                className="flex-1 max-w-[144px] py-3 border border-gray-200 hover:bg-gray-50 text-gray-900 text-lg font-bold rounded-xl transition-all shadow-sm flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Hủy
+              </button>
+              <button
+                type="submit"
+                disabled={isAccountSaving}
+                className="flex-1 max-w-[144px] py-3 bg-[#e86b6b] hover:bg-[#e55956] text-white text-lg font-bold rounded-xl transition-all shadow-md flex items-center justify-center disabled:opacity-75 disabled:cursor-not-allowed gap-2"
+              >
+                {isAccountSaving && <Loader2 className="w-5 h-5 animate-spin" />}
+                <span>{dialogMode === "add" ? "Thêm" : "Sửa"}</span>
+              </button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ==========================================
           CONFIRM DELETE DIALOG
           ========================================== */}
       <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
@@ -5176,6 +5552,7 @@ export default function AdminDashboard() {
               {activeTab === "posts" && "Xóa bài viết"}
               {activeTab === "categories" && "Xóa danh mục"}
               {activeTab === "ads" && "Xóa quảng cáo"}
+              {activeTab === "accounts" && "Xóa tài khoản"}
             </DialogTitle>
           </DialogHeader>
 
@@ -5184,6 +5561,7 @@ export default function AdminDashboard() {
               {activeTab === "posts" && "Bạn có chắc chắn muốn xóa bài viết"}
               {activeTab === "categories" && "Bạn có chắc chắn muốn xóa danh mục"}
               {activeTab === "ads" && "Bạn có chắc chắn muốn xóa quảng cáo"}
+              {activeTab === "accounts" && "Bạn có chắc chắn muốn xóa tài khoản"}
             </h3>
             <p className="text-sm font-semibold text-[#E55956]">
               Dữ liệu bị xóa sẽ không thể khôi phục
@@ -5192,7 +5570,11 @@ export default function AdminDashboard() {
 
           <div className="flex items-center justify-center gap-4 pb-2">
             <button
-              onClick={() => setDeleteConfirmOpen(false)}
+              onClick={() => {
+                setDeleteConfirmOpen(false);
+                setTargetIdToDelete(null);
+                setTargetAccountIdToDelete(null);
+              }}
               disabled={isDeleting}
               className="flex-1 max-w-[144px] py-3 border border-gray-200 hover:bg-gray-50 text-gray-900 text-lg font-bold rounded-xl transition-all shadow-sm flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
             >
