@@ -14,60 +14,68 @@ async function countRows(table: 'articles' | 'categories' | 'ads', filters: (que
   return count ?? 0
 }
 
-async function sumArticleViews(fromDate?: string, toDate?: string) {
-  let query = supabaseAdmin.from('article_stats_daily').select('views')
-  if (fromDate) query = query.gte('date', fromDate)
-  if (toDate) query = query.lt('date', toDate)
-  const { data, error } = await query
-  if (error) throw error
-  return (data ?? []).reduce((sum, row) => sum + Number(row.views ?? 0), 0)
-}
-
-async function sumAdClicks(fromDate?: string, toDate?: string) {
-  let query = supabaseAdmin.from('ad_stats_daily').select('clicks')
-  if (fromDate) query = query.gte('date', fromDate)
-  if (toDate) query = query.lt('date', toDate)
-  const { data, error } = await query
-  if (error) throw error
-  return (data ?? []).reduce((sum, row) => sum + Number(row.clicks ?? 0), 0)
-}
-
 async function getTopCategories(limit = 5) {
-  const { data: categories, error } = await supabaseAdmin
+  // Check if view exists by trying to select from it
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('view_top_categories')
+      .select('*')
+      .limit(limit)
+    if (!error && data && data.length > 0) {
+      return data
+    }
+  } catch (e) {
+    // view doesn't exist, fallback
+  }
+
+  // Fallback: single optimized query using PostgREST relation count (no N+1 queries!)
+  const { data, error } = await supabaseAdmin
     .from('categories')
-    .select('id, name, slug, updated_at')
+    .select('id, name, slug, updated_at, articles(count)')
     .is('deleted_at', null)
-    .order('created_at', { ascending: false })
+    .eq('articles.status', 'published')
+    .is('articles.deleted_at', null)
 
   if (error) throw error
-  if (!categories || categories.length === 0) return []
+  if (!data) return []
 
-  const withCounts = await Promise.all(
-    categories.map(async (cat) => {
-      const { count } = await supabaseAdmin
-        .from('articles')
-        .select('*', { count: 'exact', head: true })
-        .eq('category_id', cat.id)
-        .eq('status', 'published')
-        .is('deleted_at', null)
-
-      return { ...cat, article_count: count ?? 0 }
-    })
-  )
-
-  return withCounts
-    .sort((a, b) => b.article_count - a.article_count)
+  return data
+    .map((cat: any) => ({
+      id: cat.id,
+      name: cat.name,
+      slug: cat.slug,
+      updated_at: cat.updated_at,
+      article_count: cat.articles?.[0]?.count ?? 0
+    }))
+    .sort((a: any, b: any) => b.article_count - a.article_count)
     .slice(0, limit)
 }
 
 async function getTopAds(limit = 5, days = 7) {
+  // Check if view exists (dashboard only queries 7 days)
+  if (days === 7) {
+    try {
+      const { data, error } = await supabaseAdmin
+        .from('view_top_ads_7d')
+        .select('*')
+        .limit(limit)
+      if (!error && data && data.length > 0) {
+        return data
+      }
+    } catch (e) {
+      // view doesn't exist, fallback
+    }
+  }
+
+  // Fallback: optimized in-JS aggregation (fetches only date-filtered rows)
   const since = new Date()
   since.setDate(since.getDate() - days)
+  const sinceStr = since.toISOString().slice(0, 10)
 
   const { data: stats, error } = await supabaseAdmin
     .from('ad_stats_daily')
     .select('ad_id, impressions')
-    .gte('date', since.toISOString().slice(0, 10))
+    .gte('date', sinceStr)
 
   if (error) throw error
   if (!stats || stats.length === 0) return []
@@ -123,69 +131,170 @@ export async function getDashboardStats() {
   prevMonthDate.setDate(now.getDate() - 60)
   const prevMonthStart = prevMonthDate.toISOString().slice(0, 10)
 
-  const [
-    totalArticles,
-    totalCategories,
-    totalAds,
-    totalViews,
-    totalClicks,
+  // Try to use the unified view_dashboard_metrics for extreme efficiency (1 query instead of 20+)
+  let metrics: any = null
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('view_dashboard_metrics')
+      .select('*')
+      .maybeSingle()
     
-    todayViews,
-    yesterdayViews,
-    todayClicks,
-    yesterdayClicks,
+    if (!error && data) {
+      metrics = data
+    }
+  } catch (e) {
+    // view doesn't exist, fallback
+  }
 
-    weekViews,
-    prevWeekViews,
-    weekClicks,
-    prevWeekClicks,
+  // Define values to be populated
+  let totalArticles = 0
+  let totalCategories = 0
+  let totalAds = 0
+  let totalViews = 0
+  let totalClicks = 0
+  let todayViews = 0
+  let yesterdayViews = 0
+  let todayClicks = 0
+  let yesterdayClicks = 0
+  let weekViews = 0
+  let prevWeekViews = 0
+  let weekClicks = 0
+  let prevWeekClicks = 0
+  let monthViews = 0
+  let prevMonthViews = 0
+  let monthClicks = 0
+  let prevMonthClicks = 0
 
-    monthViews,
-    prevMonthViews,
-    monthClicks,
-    prevMonthClicks,
+  let latestArticles: any = { data: null }
+  let latestAds: any = { data: null }
+  let latestCategories: any = { data: null }
+  let topArticles: any[] = []
+  let topCategories: any[] = []
+  let topAds: any[] = []
 
-    topArticles,
-    topCategories,
-    topAds,
+  if (metrics) {
+    // Populate stats from view
+    totalArticles = metrics.total_articles
+    totalCategories = metrics.total_categories
+    totalAds = metrics.total_ads
+    totalViews = Number(metrics.total_views)
+    totalClicks = Number(metrics.total_clicks)
+    todayViews = Number(metrics.today_views)
+    yesterdayViews = Number(metrics.yesterday_views)
+    todayClicks = Number(metrics.today_clicks)
+    yesterdayClicks = Number(metrics.yesterday_clicks)
+    weekViews = Number(metrics.week_views)
+    prevWeekViews = Number(metrics.prev_week_views)
+    weekClicks = Number(metrics.week_clicks)
+    prevWeekClicks = Number(metrics.prev_week_clicks)
+    monthViews = Number(metrics.month_views)
+    prevMonthViews = Number(metrics.prev_month_views)
+    monthClicks = Number(metrics.month_clicks)
+    prevMonthClicks = Number(metrics.prev_month_clicks)
 
-    latestArticles,
-    latestAds,
-    latestCategories
-  ] = await Promise.all([
-    countRows('articles', (query) => query.is('deleted_at', null)),
-    countRows('categories', (query) => query.is('deleted_at', null)),
-    countRows('ads', (query) => query.is('deleted_at', null)),
-    sumArticleViews(),
-    sumAdClicks(),
+    // Parallel fetch remaining lists/activities (6 queries total)
+    const [
+      topArt,
+      topCat,
+      topAd,
+      latArt,
+      latAd,
+      latCat
+    ] = await Promise.all([
+      listTrendingArticles(5, 7),
+      getTopCategories(5),
+      getTopAds(5, 7),
+      supabaseAdmin.from('articles').select('id, title, created_at, status').is('deleted_at', null).order('created_at', { ascending: false }).limit(5),
+      supabaseAdmin.from('ads').select('id, name, created_at, status').is('deleted_at', null).order('created_at', { ascending: false }).limit(5),
+      supabaseAdmin.from('categories').select('id, name, created_at').is('deleted_at', null).order('created_at', { ascending: false }).limit(5)
+    ])
+    topArticles = topArt
+    topCategories = topCat
+    topAds = topAd
+    latestArticles = latArt
+    latestAds = latAd
+    latestCategories = latCat
+  } else {
+    // FALLBACK IMPLEMENTATION (Optimized: 13 queries total instead of 20+ queries)
+    // 1. Fetch metadata counts in parallel with recent activities and lists
+    const [
+      countArt,
+      countCat,
+      countAd,
+      topArt,
+      topCat,
+      topAd,
+      latArt,
+      latAd,
+      latCat,
+      // Fetch all article stats from last 60 days in exactly 1 query to avoid N queries
+      articleStatsData,
+      // Fetch all ad stats from last 60 days in exactly 1 query to avoid N queries
+      adStatsData,
+      // Fetch all-time totals
+      allTimeArticleStats,
+      allTimeAdStats
+    ] = await Promise.all([
+      countRows('articles', (query) => query.is('deleted_at', null)),
+      countRows('categories', (query) => query.is('deleted_at', null)),
+      countRows('ads', (query) => query.is('deleted_at', null)),
+      listTrendingArticles(5, 7),
+      getTopCategories(5),
+      getTopAds(5, 7),
+      supabaseAdmin.from('articles').select('id, title, created_at, status').is('deleted_at', null).order('created_at', { ascending: false }).limit(5),
+      supabaseAdmin.from('ads').select('id, name, created_at, status').is('deleted_at', null).order('created_at', { ascending: false }).limit(5),
+      supabaseAdmin.from('categories').select('id, name, created_at').is('deleted_at', null).order('created_at', { ascending: false }).limit(5),
+      supabaseAdmin.from('article_stats_daily').select('date, views').gte('date', prevMonthStart),
+      supabaseAdmin.from('ad_stats_daily').select('date, clicks').gte('date', prevMonthStart),
+      supabaseAdmin.from('article_stats_daily').select('views'),
+      supabaseAdmin.from('ad_stats_daily').select('clicks')
+    ])
 
-    sumArticleViews(today),
-    sumArticleViews(yesterday, today),
-    sumAdClicks(today),
-    sumAdClicks(yesterday, today),
+    totalArticles = countArt
+    totalCategories = countCat
+    totalAds = countAd
+    topArticles = topArt
+    topCategories = topCat
+    topAds = topAd
+    latestArticles = latArt
+    latestAds = latAd
+    latestCategories = latCat
 
-    sumArticleViews(weekStart),
-    sumArticleViews(prevWeekStart, weekStart),
-    sumAdClicks(weekStart),
-    sumAdClicks(prevWeekStart, weekStart),
+    // Compute all-time sums
+    totalViews = (allTimeArticleStats.data ?? []).reduce((sum, row) => sum + Number(row.views ?? 0), 0)
+    totalClicks = (allTimeAdStats.data ?? []).reduce((sum, row) => sum + Number(row.clicks ?? 0), 0)
 
-    sumArticleViews(monthStart),
-    sumArticleViews(prevMonthStart, monthStart),
-    sumAdClicks(monthStart),
-    sumAdClicks(prevMonthStart, monthStart),
+    // Compute daily stats ranges in JS from the 60-day query data (saves 12+ SQL queries!)
+    const articleStats = articleStatsData.data ?? []
+    for (const row of articleStats) {
+      const date = row.date
+      const views = Number(row.views ?? 0)
 
-    listTrendingArticles(5, 7),
-    getTopCategories(5),
-    getTopAds(5, 7),
+      if (date === today) todayViews += views
+      if (date >= yesterday && date < today) yesterdayViews += views
+      if (date >= weekStart) weekViews += views
+      if (date >= prevWeekStart && date < weekStart) prevWeekViews += views
+      if (date >= monthStart) monthViews += views
+      if (date >= prevMonthStart && date < monthStart) prevMonthViews += views
+    }
 
-    supabaseAdmin.from('articles').select('id, title, created_at, status').is('deleted_at', null).order('created_at', { ascending: false }).limit(5),
-    supabaseAdmin.from('ads').select('id, name, created_at, status').is('deleted_at', null).order('created_at', { ascending: false }).limit(5),
-    supabaseAdmin.from('categories').select('id, name, created_at').is('deleted_at', null).order('created_at', { ascending: false }).limit(5)
-  ])
+    const adStats = adStatsData.data ?? []
+    for (const row of adStats) {
+      const date = row.date
+      const clicks = Number(row.clicks ?? 0)
+
+      if (date === today) todayClicks += clicks
+      if (date >= yesterday && date < today) yesterdayClicks += clicks
+      if (date >= weekStart) weekClicks += clicks
+      if (date >= prevWeekStart && date < weekStart) prevWeekClicks += clicks
+      if (date >= monthStart) monthClicks += clicks
+      if (date >= prevMonthStart && date < monthStart) prevMonthClicks += clicks
+    }
+  }
 
   const activities: ActivityRecord[] = []
   if (latestArticles.data) {
-    latestArticles.data.forEach((a) => {
+    latestArticles.data.forEach((a: any) => {
       activities.push({
         type: 'article',
         title: a.title,
@@ -195,7 +304,7 @@ export async function getDashboardStats() {
     })
   }
   if (latestAds.data) {
-    latestAds.data.forEach((a) => {
+    latestAds.data.forEach((a: any) => {
       activities.push({
         type: 'ad',
         title: a.name,
@@ -205,7 +314,7 @@ export async function getDashboardStats() {
     })
   }
   if (latestCategories.data) {
-    latestCategories.data.forEach((c) => {
+    latestCategories.data.forEach((c: any) => {
       activities.push({
         type: 'category',
         title: c.name,
@@ -246,4 +355,5 @@ export async function getDashboardStats() {
     recentActivities
   }
 }
+
 
