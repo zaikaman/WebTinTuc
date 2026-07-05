@@ -41,7 +41,16 @@ import {
   Copy,
   ExternalLink,
   RotateCcw,
-  Crop
+  Crop,
+  Cpu,
+  Globe,
+  Sparkles,
+  BookOpen,
+  Coins,
+  Trophy,
+  Heart,
+  Layers,
+  Zap
 } from "lucide-react";
 import { getAdminSettings, updateAdminSettings, getAdminMedia, uploadAdminMedia, deleteAdminMedia, createAdminFolder, getAdminDashboardStats, getAdminCategories, createAdminCategory, updateAdminCategory, deleteAdminCategory, getAdminArticles, createAdminArticle, updateAdminArticle, deleteAdminArticle, restoreAdminArticle, getAdminAds, createAdminAd, updateAdminAd, deleteAdminAd, getAdminAccounts, createAdminAccount, updateAdminAccount, deleteAdminAccount } from "@/lib/api/adminClient";
 import { toast } from "sonner";
@@ -297,23 +306,48 @@ const DashboardSkeleton = () => (
     </div>
 
     {/* CATEGORIES PROGRESS SECTION */}
-    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-5">
-      <div className="space-y-2">
-        <div className="h-5 bg-gray-200 rounded-lg w-1/5"></div>
-        <div className="h-3 bg-gray-100 rounded w-1/4"></div>
+    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-6">
+      <div className="flex justify-between items-center pb-4 border-b border-gray-100">
+        <div className="space-y-2 w-full max-w-[200px]">
+          <div className="h-5 bg-gray-200 rounded-lg w-3/4 animate-pulse"></div>
+          <div className="h-3 bg-gray-100 rounded w-full animate-pulse"></div>
+        </div>
+        <div className="h-6 bg-gray-150 rounded-lg w-20 animate-pulse"></div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      
+      {/* Visual Bar skeleton */}
+      <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100/85 space-y-3">
+        <div className="flex justify-between">
+          <div className="h-3 bg-gray-200 rounded w-28 animate-pulse"></div>
+          <div className="h-3 bg-gray-150 rounded w-36 animate-pulse"></div>
+        </div>
+        <div className="w-full h-4 bg-gray-200 rounded-full animate-pulse"></div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {[...Array(6)].map((_, i) => (
-          <div key={i} className="p-4.5 rounded-xl border border-gray-100 space-y-4 bg-slate-50/25">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-gray-200"></div>
-                <div className="h-4 bg-gray-200 rounded w-20"></div>
+          <div key={i} className="p-5 rounded-2xl border border-gray-150/70 space-y-4 bg-slate-50/25 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-[4px] h-full bg-gray-200 rounded-r-md" />
+            <div className="flex items-center justify-between pl-1">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gray-200 animate-pulse"></div>
+                <div className="space-y-2">
+                  <div className="h-3.5 bg-gray-200 rounded w-16 animate-pulse"></div>
+                  <div className="h-2.5 bg-gray-150 rounded w-10 animate-pulse"></div>
+                </div>
               </div>
-              <div className="h-4 bg-gray-200 rounded w-8"></div>
+              <div className="space-y-1.5 flex flex-col items-end">
+                <div className="h-4 bg-gray-200 rounded w-8 animate-pulse"></div>
+                <div className="h-2.5 bg-gray-150 rounded w-12 animate-pulse"></div>
+              </div>
             </div>
-            <div className="w-full h-2 bg-gray-100 rounded-full"></div>
-            <div className="h-3 bg-gray-100 rounded w-12 ml-auto"></div>
+            <div className="w-full h-1.5 bg-gray-100 rounded-full pl-1">
+              <div className="h-full bg-gray-200 rounded-full w-1/2 animate-pulse" />
+            </div>
+            <div className="flex justify-between items-center text-[10px] pl-1 pt-1">
+              <div className="h-3 bg-gray-150 rounded w-14 animate-pulse"></div>
+              <div className="h-3 bg-gray-200 rounded w-12 animate-pulse"></div>
+            </div>
           </div>
         ))}
       </div>
@@ -1498,38 +1532,59 @@ export default function AdminDashboard() {
   // Styles mapping helper
   const getCategoryStyles = (name: string) => {
     const lower = name.toLowerCase();
-    if (lower.includes("tin tức") || lower.includes("tin")) {
+    if (lower.includes("tin tức") || lower.includes("tin") || lower.includes("thời sự") || lower.includes("xã hội")) {
       return {
-        color: "from-[#ff6b6b] to-[#E55956]",
-        bg: "bg-red-50 text-red-500",
-        icon: FileText
+        color: "from-[#ef4444] to-[#E55956]",
+        bg: "bg-rose-50 text-[#E55956]",
+        icon: Globe
       };
     }
-    if (lower.includes("anime") || lower.includes("manga")) {
+    if (lower.includes("công nghệ") || lower.includes("tech") || lower.includes("khoa học")) {
       return {
-        color: "from-[#a78bfa] to-[#8b5cf6]",
-        bg: "bg-purple-50 text-purple-500",
-        icon: Folder
+        color: "from-[#3b82f6] to-[#1d4ed8]",
+        bg: "bg-blue-50 text-[#1d4ed8]",
+        icon: Cpu
       };
     }
-    if (lower.includes("công nghệ") || lower.includes("tech")) {
+    if (lower.includes("giải trí") || lower.includes("anime") || lower.includes("manga") || lower.includes("phim") || lower.includes("nhạc")) {
       return {
-        color: "from-[#60a5fa] to-[#3b82f6]",
-        bg: "bg-blue-50 text-blue-500",
-        icon: TrendingUp
+        color: "from-[#a855f7] to-[#7c3aed]",
+        bg: "bg-purple-50 text-[#7c3aed]",
+        icon: Sparkles
       };
     }
-    if (lower.includes("phim")) {
+    if (lower.includes("giáo dục") || lower.includes("học tập") || lower.includes("trường học")) {
       return {
-        color: "from-[#f97316] to-[#ea580c]",
-        bg: "bg-orange-50 text-orange-500",
-        icon: ImageIcon
+        color: "from-[#10b981] to-[#047857]",
+        bg: "bg-emerald-50 text-[#047857]",
+        icon: BookOpen
+      };
+    }
+    if (lower.includes("kinh tế") || lower.includes("tài chính") || lower.includes("doanh nghiệp") || lower.includes("kinh doanh")) {
+      return {
+        color: "from-[#f59e0b] to-[#b45309]",
+        bg: "bg-amber-50 text-[#b45309]",
+        icon: Coins
+      };
+    }
+    if (lower.includes("thể thao") || lower.includes("bóng đá")) {
+      return {
+        color: "from-[#f97316] to-[#c2410c]",
+        bg: "bg-orange-50 text-[#c2410c]",
+        icon: Trophy
+      };
+    }
+    if (lower.includes("đời sống") || lower.includes("sức khỏe") || lower.includes("du lịch")) {
+      return {
+        color: "from-[#ec4899] to-[#be185d]",
+        bg: "bg-pink-50 text-[#be185d]",
+        icon: Heart
       };
     }
     return {
-      color: "from-[#2dd4bf] to-[#0d9488]",
-      bg: "bg-teal-50 text-teal-500",
-      icon: Folder
+      color: "from-[#06b6d4] to-[#0369a1]",
+      bg: "bg-cyan-50 text-[#0369a1]",
+      icon: Layers
     };
   };
 
@@ -3682,41 +3737,110 @@ export default function AdminDashboard() {
               </div>
 
               {/* CATEGORIES PROGRESS SECTION */}
-              <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-                <div className="border-b border-gray-100 pb-4 mb-5">
-                  <h3 className="text-base font-extrabold text-gray-900">Phân bố danh mục</h3>
-                  <p className="text-xs text-gray-400 mt-0.5">Phân chia tỉ lệ phần trăm số lượng bài viết hệ thống</p>
+              <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden">
+                {/* Header */}
+                <div className="border-b border-gray-100 pb-4 mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <div>
+                    <h3 className="text-base font-black text-gray-900 flex items-center gap-2">
+                      <span className="text-lg">📊</span> Phân bố danh mục hệ thống
+                    </h3>
+                    <p className="text-xs text-gray-400 mt-0.5">Thống kê mật độ & số lượng bài viết phân bổ theo danh mục</p>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] font-extrabold text-[#E55956] bg-red-50 px-2.5 py-1 rounded-lg border border-red-100/50">
+                      Tổng số: {categoryStats.reduce((acc: number, cur: any) => acc + cur.count, 0)} bài viết
+                    </span>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* SEGMENTED OVERVIEW BAR */}
+                {categoryStats.length > 0 && (
+                  <div className="mb-8 bg-slate-50/50 p-4 rounded-xl border border-slate-100/80">
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="text-[11px] font-black text-gray-500 uppercase tracking-wider">Tỉ lệ phân bổ trực quan</span>
+                      <span className="text-[10px] font-bold text-gray-400">Rê chuột lên thanh phân bổ để xem nhanh</span>
+                    </div>
+                    <div className="w-full h-4 bg-gray-100 rounded-full flex overflow-hidden shadow-inner p-[1px] relative">
+                      {categoryStats.map((item: { name: string; count: number; percentage: number }) => {
+                        const style = getCategoryStyles(item.name);
+                        return (
+                          <div
+                            key={item.name}
+                            style={{ width: `${item.percentage}%` }}
+                            className={`h-full transition-all duration-300 first:rounded-l-full last:rounded-r-full bg-gradient-to-r ${style.color} hover:opacity-95 relative group/segment cursor-pointer`}
+                          >
+                            <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent pointer-events-none" />
+                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 hidden group-hover/segment:block z-30 bg-slate-900 text-white text-[10px] px-2.5 py-1.5 rounded-lg shadow-xl font-bold whitespace-nowrap border border-white/10">
+                              <div className="flex items-center gap-1.5">
+                                <div className={`w-2 h-2 rounded-full bg-gradient-to-r ${style.color}`} />
+                                <span>{item.name}: {item.percentage}% ({item.count} bài)</span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-x-4 gap-y-2 mt-3.5 pt-3 border-t border-slate-100/50">
+                      {categoryStats.map((item: { name: string; count: number; percentage: number }) => {
+                        const style = getCategoryStyles(item.name);
+                        return (
+                          <div key={item.name} className="flex items-center gap-1.5 text-[10px] font-extrabold text-gray-500">
+                            <span className={`w-2 h-2 rounded-full bg-gradient-to-r ${style.color} shadow-xs`} />
+                            <span>{item.name} ({item.percentage}%)</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* DETAIL CARDS */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                   {categoryStats.map((item: { name: string; count: number; percentage: number }) => {
                     const style = getCategoryStyles(item.name);
                     const IconComponent = style.icon;
                     return (
                       <div
                         key={item.name}
-                        className="p-4.5 rounded-xl border border-gray-100 hover:border-gray-200 transition-all hover:shadow-xs flex flex-col justify-between group bg-slate-50/25"
+                        className="relative overflow-hidden p-5 rounded-2xl border border-gray-150/70 bg-gradient-to-b from-white to-slate-50/40 hover:from-white hover:to-slate-50/90 transition-all duration-300 hover:-translate-y-1 hover:shadow-md group flex flex-col justify-between"
                       >
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-2.5">
-                            <div className={`w-8 h-8 rounded-lg ${style.bg} flex items-center justify-center`}>
-                              <IconComponent size={15} />
+                        <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-gradient-to-br from-gray-100/10 to-gray-200/5 rounded-full group-hover:scale-150 transition-transform duration-700 pointer-events-none" />
+                        <div className={`absolute top-0 left-0 w-[4px] h-full bg-gradient-to-b ${style.color} rounded-r-md opacity-80`} />
+
+                        <div className="flex items-center justify-between mb-4 pl-1">
+                          <div className="flex items-center gap-3">
+                            <div className={`relative w-10 h-10 rounded-xl ${style.bg} flex items-center justify-center font-semibold group-hover:scale-110 transition-transform duration-300 shadow-sm`}>
+                              <div className={`absolute inset-0 rounded-xl opacity-0 group-hover:opacity-20 blur-md bg-gradient-to-br ${style.color} transition-opacity duration-300`} />
+                              <IconComponent className="w-5 h-5 relative z-10 transition-transform group-hover:rotate-[15deg] duration-300" />
                             </div>
-                            <span className="text-xs font-bold text-gray-800">{item.name}</span>
+                            
+                            <div>
+                              <h4 className="text-xs font-black text-gray-800 tracking-tight uppercase group-hover:text-black transition-colors">{item.name}</h4>
+                              <span className="text-[10px] text-gray-400 font-bold tracking-wide">Mục chuyên mục</span>
+                            </div>
                           </div>
-                          <span className="text-xs font-extrabold text-gray-900">{item.percentage}%</span>
+                          
+                          <div className="flex flex-col items-end">
+                            <span className="text-base font-black text-gray-900 tracking-tight">{item.percentage}%</span>
+                            <span className="text-[10px] text-gray-400 font-bold mt-[-2px]">{item.count} bài viết</span>
+                          </div>
                         </div>
 
-                        <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden mb-2">
-                          <div
-                            className={`h-full rounded-full bg-gradient-to-r ${style.color}`}
-                            style={{ width: `${item.percentage}%` }}
-                          />
+                        <div className="space-y-2 pl-1">
+                          <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden relative">
+                            <div className="absolute inset-0 bg-gray-200/40 rounded-full" />
+                            <div
+                              className={`h-full rounded-full bg-gradient-to-r ${style.color} relative transition-all duration-1000 ease-out`}
+                              style={{ width: `${item.percentage}%` }}
+                            />
+                          </div>
+                          
+                          <div className="flex justify-between items-center text-[10px] text-gray-400 font-bold pt-1">
+                            <span className="group-hover:text-gray-500 transition-colors">Tỉ lệ phủ sóng</span>
+                            <span className="text-gray-500 font-extrabold">{item.percentage}% hệ thống</span>
+                          </div>
                         </div>
-
-                        <span className="text-[11px] text-gray-400 font-bold self-end">
-                          {item.count} bài viết
-                        </span>
                       </div>
                     );
                   })}

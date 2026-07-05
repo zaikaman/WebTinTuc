@@ -42,23 +42,48 @@ export const DashboardSkeleton = () => (
     </div>
 
     {/* CATEGORIES PROGRESS SECTION */}
-    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-5">
-      <div className="space-y-2">
-        <div className="h-5 bg-gray-200 rounded-lg w-1/5"></div>
-        <div className="h-3 bg-gray-100 rounded w-1/4"></div>
+    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-6">
+      <div className="flex justify-between items-center pb-4 border-b border-gray-100">
+        <div className="space-y-2 w-full max-w-[200px]">
+          <div className="h-5 bg-gray-200 rounded-lg w-3/4 animate-pulse"></div>
+          <div className="h-3 bg-gray-100 rounded w-full animate-pulse"></div>
+        </div>
+        <div className="h-6 bg-gray-150 rounded-lg w-20 animate-pulse"></div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      
+      {/* Visual Bar skeleton */}
+      <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100/85 space-y-3">
+        <div className="flex justify-between">
+          <div className="h-3 bg-gray-200 rounded w-28 animate-pulse"></div>
+          <div className="h-3 bg-gray-150 rounded w-36 animate-pulse"></div>
+        </div>
+        <div className="w-full h-4 bg-gray-200 rounded-full animate-pulse"></div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {[...Array(6)].map((_, i) => (
-          <div key={i} className="p-4.5 rounded-xl border border-gray-100 space-y-4 bg-slate-50/25">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-gray-200"></div>
-                <div className="h-4 bg-gray-200 rounded w-20"></div>
+          <div key={i} className="p-5 rounded-2xl border border-gray-150/70 space-y-4 bg-slate-50/25 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-[4px] h-full bg-gray-200 rounded-r-md" />
+            <div className="flex items-center justify-between pl-1">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gray-200 animate-pulse"></div>
+                <div className="space-y-2">
+                  <div className="h-3.5 bg-gray-200 rounded w-16 animate-pulse"></div>
+                  <div className="h-2.5 bg-gray-150 rounded w-10 animate-pulse"></div>
+                </div>
               </div>
-              <div className="h-4 bg-gray-200 rounded w-8"></div>
+              <div className="space-y-1.5 flex flex-col items-end">
+                <div className="h-4 bg-gray-200 rounded w-8 animate-pulse"></div>
+                <div className="h-2.5 bg-gray-150 rounded w-12 animate-pulse"></div>
+              </div>
             </div>
-            <div className="w-full h-2 bg-gray-100 rounded-full"></div>
-            <div className="h-3 bg-gray-100 rounded w-12 ml-auto"></div>
+            <div className="w-full h-1.5 bg-gray-100 rounded-full pl-1">
+              <div className="h-full bg-gray-200 rounded-full w-1/2 animate-pulse" />
+            </div>
+            <div className="flex justify-between items-center text-[10px] pl-1 pt-1">
+              <div className="h-3 bg-gray-150 rounded w-14 animate-pulse"></div>
+              <div className="h-3 bg-gray-200 rounded w-12 animate-pulse"></div>
+            </div>
           </div>
         ))}
       </div>

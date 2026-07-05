@@ -7,6 +7,15 @@ import {
   MousePointerClick,
   FileText,
   Download,
+  Cpu,
+  Globe,
+  Sparkles,
+  BookOpen,
+  Coins,
+  Trophy,
+  Heart,
+  Layers,
+  Zap
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { DashboardSkeleton } from "./Skeletons";
@@ -177,42 +186,118 @@ export default function DashboardOverview({
 
         {/* CATEGORIES PROGRESS */}
         {categoryStats.length > 0 && (
-          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-            <div className="flex items-center justify-between mb-5">
+          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden">
+            {/* Header */}
+            <div className="border-b border-gray-100 pb-4 mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <div>
-                <h3 className="text-base font-bold text-gray-900">📂 Phân bố danh mục</h3>
-                <p className="text-xs text-gray-500 font-medium mt-0.5">Số lượng bài viết theo danh mục</p>
+                <h3 className="text-base font-black text-gray-900 flex items-center gap-2">
+                  <span className="text-lg">📊</span> Phân bố danh mục hệ thống
+                </h3>
+                <p className="text-xs text-gray-400 mt-0.5">Thống kê mật độ & số lượng bài viết phân bổ theo danh mục</p>
+              </div>
+              <div className="text-right">
+                <span className="text-[10px] font-extrabold text-[#E55956] bg-red-50 px-2.5 py-1 rounded-lg border border-red-100/50 animate-pulse">
+                  Tổng số: {categoryStats.reduce((acc: number, cur: any) => acc + cur.count, 0)} bài viết
+                </span>
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+            {/* SEGMENTED OVERVIEW BAR */}
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="mb-8 bg-slate-50/50 p-4 rounded-xl border border-slate-100/80"
+            >
+              <div className="flex justify-between items-center mb-3">
+                <span className="text-[11px] font-black text-gray-500 uppercase tracking-wider">Tỉ lệ phân bổ trực quan</span>
+                <span className="text-[10px] font-bold text-gray-400">Rê chuột lên thanh phân bổ để xem nhanh</span>
+              </div>
+              <div className="w-full h-4 bg-gray-100 rounded-full flex overflow-hidden shadow-inner p-[1px] relative">
+                {categoryStats.map((item, idx) => {
+                  const style = getCategoryStyles(item.name);
+                  return (
+                    <div
+                      key={item.name}
+                      style={{ width: `${item.percentage}%` }}
+                      className={`h-full transition-all duration-300 first:rounded-l-full last:rounded-r-full bg-gradient-to-r ${style.color} hover:opacity-95 relative group/segment cursor-pointer`}
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent pointer-events-none" />
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 hidden group-hover/segment:block z-30 bg-slate-900 text-white text-[10px] px-2.5 py-1.5 rounded-lg shadow-xl font-bold whitespace-nowrap border border-white/10">
+                        <div className="flex items-center gap-1.5">
+                          <div className={`w-2 h-2 rounded-full bg-gradient-to-r ${style.color}`} />
+                          <span>{item.name}: {item.percentage}% ({item.count} bài)</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              
+              <div className="flex flex-wrap gap-x-4 gap-y-2 mt-3.5 pt-3 border-t border-slate-100/50">
+                {categoryStats.map((item) => {
+                  const style = getCategoryStyles(item.name);
+                  return (
+                    <div key={item.name} className="flex items-center gap-1.5 text-[10px] font-extrabold text-gray-500">
+                      <span className={`w-2 h-2 rounded-full bg-gradient-to-r ${style.color} shadow-xs`} />
+                      <span>{item.name} ({item.percentage}%)</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </motion.div>
+
+            {/* DETAIL CARDS */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {categoryStats.map((cat, idx) => {
                 const styles = getCategoryStyles(cat.name);
+                const IconComponent = styles.icon;
                 return (
                   <motion.div
                     key={idx}
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: idx * 0.05 }}
-                    className="p-4 rounded-xl border border-gray-100 bg-gradient-to-br from-white to-slate-50/50"
+                    className="relative overflow-hidden p-5 rounded-2xl border border-gray-150/70 bg-gradient-to-b from-white to-slate-50/40 hover:from-white hover:to-slate-50/90 transition-all duration-300 hover:-translate-y-1 hover:shadow-md group flex flex-col justify-between"
                   >
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2.5">
-                        <div className={`w-8 h-8 rounded-lg ${styles.bg} flex items-center justify-center`}>
-                          <styles.icon size={16} />
+                    <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-gradient-to-br from-gray-100/10 to-gray-200/5 rounded-full group-hover:scale-150 transition-transform duration-700 pointer-events-none" />
+                    <div className={`absolute top-0 left-0 w-[4px] h-full bg-gradient-to-b ${styles.color} rounded-r-md opacity-80`} />
+
+                    <div className="flex items-center justify-between mb-4 pl-1">
+                      <div className="flex items-center gap-3">
+                        <div className={`relative w-10 h-10 rounded-xl ${styles.bg} flex items-center justify-center font-semibold group-hover:scale-110 transition-transform duration-300 shadow-sm`}>
+                          <div className={`absolute inset-0 rounded-xl opacity-0 group-hover:opacity-20 blur-md bg-gradient-to-br ${styles.color} transition-opacity duration-300`} />
+                          <IconComponent className="w-5 h-5 relative z-10 transition-transform group-hover:rotate-[15deg] duration-300" />
                         </div>
-                        <span className="text-sm font-bold text-gray-800">{cat.name}</span>
+                        
+                        <div>
+                          <h4 className="text-xs font-black text-gray-800 tracking-tight uppercase group-hover:text-black transition-colors">{cat.name}</h4>
+                          <span className="text-[10px] text-gray-400 font-bold tracking-wide">Mục chuyên mục</span>
+                        </div>
                       </div>
-                      <span className="text-xs font-bold text-gray-400">{cat.count} bài</span>
+                      
+                      <div className="flex flex-col items-end">
+                        <span className="text-base font-black text-gray-900 tracking-tight">{cat.percentage}%</span>
+                        <span className="text-[10px] text-gray-400 font-bold mt-[-2px]">{cat.count} bài viết</span>
+                      </div>
                     </div>
-                    <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${cat.percentage}%` }}
-                        transition={{ duration: 1, ease: "easeOut", delay: idx * 0.1 }}
-                        className={`h-full rounded-full bg-gradient-to-r ${styles.color}`}
-                      />
+
+                    <div className="space-y-2 pl-1">
+                      <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden relative">
+                        <div className="absolute inset-0 bg-gray-200/40 rounded-full" />
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${cat.percentage}%` }}
+                          transition={{ duration: 1, ease: "easeOut", delay: idx * 0.1 }}
+                          className={`h-full rounded-full bg-gradient-to-r ${styles.color} relative`}
+                        />
+                      </div>
+                      
+                      <div className="flex justify-between items-center text-[10px] text-gray-400 font-bold pt-1">
+                        <span className="group-hover:text-gray-500 transition-colors">Tỉ lệ phủ sóng</span>
+                        <span className="text-gray-500 font-extrabold">{cat.percentage}% hệ thống</span>
+                      </div>
                     </div>
-                    <p className="text-xs text-gray-400 font-semibold mt-2 text-right">{cat.percentage}%</p>
                   </motion.div>
                 );
               })}
