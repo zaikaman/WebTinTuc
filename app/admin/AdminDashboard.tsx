@@ -505,6 +505,8 @@ const AdsTableSkeleton = () => (
   </>
 );
 
+let cachedSettings: any = null;
+
 export default function AdminDashboard() {
   // ==========================================
   // STATE DEFINITIONS
@@ -670,17 +672,17 @@ export default function AdminDashboard() {
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
   const [mediaLoading, setMediaLoading] = useState(false);
 
-  const [, setSiteSettings] = useState(mockSiteSettings);
+  const [, setSiteSettings] = useState(() => cachedSettings || mockSiteSettings);
 
   // Simplified Logo & Footer states matching screenshot
-  const [logoWebsiteName, setLogoWebsiteName] = useState("Tên Web");
-  const [logoUrl, setLogoUrl] = useState<string | null>(null);
-  const [footerOperator, setFooterOperator] = useState("Công ty TNHH PHD STUDIO");
-  const [footerAddress, setFooterAddress] = useState("246 Lê Đình Cẩn, phường Tân Tạo, quận Bình Tân, Thành phố Hồ Chí Minh");
-  const [footerResponsible, setFooterResponsible] = useState("Ông Phạm Hải Đăng");
-  const [footerPhone, setFooterPhone] = useState("0327906965");
-  const [footerEmail, setFooterEmail] = useState("congtyphdstudio@gmail.com");
-  const [footerLicense, setFooterLicense] = useState("Số bao nhiêu ....");
+  const [logoWebsiteName, setLogoWebsiteName] = useState(() => cachedSettings?.brand?.name || "Tên Web");
+  const [logoUrl, setLogoUrl] = useState<string | null>(() => cachedSettings?.brand?.logo_url || null);
+  const [footerOperator, setFooterOperator] = useState(() => cachedSettings?.brand?.copyright || "Công ty TNHH PHD STUDIO");
+  const [footerAddress, setFooterAddress] = useState(() => cachedSettings?.footer?.address || "246 Lê Đình Cẩn, phường Tân Tạo, quận Bình Tân, Thành phố Hồ Chí Minh");
+  const [footerResponsible, setFooterResponsible] = useState(() => cachedSettings?.footer?.responsible || "Ông Phạm Hải Đăng");
+  const [footerPhone, setFooterPhone] = useState(() => cachedSettings?.footer?.phone || "0327906965");
+  const [footerEmail, setFooterEmail] = useState(() => cachedSettings?.footer?.email || "congtyphdstudio@gmail.com");
+  const [footerLicense, setFooterLicense] = useState(() => cachedSettings?.footer?.license || "Số bao nhiêu ....");
 
   const [mediaSort, setMediaSort] = useState<"newest" | "oldest" | "az">("newest");
 
@@ -967,28 +969,32 @@ export default function AdminDashboard() {
     if (activeTab === "dashboard") {
       loadDashboardStats();
     }
-    if (activeTab === "logo-footer" || activeTab === "dashboard") {
+    // Luôn tải Site Settings khi admin đăng nhập thành công để hiển thị đúng tên website/logo ở Sidebar
+    if (activeTab === "logo-footer") {
       setSettingsLoading(true);
-      getAdminSettings().then(res => {
-        if (res) {
-          setSiteSettings(res as any);
-          if (res.brand) {
-            setLogoWebsiteName(res.brand.name || "Tên Web");
-            setLogoUrl(res.brand.logo_url || null);
-            setFooterOperator(res.brand.copyright || "");
-          }
-          if (res.footer) {
-            setFooterAddress(res.footer.address || "");
-            setFooterPhone(res.footer.phone || "");
-            setFooterEmail(res.footer.email || "");
-            setFooterLicense(res.footer.license || "");
-            setFooterResponsible(res.footer.responsible || "");
-          }
-        }
-      }).catch(() => {}).finally(() => {
-        setSettingsLoading(false);
-      });
     }
+    getAdminSettings().then(res => {
+      if (res) {
+        cachedSettings = res;
+        setSiteSettings(res as any);
+        if (res.brand) {
+          setLogoWebsiteName(res.brand.name || "Tên Web");
+          setLogoUrl(res.brand.logo_url || null);
+          setFooterOperator(res.brand.copyright || "");
+        }
+        if (res.footer) {
+          setFooterAddress(res.footer.address || "");
+          setFooterPhone(res.footer.phone || "");
+          setFooterEmail(res.footer.email || "");
+          setFooterLicense(res.footer.license || "");
+          setFooterResponsible(res.footer.responsible || "");
+        }
+      }
+    }).catch(() => {}).finally(() => {
+      if (activeTab === "logo-footer") {
+        setSettingsLoading(false);
+      }
+    });
   }, [activeTab, isLoggedIn, isAuthVerified]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentView, setCurrentView] = useState<"list" | "editor">("list");
@@ -3651,7 +3657,7 @@ export default function AdminDashboard() {
                       try {
                         setIsSettingsSaving(true);
                         toast.loading("Đang lưu cấu hình...", { id: "save-logo-footer" });
-                        await updateAdminSettings({
+                        const updatedPayload = {
                           brand: {
                             name: logoWebsiteName,
                             logo_url: logoUrl,
@@ -3664,7 +3670,9 @@ export default function AdminDashboard() {
                             license: footerLicense,
                             responsible: footerResponsible
                           }
-                        });
+                        };
+                        await updateAdminSettings(updatedPayload);
+                        cachedSettings = updatedPayload; // Cập nhật cache tức thời
                         toast.success("Lưu thay đổi thành công!", { id: "save-logo-footer" });
                       } catch (err) {
                         toast.error("Lỗi khi lưu cấu hình!", { id: "save-logo-footer" });
