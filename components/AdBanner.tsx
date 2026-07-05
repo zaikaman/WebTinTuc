@@ -165,7 +165,7 @@ export default function AdBanner({
       )}
 
       <div className="absolute top-1.5 right-1.5 bg-black/45 hover:bg-black/75 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded-sm select-none z-10 transition-colors">
-        Quảng cáo &times;
+        Quảng cáo
       </div>
     </div>
   );

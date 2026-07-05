@@ -81,7 +81,7 @@ export function CategoryContent({ featured, initialList, ads = [] }: CategoryCon
                 />
               </a>
               <div className="absolute top-1 right-1 bg-black/45 text-white/90 text-[8px] px-1 py-0.5 rounded-sm select-none z-10">
-                QC &times;
+                QC
               </div>
             </div>
             <div className="w-[46%] min-w-[140px] flex-shrink-0 snap-start relative overflow-hidden rounded border border-gray-200 bg-gray-50 shadow-xs aspect-[300/600]">
@@ -95,7 +95,7 @@ export function CategoryContent({ featured, initialList, ads = [] }: CategoryCon
                 />
               </a>
               <div className="absolute top-1 right-1 bg-black/45 text-white/90 text-[8px] px-1 py-0.5 rounded-sm select-none z-10">
-                QC &times;
+                QC
               </div>
             </div>
             <div className="w-[46%] min-w-[140px] flex-shrink-0 snap-start relative overflow-hidden rounded border border-gray-200 bg-gray-50 shadow-xs aspect-[300/600]">
@@ -109,7 +109,7 @@ export function CategoryContent({ featured, initialList, ads = [] }: CategoryCon
                 />
               </a>
               <div className="absolute top-1 right-1 bg-black/45 text-white/90 text-[8px] px-1 py-0.5 rounded-sm select-none z-10">
-                QC &times;
+                QC
               </div>
             </div>
           </div>

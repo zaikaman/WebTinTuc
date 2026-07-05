@@ -50,7 +50,8 @@ import {
   Trophy,
   Heart,
   Layers,
-  Zap
+  Zap,
+  BarChart3
 } from "lucide-react";
 import { getAdminSettings, updateAdminSettings, getAdminMedia, uploadAdminMedia, deleteAdminMedia, createAdminFolder, getAdminDashboardStats, getAdminCategories, createAdminCategory, updateAdminCategory, deleteAdminCategory, getAdminArticles, createAdminArticle, updateAdminArticle, deleteAdminArticle, restoreAdminArticle, getAdminAds, createAdminAd, updateAdminAd, deleteAdminAd, getAdminAccounts, createAdminAccount, updateAdminAccount, deleteAdminAccount } from "@/lib/api/adminClient";
 import { toast } from "sonner";
@@ -3742,7 +3743,7 @@ export default function AdminDashboard() {
                 <div className="border-b border-gray-100 pb-4 mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                   <div>
                     <h3 className="text-base font-black text-gray-900 flex items-center gap-2">
-                      <span className="text-lg">📊</span> Phân bố danh mục hệ thống
+                      <BarChart3 className="w-5 h-5 text-[#E55956]" /> Phân bố danh mục hệ thống
                     </h3>
                     <p className="text-xs text-gray-400 mt-0.5">Thống kê mật độ & số lượng bài viết phân bổ theo danh mục</p>
                   </div>
@@ -3752,48 +3753,6 @@ export default function AdminDashboard() {
                     </span>
                   </div>
                 </div>
-
-                {/* SEGMENTED OVERVIEW BAR */}
-                {categoryStats.length > 0 && (
-                  <div className="mb-8 bg-slate-50/50 p-4 rounded-xl border border-slate-100/80">
-                    <div className="flex justify-between items-center mb-3">
-                      <span className="text-[11px] font-black text-gray-500 uppercase tracking-wider">Tỉ lệ phân bổ trực quan</span>
-                      <span className="text-[10px] font-bold text-gray-400">Rê chuột lên thanh phân bổ để xem nhanh</span>
-                    </div>
-                    <div className="w-full h-4 bg-gray-100 rounded-full flex overflow-hidden shadow-inner p-[1px] relative">
-                      {categoryStats.map((item: { name: string; count: number; percentage: number }) => {
-                        const style = getCategoryStyles(item.name);
-                        return (
-                          <div
-                            key={item.name}
-                            style={{ width: `${item.percentage}%` }}
-                            className={`h-full transition-all duration-300 first:rounded-l-full last:rounded-r-full bg-gradient-to-r ${style.color} hover:opacity-95 relative group/segment cursor-pointer`}
-                          >
-                            <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent pointer-events-none" />
-                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 hidden group-hover/segment:block z-30 bg-slate-900 text-white text-[10px] px-2.5 py-1.5 rounded-lg shadow-xl font-bold whitespace-nowrap border border-white/10">
-                              <div className="flex items-center gap-1.5">
-                                <div className={`w-2 h-2 rounded-full bg-gradient-to-r ${style.color}`} />
-                                <span>{item.name}: {item.percentage}% ({item.count} bài)</span>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    
-                    <div className="flex flex-wrap gap-x-4 gap-y-2 mt-3.5 pt-3 border-t border-slate-100/50">
-                      {categoryStats.map((item: { name: string; count: number; percentage: number }) => {
-                        const style = getCategoryStyles(item.name);
-                        return (
-                          <div key={item.name} className="flex items-center gap-1.5 text-[10px] font-extrabold text-gray-500">
-                            <span className={`w-2 h-2 rounded-full bg-gradient-to-r ${style.color} shadow-xs`} />
-                            <span>{item.name} ({item.percentage}%)</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
 
                 {/* DETAIL CARDS */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
