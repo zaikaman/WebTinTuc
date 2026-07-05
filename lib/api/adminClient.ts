@@ -43,6 +43,7 @@ async function fetchAdmin<T>(path: string, options: RequestInit = {}): Promise<T
 
 // ARTICLES
 export const getAdminArticles = (qs = "") => fetchAdmin<{ items: AdminArticle[] }>(`/articles${qs}`);
+export const getAdminArticleById = (id: number) => fetchAdmin<AdminArticle>(`/articles/${id}`);
 export const createAdminArticle = (data: CreateArticlePayload) => fetchAdmin<AdminArticle>("/articles", { method: "POST", body: JSON.stringify(data) });
 export const updateAdminArticle = (id: number, data: Partial<CreateArticlePayload>) => fetchAdmin<AdminArticle>(`/articles/${id}`, { method: "PATCH", body: JSON.stringify(data) });
 export const deleteAdminArticle = (id: number) => fetchAdmin<{ id: number }>(`/articles/${id}`, { method: "DELETE" });

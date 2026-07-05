@@ -50,10 +50,9 @@ import {
   Trophy,
   Heart,
   Layers,
-  Zap,
   BarChart3
 } from "lucide-react";
-import { getAdminSettings, updateAdminSettings, getAdminMedia, uploadAdminMedia, deleteAdminMedia, createAdminFolder, getAdminDashboardStats, getAdminCategories, createAdminCategory, updateAdminCategory, deleteAdminCategory, getAdminArticles, createAdminArticle, updateAdminArticle, deleteAdminArticle, restoreAdminArticle, getAdminAds, createAdminAd, updateAdminAd, deleteAdminAd, getAdminAccounts, createAdminAccount, updateAdminAccount, deleteAdminAccount } from "@/lib/api/adminClient";
+import { getAdminSettings, updateAdminSettings, getAdminMedia, uploadAdminMedia, deleteAdminMedia, createAdminFolder, getAdminDashboardStats, getAdminCategories, createAdminCategory, updateAdminCategory, deleteAdminCategory, getAdminArticles, getAdminArticleById, createAdminArticle, updateAdminArticle, deleteAdminArticle, restoreAdminArticle, getAdminAds, createAdminAd, updateAdminAd, deleteAdminAd, getAdminAccounts, createAdminAccount, updateAdminAccount, deleteAdminAccount } from "@/lib/api/adminClient";
 import { toast } from "sonner";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -1036,7 +1035,7 @@ export default function AdminDashboard() {
           views: a.views || 0,
           status: a.status === 'published' ? 'Đã đăng' : 'Nháp',
           createdAt: a.created_at ? new Date(a.created_at).toISOString().split('T')[0] : "",
-          content: a.content ? blocksToHtml(a.content) : "",
+          content: "", // We fetch full content on demand when editing
           coverImage: a.thumbnail_key || "",
           isDeleted: !!a.deleted_at
         })));
@@ -1072,35 +1071,37 @@ export default function AdminDashboard() {
       loadDashboardStats();
     }
     // Luôn tải Site Settings khi admin đăng nhập thành công để hiển thị đúng tên website/logo ở Sidebar
-    if (activeTab === "logo-footer") {
-      setSettingsLoading(true);
-    }
-    getAdminSettings().then(res => {
-      if (res) {
-        cachedSettings = res;
-        setSiteSettings(res as any);
-        if (res.brand) {
-          setLogoWebsiteName(res.brand.name || "Tên Web");
-          setLogoUrl(res.brand.logo_url || null);
-          setFooterOperator(res.brand.copyright || "");
-          setHeaderAdsContactText(res.brand.utilityLinks?.[0]?.label || "Liên hệ quảng cáo");
-          setHeaderAdsContactUrl(res.brand.utilityLinks?.[0]?.href || "");
-          setHeaderZaloUrl(res.brand.socialLinks?.find((l: any) => l.platform === 'zalo')?.href || "https://zalo.me");
-          setHeaderEmailUrl(res.brand.socialLinks?.find((l: any) => l.platform === 'email')?.href || "mailto:quangcao@linhka.vn");
-        }
-        if (res.footer) {
-          setFooterAddress(res.footer.address || "");
-          setFooterPhone(res.footer.phone || "");
-          setFooterEmail(res.footer.email || "");
-          setFooterLicense(res.footer.license || "");
-          setFooterResponsible(res.footer.responsible || "");
-        }
-      }
-    }).catch(() => {}).finally(() => {
+    if (activeTab === "logo-footer" || !cachedSettings) {
       if (activeTab === "logo-footer") {
-        setSettingsLoading(false);
+        setSettingsLoading(true);
       }
-    });
+      getAdminSettings().then(res => {
+        if (res) {
+          cachedSettings = res;
+          setSiteSettings(res as any);
+          if (res.brand) {
+            setLogoWebsiteName(res.brand.name || "Tên Web");
+            setLogoUrl(res.brand.logo_url || null);
+            setFooterOperator(res.brand.copyright || "");
+            setHeaderAdsContactText(res.brand.utilityLinks?.[0]?.label || "Liên hệ quảng cáo");
+            setHeaderAdsContactUrl(res.brand.utilityLinks?.[0]?.href || "");
+            setHeaderZaloUrl(res.brand.socialLinks?.find((l: any) => l.platform === 'zalo')?.href || "https://zalo.me");
+            setHeaderEmailUrl(res.brand.socialLinks?.find((l: any) => l.platform === 'email')?.href || "mailto:quangcao@linhka.vn");
+          }
+          if (res.footer) {
+            setFooterAddress(res.footer.address || "");
+            setFooterPhone(res.footer.phone || "");
+            setFooterEmail(res.footer.email || "");
+            setFooterLicense(res.footer.license || "");
+            setFooterResponsible(res.footer.responsible || "");
+          }
+        }
+      }).catch(() => {}).finally(() => {
+        if (activeTab === "logo-footer") {
+          setSettingsLoading(false);
+        }
+      });
+    }
   }, [activeTab, isLoggedIn, isAuthVerified]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentView, setCurrentView] = useState<"list" | "editor">("list");
@@ -1691,16 +1692,36 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleOpenEditDialog = (item: any) => {
+  const handleOpenEditDialog = async (item: any) => {
     setDialogMode("edit");
     setEditId(item.id);
     if (activeTab === "posts") {
-      setPostForm({
-        ...item
-      });
-      setPostContent(item.content || "");
-      setPostCoverImage(item.coverImage || null);
-      setCurrentView("editor");
+      const toastId = toast.loading("Đang tải chi tiết bài viết...");
+      try {
+        const fullArticle = await getAdminArticleById(item.id);
+        if (!fullArticle) {
+          throw new Error("Không thể tải thông tin chi tiết bài viết");
+        }
+        
+        setPostForm({
+          id: fullArticle.id,
+          title: fullArticle.title,
+          category: fullArticle.categories?.name || "Tin tức",
+          views: fullArticle.views || 0,
+          status: fullArticle.status === 'published' ? 'Đã đăng' : 'Nháp',
+          createdAt: fullArticle.created_at ? new Date(fullArticle.created_at).toISOString().split('T')[0] : "",
+          coverImage: fullArticle.thumbnail_key || "",
+          isDeleted: !!fullArticle.deleted_at
+        });
+        setPostContent(fullArticle.content ? blocksToHtml(fullArticle.content as any) : "");
+        setPostCoverImage(fullArticle.thumbnail_key || null);
+        setCurrentView("editor");
+        toast.dismiss(toastId);
+      } catch (err) {
+        console.error(err);
+        toast.error("Không thể tải thông tin chi tiết bài viết", { id: toastId });
+        toast.dismiss(toastId);
+      }
     } else if (activeTab === "categories") {
       setCategoryForm(item);
       setCategoryDialogOpen(true);

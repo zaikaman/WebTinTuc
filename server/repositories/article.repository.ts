@@ -8,6 +8,27 @@ const ARTICLE_SELECT = `
   profiles(*)
 `
 
+const ARTICLE_LIST_SELECT = `
+  id,
+  title,
+  slug,
+  summary,
+  thumbnail_key,
+  category_id,
+  author_id,
+  views,
+  status,
+  featured,
+  seo_title,
+  seo_description,
+  created_at,
+  updated_at,
+  published_at,
+  deleted_at,
+  categories(*),
+  profiles(*)
+`
+
 type ArticleListOptions = {
   page?: number
   limit?: number
@@ -36,7 +57,7 @@ export async function listAdminArticles(options: ArticleListOptions = {}) {
 
   let query = supabaseAdmin
     .from('articles')
-    .select(ARTICLE_SELECT, { count: 'exact' })
+    .select(ARTICLE_LIST_SELECT, { count: 'exact' })
     .range(from, to)
     .order(sortBy, { ascending: sortOrder === 'asc', nullsFirst: false })
 
@@ -65,7 +86,7 @@ export async function listPublicArticles(options: ArticleListOptions = {}) {
 
   let query = supabaseAdmin
     .from('articles')
-    .select(`*, ${categorySelect}, profiles(*)`, countOption ? { count: countOption } : undefined)
+    .select(`id, title, slug, summary, thumbnail_key, category_id, author_id, views, status, featured, created_at, updated_at, published_at, deleted_at, seo_title, seo_description, ${categorySelect}, profiles(*)`, countOption ? { count: countOption } : undefined)
     .eq('status', 'published')
     .is('deleted_at', null)
     .range(from, to)
@@ -155,7 +176,7 @@ export async function listRelatedArticles(article: { id: number; category_id: nu
 
   const { data, error } = await supabaseAdmin
     .from('articles')
-    .select(ARTICLE_SELECT)
+    .select(ARTICLE_LIST_SELECT)
     .eq('category_id', article.category_id)
     .neq('id', article.id)
     .eq('status', 'published')
@@ -170,7 +191,7 @@ export async function listRelatedArticles(article: { id: number; category_id: nu
 export async function listFeaturedArticles(limit = 6) {
   const { data, error } = await supabaseAdmin
     .from('articles')
-    .select(ARTICLE_SELECT)
+    .select(ARTICLE_LIST_SELECT)
     .eq('featured', true)
     .eq('status', 'published')
     .is('deleted_at', null)
@@ -197,7 +218,7 @@ export async function searchArticles(queryText: string, page = 1, limit = 10) {
   if (normalizedQuery.length >= 2) {
     const { data, error, count } = await supabaseAdmin
       .from('articles')
-      .select(ARTICLE_SELECT, { count: 'exact' })
+      .select(ARTICLE_LIST_SELECT, { count: 'exact' })
       .textSearch('search_vector', normalizedQuery, { type: 'plain', config: 'simple' })
       .eq('status', 'published')
       .is('deleted_at', null)
@@ -210,7 +231,7 @@ export async function searchArticles(queryText: string, page = 1, limit = 10) {
   // Fallback for single-char or empty queries
   const { data, error, count } = await supabaseAdmin
     .from('articles')
-    .select(ARTICLE_SELECT, { count: 'exact' })
+    .select(ARTICLE_LIST_SELECT, { count: 'exact' })
     .or(`title.ilike.%${queryText}%,summary.ilike.%${queryText}%`)
     .eq('status', 'published')
     .is('deleted_at', null)
@@ -247,7 +268,7 @@ export async function listTrendingArticles(limit = 10, days = 7) {
 
   const { data: articles, error: articleError } = await supabaseAdmin
     .from('articles')
-    .select(ARTICLE_SELECT)
+    .select(ARTICLE_LIST_SELECT)
     .in('id', ids)
     .eq('status', 'published')
     .is('deleted_at', null)
