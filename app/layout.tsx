@@ -83,6 +83,7 @@ const jsonLd = {
 };
 
 import { HoverPreloader } from "@/components/HoverPreloader";
+import { Toaster } from "sonner";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -98,6 +99,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="min-h-screen bg-[#f4f6f8] text-[#333] font-sans antialiased">
+        <Toaster position="top-right" richColors />
         <HoverPreloader />
         {children}
       </body>

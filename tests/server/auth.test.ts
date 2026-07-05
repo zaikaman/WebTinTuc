@@ -1,44 +1,82 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { createClient } from '@/lib/supabase/server'
+import { supabaseAdmin } from '@/lib/supabase/admin'
+import { requireAdminAccess, requireAdmin } from '@/server/auth'
+import { ApiError } from '@/server/http'
 
-// The auth module currently bypasses authentication and returns a hardcoded admin
-// We should test that the bypass works as expected
+vi.mock('@/lib/supabase/server', () => ({
+  createClient: vi.fn(),
+}))
+vi.mock('@/lib/supabase/admin', () => ({
+  supabaseAdmin: {
+    from: vi.fn()
+  } as any,
+}))
+
 describe('auth', () => {
   beforeEach(() => {
-    vi.resetModules()
+    vi.resetAllMocks()
+    process.env.ADMIN_API_SECRET = 'test-admin-secret'
   })
 
-  it('requireAdminAccess returns the test admin user (bypass mode)', async () => {
-    const { requireAdminAccess } = await import('@/server/auth')
-    const result = await requireAdminAccess()
+  it('requireAdminAccess returns admin payload when x-admin-secret matches', async () => {
+    const result = await requireAdminAccess('test-admin-secret')
+    expect(result).toEqual({ id: 'admin-api-secret', role: 'admin' })
+  })
 
-    expect(result).toEqual({
-      id: '00000000-0000-0000-0000-000000000001',
-      role: 'admin',
+  it('requireAdminAccess throws 401 when session is missing or invalid', async () => {
+    vi.mocked(createClient).mockResolvedValue({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({ data: { user: null }, error: new Error('Unauthorized') })
+      }
+    } as any)
+
+    await expect(requireAdminAccess()).rejects.toThrow(ApiError)
+  })
+
+  it('requireAdminAccess throws 403 when profile role is not admin', async () => {
+    vi.mocked(createClient).mockResolvedValue({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'user-id' } }, error: null })
+      }
+    } as any)
+
+    supabaseAdmin.from = vi.fn().mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({ data: { id: 'user-id', role: 'editor' }, error: null })
+        })
+      })
     })
+
+    await expect(requireAdminAccess()).rejects.toThrow(ApiError)
   })
 
-  it('requireAdminAccess returns admin regardless of input (bypass mode)', async () => {
-    const { requireAdminAccess } = await import('@/server/auth')
-    const result1 = await requireAdminAccess('test-secret')
-    const result2 = await requireAdminAccess(null)
-    const result3 = await requireAdminAccess(undefined)
+  it('requireAdminAccess returns user payload for valid admin session', async () => {
+    vi.mocked(createClient).mockResolvedValue({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'user-id' } }, error: null })
+      }
+    } as any)
 
-    expect(result1).toEqual(result2)
-    expect(result2).toEqual(result3)
+    supabaseAdmin.from = vi.fn().mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({ data: { id: 'user-id', role: 'admin' }, error: null })
+        })
+      })
+    })
+
+    const result = await requireAdminAccess()
+    expect(result).toEqual({ id: 'user-id', role: 'admin' })
   })
 
-  it('requireAdmin delegates to requireAdminAccess', async () => {
-    // Create a mock request
+  it('requireAdmin extracts x-admin-secret header and delegates to requireAdminAccess', async () => {
     const request = new Request('http://localhost', {
-      headers: { 'x-admin-secret': 'test-secret' },
+      headers: { 'x-admin-secret': 'test-admin-secret' },
     }) as any
 
-    const { requireAdmin } = await import('@/server/auth')
     const result = await requireAdmin(request)
-
-    expect(result).toEqual({
-      id: '00000000-0000-0000-0000-000000000001',
-      role: 'admin',
-    })
+    expect(result).toEqual({ id: 'admin-api-secret', role: 'admin' })
   })
 })

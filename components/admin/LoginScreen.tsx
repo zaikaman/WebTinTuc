@@ -1,46 +1,69 @@
 "use client";
 
 import React, { useState } from "react";
-import { Lock, Eye, EyeOff, HelpCircle } from "lucide-react";
+import { Lock, Eye, EyeOff } from "lucide-react";
 import { Toaster, toast } from "sonner";
+import { supabase } from "@/lib/supabase/client";
 
 interface LoginScreenProps {
   onLoginSuccess: () => void;
 }
 
 export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
-  const [loginUsername, setLoginUsername] = useState("");
+  const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!loginUsername || !loginPassword) {
+    if (!loginEmail || !loginPassword) {
       toast.error("Vui lòng điền đầy đủ thông tin đăng nhập!");
       return;
     }
-    
+
     setIsLoading(true);
-    setTimeout(() => {
-      if (loginUsername.trim() === "admin" && loginPassword.trim() === "123") {
-        sessionStorage.setItem("admin_logged_in", "true");
-        onLoginSuccess();
-        toast.success("Đăng nhập quản trị thành công!");
-      } else {
-        toast.error("Tên đăng nhập hoặc mật khẩu không chính xác!");
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: loginEmail.trim(),
+        password: loginPassword,
+      });
+
+      if (error || !data.user) {
+        toast.error("Email hoặc mật khẩu không chính xác!");
+        return;
       }
+
+      // Kiểm tra role admin trong bảng profiles
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", data.user.id)
+        .single();
+
+      if (profileError || !profile || profile.role !== "admin") {
+        await supabase.auth.signOut();
+        toast.error("Tài khoản này không có quyền quản trị!");
+        return;
+      }
+
+      localStorage.setItem("admin_logged_in", "true");
+      onLoginSuccess();
+      toast.success("Đăng nhập quản trị thành công!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Có lỗi xảy ra, vui lòng thử lại!");
+    } finally {
       setIsLoading(false);
-    }, 800);
+    }
   };
 
   return (
     <div className="min-h-screen bg-[#f4f6f8] flex items-center justify-center p-4 font-sans antialiased text-[#2c3e50] select-none">
-      <Toaster position="top-right" richColors />
       <div className="max-w-[450px] w-full bg-white rounded-3xl p-8 border border-gray-100 shadow-2xl relative overflow-hidden flex flex-col gap-6">
         {/* Top colored stripe */}
         <div className="absolute top-0 left-0 right-0 h-2 bg-[#E55956]" />
-        
+
         {/* Header */}
         <div className="text-center space-y-2 pt-2">
           <div className="mx-auto w-16 h-16 rounded-2xl bg-[#E55956]/10 flex items-center justify-center text-[#E55956] mb-4">
@@ -53,12 +76,13 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
         {/* Form */}
         <form onSubmit={handleLogin} className="space-y-4">
           <div className="space-y-1">
-            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Tên đăng nhập</label>
+            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Email quản trị</label>
             <input
-              type="text"
-              value={loginUsername}
-              onChange={(e) => setLoginUsername(e.target.value)}
-              placeholder="Nhập tên đăng nhập..."
+              type="email"
+              value={loginEmail}
+              onChange={(e) => setLoginEmail(e.target.value)}
+              placeholder="Nhập địa chỉ email..."
+              autoComplete="email"
               className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white shadow-sm font-medium"
               required
             />
@@ -72,6 +96,7 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
                 value={loginPassword}
                 onChange={(e) => setLoginPassword(e.target.value)}
                 placeholder="Nhập mật khẩu..."
+                autoComplete="current-password"
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white shadow-sm font-medium pr-10"
                 required
               />
@@ -82,25 +107,6 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
               >
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
-            </div>
-          </div>
-
-          {/* Note Panel */}
-          <div className="bg-amber-50 border border-amber-200/60 rounded-2xl p-4 text-xs text-amber-8 tracking-normal space-y-1.5 shadow-sm">
-            <div className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-amber-900">
-              <HelpCircle size={14} />
-              <span>Thông tin đăng nhập</span>
-            </div>
-            <p className="font-medium text-amber-800">Sử dụng tài khoản mặc định dưới đây để truy cập hệ thống:</p>
-            <div className="grid grid-cols-2 gap-2 pt-1 font-mono text-[11px]">
-              <div className="bg-amber-100/50 p-1.5 rounded-lg border border-amber-200/40">
-                <span className="text-amber-600 block text-[9px] uppercase font-bold tracking-wider mb-0.5">Tài khoản</span>
-                <strong className="text-amber-950 font-bold select-all">admin</strong>
-              </div>
-              <div className="bg-amber-100/50 p-1.5 rounded-lg border border-amber-200/40">
-                <span className="text-amber-600 block text-[9px] uppercase font-bold tracking-wider mb-0.5">Mật khẩu</span>
-                <strong className="text-amber-950 font-bold select-all">123</strong>
-              </div>
             </div>
           </div>
 

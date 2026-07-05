@@ -333,7 +333,6 @@ export default function EditorView({
 
   return (
     <div className="min-h-screen bg-[#fafbfc] text-[#2c3e50] font-sans antialiased flex flex-col animate-fade-in">
-      <Toaster position="top-right" richColors />
       
       {/* Top Header */}
       <header className="h-[65px] bg-white border-b border-gray-200 px-6 flex items-center justify-between sticky top-0 z-30 shadow-sm">
