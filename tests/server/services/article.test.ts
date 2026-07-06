@@ -173,7 +173,7 @@ describe('articleService', () => {
   })
 
   it('getArticlesOptions normalizes published filter', async () => {
-    vi.mocked(articleRepository.listPublicArticles).mockResolvedValue({ items: [{ id: 1 }], meta: { page: 1, limit: 20, total: 1, totalPages: 1 } })
+    vi.mocked(articleRepository.listPublicArticles).mockResolvedValue({ items: [{ id: 1 }] as any, meta: { page: 1, limit: 20, total: 1, totalPages: 1 } })
 
     const result = await articleService.getArticlesOptions({ limit: '10', published: 'true' })
     expect(result).toEqual([{ id: 1 }])
@@ -187,7 +187,7 @@ describe('articleService', () => {
     const mockArticles = { items: [{ id: 1 }], meta: { page: 1, limit: 20, total: 1, totalPages: 1 } }
 
     vi.mocked(categoryRepository.getPublicCategoryBySlug).mockResolvedValue(mockCategory)
-    vi.mocked(articleRepository.listPublicArticles).mockResolvedValue(mockArticles)
+    vi.mocked(articleRepository.listPublicArticles).mockResolvedValue(mockArticles as any)
 
     const result = await articleService.getArticlesByCategorySlug('tin-tuc', { page: 1, limit: 20 })
 

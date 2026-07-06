@@ -280,7 +280,7 @@ export async function listTrendingArticles(limit = 10, days = 7) {
       const article = articles?.find((item) => item.id === id)
       return article ? { ...article, trending_views: totals.get(id) ?? 0 } : null
     })
-    .filter(Boolean)
+    .filter((a): a is Exclude<typeof a, null> => a !== null)
 }
 
 export async function incrementArticleViews(id: number, count: number) {

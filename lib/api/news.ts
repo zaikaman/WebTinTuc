@@ -45,7 +45,7 @@ interface BackendArticle {
   slug: string
   title: string
   category?: string | { name: string; slug?: string }
-  categories?: { name: string; slug?: string }
+  categories?: any
   published_at?: string
   created_at: string
   thumbnail_key?: string
@@ -64,17 +64,24 @@ export function mapBackendArticleToFrontend(data: Partial<BackendArticle>): Arti
       : data.content.blocks
     : undefined
 
+  // Handle both single category object and list/array of categories (due to Supabase plural table join types)
+  const catFromCategories = data.categories
+    ? Array.isArray(data.categories)
+      ? data.categories[0]
+      : data.categories
+    : undefined
+
   const result: Article = {
     id: data.slug || data.id?.toString() || "",
     dbId: data.id ? Number(data.id) : undefined,
     title: data.title || "",
-    category: catObj?.name || catStr || data.categories?.name || "Tin tức",
+    category: catObj?.name || catStr || catFromCategories?.name || "Tin tức",
     time: data.published_at || data.created_at || new Date().toISOString(),
     image: data.thumbnail_key || "",
     views: typeof data.views === "number" ? data.views : 0,
   }
 
-  const catSlug = catObj?.slug || data.categories?.slug
+  const catSlug = catObj?.slug || catFromCategories?.slug
   if (catSlug) result.categorySlug = catSlug
   if (data.summary) result.intro = data.summary
   if (contentBlocks) result.content = contentBlocks as ContentBlock[]
@@ -187,7 +194,8 @@ const getPostRecommendationsCached = unstable_cache(
         relatedItems = await articleService.getRelatedArticles(articleId, 4);
 
         // Fetch trending articles (max 10) as "You May Also Like" candidate pool
-        const trending = await articleService.getTrendingArticles(10);
+        const trendingRaw = await articleService.getTrendingArticles(10);
+        const trending = (trendingRaw || []).filter((a): a is Exclude<typeof a, null> => a !== null);
         const relatedIds = new Set(relatedItems.map((a) => a.id));
         
         likeItems = trending
