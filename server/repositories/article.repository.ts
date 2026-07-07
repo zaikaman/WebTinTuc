@@ -205,13 +205,46 @@ export async function listFeaturedArticles(limit = 6) {
 export async function searchArticles(queryText: string, page = 1, limit = 10) {
   const { from, to } = toRange(page, limit)
 
-  // Normalize query to remove diacritics so it matches the accentless search_vector GIN index
-  const normalizedQuery = queryText
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/đ/g, "d")
-    .replace(/Đ/g, "D")
-    .trim();
+  // Normalize helper function
+  const normalize = (str: string) =>
+    str
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/đ/g, "d")
+      .replace(/Đ/g, "D")
+      .toLowerCase()
+      .trim();
+
+  const normalizedQuery = normalize(queryText);
+
+  // Post-filtering function to only match on the article title
+  // and match exactly the characters in the query (accent-aware contiguous substring check)
+  const filterArticles = (items: any[]) => {
+    const query = queryText.trim();
+    if (!query) {
+      return items;
+    }
+
+    const hasAccents = (str: string) => normalize(str) !== str.toLowerCase();
+
+    return items.filter(item => {
+      // Strict matching on Title only (must contain the query as a contiguous substring)
+      const title = item.title || "";
+      const normTitle = normalize(title);
+      
+      // Basic normalized check first
+      if (!normTitle.includes(normalizedQuery)) {
+        return false;
+      }
+
+      // If query has accents, enforce accent-sensitive substring check
+      if (hasAccents(query)) {
+        return title.toLowerCase().includes(query.toLowerCase());
+      }
+
+      return true;
+    });
+  };
 
   // Use PostgreSQL Full-Text Search via search_vector GIN index for queries >= 2 chars
   // Falls back to ilike for very short inputs where plainto_tsquery isn't effective
@@ -223,9 +256,10 @@ export async function searchArticles(queryText: string, page = 1, limit = 10) {
       .eq('status', 'published')
       .is('deleted_at', null)
       .range(from, to)
+      .order('published_at', { ascending: false, nullsFirst: false });
 
     if (error) throw error
-    return { items: data ?? [], meta: pageMeta(count, page, limit) }
+    return { items: filterArticles(data ?? []), meta: pageMeta(count, page, limit) }
   }
 
   // Fallback for single-char or empty queries
@@ -239,7 +273,7 @@ export async function searchArticles(queryText: string, page = 1, limit = 10) {
     .order('published_at', { ascending: false, nullsFirst: false })
 
   if (error) throw error
-  return { items: data ?? [], meta: pageMeta(count, page, limit) }
+  return { items: filterArticles(data ?? []), meta: pageMeta(count, page, limit) }
 }
 
 

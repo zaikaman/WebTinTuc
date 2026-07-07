@@ -35,7 +35,6 @@ export function SearchContent({ query, initialArticles, ads = [], categories = [
   const [searchInput, setSearchInput] = useState(query);
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [timeRangeFilter, setTimeRangeFilter] = useState("all");
-  const [scopeFilter, setScopeFilter] = useState("all");
   const [sortByFilter, setSortByFilter] = useState("relevant");
   
   // Show/Hide advanced filter panel
@@ -47,7 +46,6 @@ export function SearchContent({ query, initialArticles, ads = [], categories = [
     if (searchParams) {
       setCategoryFilter(searchParams.get("category") || "all");
       setTimeRangeFilter(searchParams.get("timeRange") || "all");
-      setScopeFilter(searchParams.get("scope") || "all");
       setSortByFilter(searchParams.get("sortBy") || "relevant");
     }
   }, [query, searchParams]);
@@ -73,16 +71,31 @@ export function SearchContent({ query, initialArticles, ads = [], categories = [
       if (timeRangeFilter === "year" && diffDays > 365) return false;
     }
 
-    // 3. Search Scope Filter
-    if (scopeFilter !== "all") {
-      const queryLower = query.toLowerCase().trim();
-      if (!queryLower) return true;
+    // 3. Strict matching on Title only (accent-aware contiguous substring check)
+    if (query.trim()) {
+      const q = query.trim();
+      const normalizeStr = (str: string) =>
+        str
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/đ/g, "d")
+          .replace(/Đ/g, "D")
+          .toLowerCase()
+          .trim();
 
-      if (scopeFilter === "title") {
-        return article.title.toLowerCase().includes(queryLower);
+      const normalizedQuery = normalizeStr(q);
+      const title = article.title || "";
+      const normTitle = normalizeStr(title);
+
+      if (!normTitle.includes(normalizedQuery)) {
+        return false;
       }
-      if (scopeFilter === "summary") {
-        return (article.intro || "").toLowerCase().includes(queryLower);
+
+      const hasAccents = (str: string) => normalizeStr(str) !== str.toLowerCase();
+      if (hasAccents(q)) {
+        if (!title.toLowerCase().includes(q.toLowerCase())) {
+          return false;
+        }
       }
     }
 
@@ -115,7 +128,7 @@ export function SearchContent({ query, initialArticles, ads = [], categories = [
     setVisibleList(sortedArticles.slice(0, 12));
     setExtraList(sortedArticles.slice(12));
     setHasMore(sortedArticles.length > 12);
-  }, [categoryFilter, timeRangeFilter, scopeFilter, sortByFilter, initialArticles]);
+  }, [categoryFilter, timeRangeFilter, sortByFilter, initialArticles]);
 
   const handleLoadMore = () => {
     if (loading || !hasMore) return;
@@ -139,7 +152,6 @@ export function SearchContent({ query, initialArticles, ads = [], categories = [
     if (qValue.trim()) params.set("q", qValue.trim());
     if (categoryFilter !== "all") params.set("category", categoryFilter);
     if (timeRangeFilter !== "all") params.set("timeRange", timeRangeFilter);
-    if (scopeFilter !== "all") params.set("scope", scopeFilter);
     if (sortByFilter !== "relevant") params.set("sortBy", sortByFilter);
 
     router.push(`/search?${params.toString()}`);
@@ -148,7 +160,6 @@ export function SearchContent({ query, initialArticles, ads = [], categories = [
   const handleResetFilters = () => {
     setCategoryFilter("all");
     setTimeRangeFilter("all");
-    setScopeFilter("all");
     setSortByFilter("relevant");
     
     // Also push clean query URL
@@ -157,7 +168,7 @@ export function SearchContent({ query, initialArticles, ads = [], categories = [
     }
   };
 
-  const hasActiveFilters = categoryFilter !== "all" || timeRangeFilter !== "all" || scopeFilter !== "all" || sortByFilter !== "relevant";
+  const hasActiveFilters = categoryFilter !== "all" || timeRangeFilter !== "all" || sortByFilter !== "relevant";
 
   const listPart1 = visibleList.slice(0, 6);
   const listPart2 = visibleList.slice(6);
@@ -217,7 +228,7 @@ export function SearchContent({ query, initialArticles, ads = [], categories = [
 
             {/* Filter grid collapsible */}
             {showFilters && (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-1 border-t border-gray-100">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1 border-t border-gray-100">
                 {/* Category Dropdown */}
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[9px] font-extrabold text-gray-400 uppercase tracking-wider flex items-center gap-1">
@@ -263,26 +274,6 @@ export function SearchContent({ query, initialArticles, ads = [], categories = [
                   </div>
                 </div>
 
-                {/* Search Scope Dropdown */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[9px] font-extrabold text-gray-400 uppercase tracking-wider flex items-center gap-1">
-                    <AlertCircle size={10} />
-                    Phạm vi tìm
-                  </label>
-                  <div className="relative">
-                    <select
-                      value={scopeFilter}
-                      onChange={(e) => setScopeFilter(e.target.value)}
-                      className="w-full bg-white border border-gray-200 rounded-lg pl-3 pr-8 py-2 text-xs font-bold text-gray-700 outline-none focus:border-[#df3232] focus:ring-2 focus:ring-[#df3232]/10 transition-all cursor-pointer appearance-none shadow-sm"
-                    >
-                      <option value="all">Toàn bộ bài viết</option>
-                      <option value="title">Chỉ tiêu đề</option>
-                      <option value="summary">Chỉ tóm tắt</option>
-                    </select>
-                    <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={13} />
-                  </div>
-                </div>
-
                 {/* Sort By Dropdown */}
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[9px] font-extrabold text-gray-400 uppercase tracking-wider flex items-center gap-1">
@@ -323,12 +314,7 @@ export function SearchContent({ query, initialArticles, ads = [], categories = [
                       <button onClick={() => setTimeRangeFilter("all")} className="hover:text-black font-extrabold ml-0.5">×</button>
                     </span>
                   )}
-                  {scopeFilter !== "all" && (
-                    <span className="bg-amber-50 text-amber-600 border border-amber-100 rounded-full px-2.5 py-0.5 text-[10px] font-bold flex items-center gap-1">
-                      Phạm vi: {scopeFilter === "title" ? "Chỉ tiêu đề" : "Chỉ tóm tắt"}
-                      <button onClick={() => setScopeFilter("all")} className="hover:text-black font-extrabold ml-0.5">×</button>
-                    </span>
-                  )}
+
                   {sortByFilter !== "relevant" && (
                     <span className="bg-purple-50 text-purple-600 border border-purple-100 rounded-full px-2.5 py-0.5 text-[10px] font-bold flex items-center gap-1">
                       Sắp xếp: {sortByFilter === "newest" ? "Mới nhất" : sortByFilter === "oldest" ? "Cũ nhất" : "Xem nhiều nhất"}

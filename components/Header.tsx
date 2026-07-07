@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Mail, Menu, Search, X, ChevronRight, Loader2 } from "lucide-react";
 import type { SiteSettings, SocialLink, NavigationItem } from "@/lib/types/news";
 
@@ -47,6 +47,7 @@ function ZaloIcon({ className = "h-4 w-4" }: { className?: string }) {
 export function Header({ brand, categories }: HeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const utilityLink = brand.utilityLinks[0];
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -65,6 +66,7 @@ export function Header({ brand, categories }: HeaderProps) {
   const mobileDrawerRef = useRef<HTMLDivElement>(null);
 
   // Highlight helper function for search suggestions (accent-insensitive)
+  // Centers the visible text around the matched keyword if the title is very long
   const highlightText = (text: string, highlight: string) => {
     if (!highlight.trim()) return <span>{text}</span>;
     
@@ -78,11 +80,63 @@ export function Header({ brand, categories }: HeaderProps) {
       .replace(/[yỳýỷỹỵYỲÝỶỸỴ]/g, "[yỳýỷỹỵYỲÝỶỸỴ]")
       .replace(/[dđDĐ]/g, "[dđDĐ]");
 
+    const maxLen = 50;
+    const highlightLen = highlight.length;
+
+    let snippet = text;
+    let prefix = "";
+    let suffix = "";
+
+    if (text.length > maxLen) {
+      try {
+        const regex = new RegExp(`(${pattern})`, "gi");
+        const match = regex.exec(text);
+        const idx = match ? match.index : -1;
+
+        if (idx !== -1) {
+          let start = Math.max(0, idx - 18);
+          let end = Math.min(text.length, idx + highlightLen + 28);
+
+          if (start === 0) {
+            end = Math.min(text.length, maxLen);
+          }
+          if (end === text.length) {
+            start = Math.max(0, text.length - maxLen);
+          }
+
+          snippet = text.slice(start, end);
+
+          if (start > 0) {
+            const firstSpace = snippet.indexOf(" ");
+            if (firstSpace !== -1 && firstSpace < 12) {
+              snippet = snippet.slice(firstSpace + 1);
+            }
+            prefix = "... ";
+          }
+
+          if (end < text.length) {
+            const lastSpace = snippet.lastIndexOf(" ");
+            if (lastSpace !== -1 && snippet.length - lastSpace < 12) {
+              snippet = snippet.slice(0, lastSpace);
+            }
+            suffix = " ...";
+          }
+        } else {
+          snippet = text.slice(0, maxLen);
+          suffix = " ...";
+        }
+      } catch (e) {
+        snippet = text.slice(0, maxLen);
+        suffix = " ...";
+      }
+    }
+
     try {
       const regex = new RegExp(`(${pattern})`, "gi");
-      const parts = text.split(regex);
+      const parts = snippet.split(regex);
       return (
         <span>
+          {prefix && <span className="text-gray-400 font-normal">{prefix}</span>}
           {parts.map((part, i) =>
             regex.test(part) ? (
               <mark key={i} className="bg-yellow-100 text-gray-900 font-bold px-0.5 rounded-sm">
@@ -92,10 +146,11 @@ export function Header({ brand, categories }: HeaderProps) {
               <span key={i}>{part}</span>
             )
           )}
+          {suffix && <span className="text-gray-400 font-normal">{suffix}</span>}
         </span>
       );
     } catch (e) {
-      return <span>{text}</span>;
+      return <span>{prefix + snippet + suffix}</span>;
     }
   };
 
@@ -135,6 +190,19 @@ export function Header({ brand, categories }: HeaderProps) {
     };
   }, [showSuggestionsFor]);
 
+  // Sync search input query state with URL when navigating
+  useEffect(() => {
+    if (pathname === "/search") {
+      const q = searchParams?.get("q") || "";
+      setQuery(q);
+    } else {
+      setQuery("");
+    }
+    setShowSuggestionsFor(null);
+    setMobileSearchOpen(false);
+    setMobileMenuOpen(false);
+  }, [pathname, searchParams]);
+
   // Debounced fetch search suggestions
   useEffect(() => {
     if (!query.trim()) {
@@ -142,26 +210,36 @@ export function Header({ brand, categories }: HeaderProps) {
       return;
     }
 
+    let active = true;
     setIsLoading(true);
     const delayDebounce = setTimeout(async () => {
       try {
         const res = await fetch(`/api/search?q=${encodeURIComponent(query.trim())}&limit=5`);
-        if (res.ok) {
+        if (res.ok && active) {
           const data = await res.json();
-          if (data && data.success && data.data && Array.isArray(data.data.items)) {
-            setSuggestions(data.data.items);
-          } else {
-            setSuggestions([]);
+          if (active) {
+            if (data && data.success && data.data && Array.isArray(data.data.items)) {
+              setSuggestions(data.data.items);
+            } else {
+              setSuggestions([]);
+            }
           }
         }
       } catch (err) {
-        console.error("Error fetching search suggestions:", err);
+        if (active) {
+          console.error("Error fetching search suggestions:", err);
+        }
       } finally {
-        setIsLoading(false);
+        if (active) {
+          setIsLoading(false);
+        }
       }
     }, 250);
 
-    return () => clearTimeout(delayDebounce);
+    return () => {
+      active = false;
+      clearTimeout(delayDebounce);
+    };
   }, [query]);
 
   // Handle click on suggestions or navigation completion
