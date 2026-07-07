@@ -110,6 +110,7 @@ const getSiteSettingsCached = unstable_cache(
         settings: {
           brand: {
             name: data?.brand?.name || "WebTinTuc",
+            logo_url: data?.brand?.logo_url || null,
             tagline: data?.brand?.tagline || "",
             footerDescription: data?.brand?.footerDescription || "",
             copyright: data?.brand?.copyright || "",
@@ -119,6 +120,11 @@ const getSiteSettingsCached = unstable_cache(
           },
           footer: {
             columns: data?.footer?.columns || [],
+            address: data?.footer?.address || "",
+            phone: data?.footer?.phone || "",
+            email: data?.footer?.email || "",
+            license: data?.footer?.license || "",
+            responsible: data?.footer?.responsible || "",
           }
         },
         categories: dynamicPrimaryLinks
@@ -127,8 +133,8 @@ const getSiteSettingsCached = unstable_cache(
       console.error("Failed to fetch settings:", error);
       return {
         settings: {
-          brand: { name: "WebTinTuc", tagline: "", footerDescription: "", copyright: "", searchPlaceholder: "Tìm kiếm...", utilityLinks: [], socialLinks: [] },
-          footer: { columns: [] }
+          brand: { name: "WebTinTuc", logo_url: null, tagline: "", footerDescription: "", copyright: "", searchPlaceholder: "Tìm kiếm...", utilityLinks: [], socialLinks: [] },
+          footer: { columns: [], address: "", phone: "", email: "", license: "", responsible: "" }
         },
         categories: []
       };

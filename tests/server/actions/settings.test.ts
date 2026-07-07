@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
 
 vi.mock('@/server/services/site-settings.service', () => ({
   updateSiteSettings: vi.fn(),
@@ -28,6 +28,8 @@ describe('settingsActions', () => {
     if (result.success) {
       expect(result.data.id).toBe(1)
     }
+    expect(revalidateTag).toHaveBeenCalledWith('site-settings')
+    expect(revalidateTag).toHaveBeenCalledWith('settings')
     expect(revalidatePath).toHaveBeenCalledWith('/')
   })
 })

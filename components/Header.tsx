@@ -312,9 +312,13 @@ export function Header({ brand, categories }: HeaderProps) {
 
         {/* Center: Brand Logo */}
         <Link href="/" prefetch={true} className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center font-extrabold text-[#df3232] text-sm shadow-sm">
-            {brand.name.slice(0, 1).toUpperCase()}
-          </div>
+          {brand.logo_url ? (
+            <img src={brand.logo_url} alt={brand.name} className="h-8 w-auto object-contain" />
+          ) : (
+            <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center font-extrabold text-[#df3232] text-sm shadow-sm">
+              {brand.name.slice(0, 1).toUpperCase()}
+            </div>
+          )}
           <div className="flex flex-col">
             <span className="text-white font-extrabold text-[12px] tracking-wider uppercase leading-none">
               {brand.name}
@@ -428,7 +432,13 @@ export function Header({ brand, categories }: HeaderProps) {
           prefetch={true}
           className="bg-[#df3232] text-white flex items-center gap-2 md:gap-3 px-3 md:px-5 py-2 md:py-3.5 min-w-[115px] md:min-w-[220px] flex-shrink-0"
         >
-          <div className="w-6 h-6 md:w-9 md:h-9 rounded-full bg-white flex-shrink-0" />
+          {brand.logo_url ? (
+            <img src={brand.logo_url} alt={brand.name} className="h-8 md:h-10 w-auto object-contain flex-shrink-0" />
+          ) : (
+            <div className="w-6 h-6 md:w-9 md:h-9 rounded-full bg-white flex-shrink-0 flex items-center justify-center font-extrabold text-[#df3232] text-xs md:text-base" >
+              {brand.name.slice(0, 1).toUpperCase()}
+            </div>
+          )}
           <div className="flex flex-col justify-center">
             <span className="text-white font-extrabold text-[11px] md:text-[15px] leading-[1.1] tracking-wider uppercase">
               {brand.name}
@@ -670,9 +680,13 @@ export function Header({ brand, categories }: HeaderProps) {
             {/* Header branding & close button */}
             <div className="flex items-center justify-between pb-4 border-b border-white/10">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-[#df3232] flex items-center justify-center font-extrabold text-white text-base shadow-inner">
-                  {brand.name.slice(0, 1).toUpperCase()}
-                </div>
+                {brand.logo_url ? (
+                  <img src={brand.logo_url} alt={brand.name} className="h-8 w-auto object-contain" />
+                ) : (
+                  <div className="w-8 h-8 rounded-lg bg-[#df3232] flex items-center justify-center font-extrabold text-white text-base shadow-inner">
+                    {brand.name.slice(0, 1).toUpperCase()}
+                  </div>
+                )}
                 <div className="flex flex-col">
                   <span className="text-white font-extrabold text-xs tracking-wider uppercase leading-none">
                     {brand.name}

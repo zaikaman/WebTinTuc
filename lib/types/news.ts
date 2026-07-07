@@ -54,6 +54,7 @@ export interface FooterColumn {
 export interface SiteSettings {
   brand: {
     name: string;
+    logo_url?: string | null;
     tagline: string;
     footerDescription: string;
     copyright: string;
@@ -63,5 +64,11 @@ export interface SiteSettings {
   };
   footer: {
     columns: FooterColumn[];
+    address?: string;
+    phone?: string;
+    email?: string;
+    license?: string;
+    responsible?: string;
   };
 }
+

@@ -3409,7 +3409,17 @@ export default function AdminDashboard() {
         <div>
           {/* Logo Brand Header */}
           <div className="flex items-center gap-3.5 mb-10 mt-2">
-            <div className="w-[50px] h-[50px] bg-[#d9d9d9] rounded-full flex-shrink-0 border-2 border-white/25 shadow-sm" />
+            {logoUrl ? (
+              <img
+                src={logoUrl}
+                alt="Logo"
+                className="w-[50px] h-[50px] rounded-full flex-shrink-0 border-2 border-white/25 shadow-sm object-contain bg-white p-0.5"
+              />
+            ) : (
+              <div className="w-[50px] h-[50px] bg-[#cb4643] rounded-full flex-shrink-0 border-2 border-white/25 shadow-sm flex items-center justify-center font-black text-white text-lg">
+                {(logoWebsiteName || "W").slice(0, 1).toUpperCase()}
+              </div>
+            )}
             <span className="font-extrabold text-[22px] tracking-tight drop-shadow-sm">{logoWebsiteName || "Logo"}</span>
             <button
               onClick={() => setSidebarOpen(false)}
@@ -4045,26 +4055,46 @@ export default function AdminDashboard() {
                       type="file"
                       id="logo-upload-input"
                       accept="image/*"
-                      onChange={(e) => {
+                      onChange={async (e) => {
                         const file = e.target.files?.[0];
                         if (file) {
-                          const reader = new FileReader();
-                          reader.onload = () => {
-                            setLogoUrl(reader.result as string);
-                            toast.success("Đã chọn ảnh logo mới!");
-                          };
-                          reader.readAsDataURL(file);
+                          toast.loading("Đang tải ảnh logo lên...", { id: "upload-logo" });
+                          try {
+                            const formData = new FormData();
+                            formData.append("file", file);
+                            formData.append("folder", "settings");
+                            const res = await uploadAdminMedia(formData);
+                            if (res && res.url) {
+                              setLogoUrl(res.url);
+                              toast.success("Đã tải logo lên thành công!", { id: "upload-logo" });
+                            } else {
+                              throw new Error("Không nhận được URL từ server");
+                            }
+                          } catch (err: any) {
+                            toast.error("Tải logo thất bại: " + (err.message || err), { id: "upload-logo" });
+                          }
                         }
                       }}
                       className="hidden"
                     />
-                    <button
-                      type="button"
-                      onClick={() => document.getElementById("logo-upload-input")?.click()}
-                      className="text-[#E55956] hover:text-[#cb4643] text-xs font-bold transition-colors mt-2 cursor-pointer"
-                    >
-                      Đổi logo
-                    </button>
+                    <div className="flex flex-col items-center gap-1 mt-2">
+                      <button
+                        type="button"
+                        onClick={() => document.getElementById("logo-upload-input")?.click()}
+                        className="text-[#E55956] hover:text-[#cb4643] text-xs font-bold transition-colors cursor-pointer"
+                      >
+                        Đổi logo
+                      </button>
+                      {logoUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setLogoUrl(null)}
+                          className="text-red-500 hover:text-red-600 text-xs font-bold transition-colors cursor-pointer"
+                        >
+                          Xóa logo
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   {/* Logo name input */}

@@ -11,6 +11,7 @@ process.env.NEXT_PUBLIC_R2_PUBLIC_URL = 'https://test.r2.dev'
 // Mock Next.js cache
 vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
+  revalidateTag: vi.fn(),
   unstable_cache: vi.fn((fn) => fn),
 }))
 
