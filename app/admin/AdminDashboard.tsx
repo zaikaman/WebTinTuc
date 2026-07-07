@@ -3356,6 +3356,9 @@ export default function AdminDashboard() {
                             const imgEl = wrapper.querySelector("img");
                             if (imgEl) {
                               imgEl.src = res.url;
+                              if (editorRef.current) {
+                                setPostContent(editorRef.current.innerHTML);
+                              }
                               const ed = wrapper.closest("[contenteditable]");
                               if (ed) ed.dispatchEvent(new Event("input", { bubbles: true }));
                             }

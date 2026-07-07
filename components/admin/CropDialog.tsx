@@ -186,6 +186,12 @@ export default function CropDialog({
           if (imgEl) {
             imgEl.src = res.url;
             imgEl.dispatchEvent(new Event('load'));
+            
+            // Dispatch input event to contenteditable parent to sync React state
+            const ed = imgEl.closest('[contenteditable]');
+            if (ed) {
+              ed.dispatchEvent(new Event('input', { bubbles: true }));
+            }
           }
           toast.success("Cắt ảnh thành công!", { id: "crop-save" });
           onOpenChange(false);
