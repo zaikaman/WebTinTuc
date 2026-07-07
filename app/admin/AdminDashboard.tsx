@@ -3089,10 +3089,14 @@ export default function AdminDashboard() {
                   className="relative max-w-full max-h-[300px] select-none"
                 >
                   <img 
-                    src={cropImageUrl} 
+                    src={cropImageUrl && (cropImageUrl.startsWith("http://") || cropImageUrl.startsWith("https://"))
+                      ? `/api/admin/proxy-image?url=${encodeURIComponent(cropImageUrl)}`
+                      : cropImageUrl
+                    } 
                     alt="Source image to crop" 
                     className="max-w-full max-h-[300px] object-contain select-none pointer-events-none" 
                     draggable={false}
+                    crossOrigin="anonymous"
                   />
                   {/* Draggable & Resizable crop selection overlay */}
                   <div 
@@ -3320,7 +3324,9 @@ export default function AdminDashboard() {
                 onClick={() => {
                   const img = new Image();
                   img.crossOrigin = "anonymous";
-                  img.src = cropImageUrl;
+                  img.src = cropImageUrl && (cropImageUrl.startsWith("http://") || cropImageUrl.startsWith("https://"))
+                    ? `/api/admin/proxy-image?url=${encodeURIComponent(cropImageUrl)}`
+                    : cropImageUrl;
                   img.onload = () => {
                     const canvas = document.createElement("canvas");
                     const ctx = canvas.getContext("2d");

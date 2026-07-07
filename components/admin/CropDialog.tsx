@@ -226,11 +226,15 @@ export default function CropDialog({
             onTouchStart={handleMouseDown}
           >
             <img
-              src={cropImageUrl}
+              src={cropImageUrl && (cropImageUrl.startsWith("http://") || cropImageUrl.startsWith("https://"))
+                ? `/api/admin/proxy-image?url=${encodeURIComponent(cropImageUrl)}`
+                : cropImageUrl
+              }
               alt="Crop preview"
               className="w-full h-auto select-none"
               draggable={false}
               style={{ pointerEvents: 'none' }}
+              crossOrigin="anonymous"
             />
             {/* Crop overlay */}
             <div
