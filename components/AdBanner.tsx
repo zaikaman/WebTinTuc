@@ -28,28 +28,21 @@ export default function AdBanner({
   className = "",
 }: AdBannerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [selectedAd, setSelectedAd] = useState<Ad | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
   const [isInView, setIsInView] = useState(false);
   const [recordedImpressions, setRecordedImpressions] = useState<number[]>([]);
 
   // Lấy danh sách tất cả quảng cáo active cho vị trí này
   const activeAds = ads.filter((a) => a.position === position && a.status === "active");
 
-  // Xử lý slider
   useEffect(() => {
-    if (activeAds.length <= 1) return;
-    
-    // Đổi slide mỗi 6 giây (6000ms)
-    const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % activeAds.length);
-    }, 6000);
-    
-    return () => clearInterval(interval);
-  }, [activeAds.length]);
-
-  const currentAd = activeAds.length > 0 ? activeAds[currentIndex] : null;
-  const finalImg = currentAd?.media_key || fallbackImg;
-  const adId = currentAd?.id;
+    setIsMounted(true);
+    if (activeAds.length > 0) {
+      const randomIndex = Math.floor(Math.random() * activeAds.length);
+      setSelectedAd(activeAds[randomIndex]);
+    }
+  }, [activeAds]);
 
   // Intersection Observer để kiểm tra xem Banner có nằm trong Viewport không
   useEffect(() => {
@@ -69,6 +62,8 @@ export default function AdBanner({
       observer.disconnect();
     };
   }, []);
+
+  const adId = selectedAd?.id;
 
   // Ghi nhận Impression khi Ad hiện tại đang trong Viewport và chưa được ghi nhận
   useEffect(() => {
@@ -93,75 +88,52 @@ export default function AdBanner({
     }
   };
 
-  if (!finalImg && !currentAd?.html_code) {
+  const hasActiveAds = activeAds.length > 0;
+
+  // If no ads booked, we can render fallback immediately on server & client
+  if (!hasActiveAds && !fallbackImg) {
     return null;
   }
 
-  return (
-    <div ref={containerRef} className={`relative group overflow-hidden ${className}`}>
-      {/* Container của các slides để tạo hiệu ứng chuyển động mượt mà */}
-      <div 
-        className="flex w-full h-full transition-transform duration-700 ease-in-out"
-        style={{ transform: `translateX(-${currentIndex * 100}%)` }}
-      >
-        {activeAds.length > 0 ? (
-          activeAds.map((ad) => (
-            <div key={ad.id} className="w-full h-full flex-shrink-0">
-              {ad.type === "html" && ad.html_code ? (
-                <div 
-                  className="w-full h-full"
-                  dangerouslySetInnerHTML={{ __html: ad.html_code }}
-                  onClick={() => handleClick(ad.id)}
-                />
-              ) : (
-                <a 
-                  href={ad.target_url || fallbackLink} 
-                  className="block w-full h-full" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  onClick={() => handleClick(ad.id)}
-                >
-                  <img
-                    src={ad.media_key || fallbackImg}
-                    alt={`Quảng cáo ${position}`}
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                </a>
-              )}
-            </div>
-          ))
-        ) : (
-          <div className="w-full h-full flex-shrink-0">
-            <a 
-              href={fallbackLink} 
-              className="block w-full h-full" 
-              target="_blank" 
-              rel="noopener noreferrer"
-            >
-              <img
-                src={fallbackImg}
-                alt={`Quảng cáo ${position}`}
-                className="w-full h-full object-cover"
-                loading="lazy"
-                decoding="async"
-              />
-            </a>
-          </div>
-        )}
-      </div>
+  // Render a skeleton/blank placeholder on server to prevent hydration mismatch
+  if (hasActiveAds && !isMounted) {
+    return (
+      <div className={`relative overflow-hidden bg-gray-50/50 animate-pulse ${className}`} />
+    );
+  }
 
-      {/* Hiển thị dots nếu có nhiều hơn 1 quảng cáo */}
-      {activeAds.length > 1 && (
-        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5 z-20">
-          {activeAds.map((_, idx) => (
-            <div 
-              key={idx}
-              className={`w-1.5 h-1.5 rounded-full transition-all ${idx === currentIndex ? "bg-white w-3" : "bg-white/50"}`}
+  const finalImg = selectedAd?.media_key || fallbackImg;
+  const finalLink = selectedAd?.target_url || fallbackLink;
+
+  return (
+    <div 
+      ref={containerRef} 
+      className={`relative group overflow-hidden ${className} transition-opacity duration-300`}
+    >
+      {selectedAd?.type === "html" && selectedAd.html_code ? (
+        <div 
+          className="w-full h-full"
+          dangerouslySetInnerHTML={{ __html: selectedAd.html_code }}
+          onClick={() => handleClick(selectedAd.id)}
+        />
+      ) : (
+        <a 
+          href={finalLink} 
+          className="block w-full h-full" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          onClick={() => handleClick(selectedAd?.id)}
+        >
+          {finalImg && (
+            <img
+              src={finalImg}
+              alt={`Quảng cáo ${position}`}
+              className="w-full h-full object-cover"
+              loading="lazy"
+              decoding="async"
             />
-          ))}
-        </div>
+          )}
+        </a>
       )}
 
       <div className="absolute top-1.5 right-1.5 bg-black/45 hover:bg-black/75 text-white/90 text-[9px] px-1.5 py-0.5 cursor-pointer rounded-sm select-none z-10 transition-colors">

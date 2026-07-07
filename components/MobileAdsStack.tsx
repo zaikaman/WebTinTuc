@@ -22,6 +22,8 @@ export default function MobileAdsStack({ ads = [] }: MobileAdsStackProps) {
   const [activeIndex, setActiveIndex] = useState(1); // Default to middle card (index 1)
   const [isInView, setIsInView] = useState(false);
   const [recordedImpressions, setRecordedImpressions] = useState<number[]>([]);
+  const [isMounted, setIsMounted] = useState(false);
+  const [resolvedAds, setResolvedAds] = useState<{ [pos: string]: Ad | null }>({});
 
   // 3 ad positions defined for the stack
   const adPositions = [
@@ -30,12 +32,27 @@ export default function MobileAdsStack({ ads = [] }: MobileAdsStackProps) {
     { position: "sidebar_3", fallbackImg: "/zento_toilet_ad.webp", alt: "Quảng cáo 3" },
   ];
 
+  useEffect(() => {
+    setIsMounted(true);
+    const resolved: { [pos: string]: Ad | null } = {};
+    adPositions.forEach((pos) => {
+      const activeAdsForPos = ads.filter((a) => a.position === pos.position && a.status === "active");
+      if (activeAdsForPos.length > 0) {
+        const randomIndex = Math.floor(Math.random() * activeAdsForPos.length);
+        resolved[pos.position] = activeAdsForPos[randomIndex];
+      } else {
+        resolved[pos.position] = null;
+      }
+    });
+    setResolvedAds(resolved);
+  }, [ads]);
+
   // Resolve active ads from DB or fallback
   const items = adPositions.map((pos) => {
-    const activeAd = ads.find((a) => a.position === pos.position && a.status === "active");
+    const activeAd = resolvedAds[pos.position] || null;
     return {
       ...pos,
-      ad: activeAd || null,
+      ad: activeAd,
     };
   });
 
@@ -155,6 +172,12 @@ export default function MobileAdsStack({ ads = [] }: MobileAdsStackProps) {
       boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)",
     };
   };
+
+  if (!isMounted) {
+    return (
+      <div className="md:hidden w-full h-[320px] bg-gray-50/50 animate-pulse my-4 rounded-lg" />
+    );
+  }
 
   return (
     <div
