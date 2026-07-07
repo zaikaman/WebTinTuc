@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Clock } from "lucide-react";
 import type { Article } from "@/lib/types/news";
-import { formatCategory } from "@/lib/utils";
+import { formatCategory, formatVietnameseDate } from "@/lib/utils";
 import { FeaturedCarousel } from "@/components/FeaturedCarousel";
 import AdBanner from "@/components/AdBanner";
 import MobileAdsStack from "@/components/MobileAdsStack";
@@ -96,13 +96,10 @@ export function CategoryContent({ featured, initialList, ads = [] }: CategoryCon
                   <div className="flex items-center gap-1.5 text-gray-400 font-semibold text-[10px] mt-1">
                     <span className="text-[#df3232] font-bold">{formatCategory(item.category)}</span>
                     <span className="text-gray-200 font-normal">|</span>
-                    <span>{item.time.split(" ")[0]}</span>
-                    {item.time.includes(" ") && (
-                      <>
-                        <Clock size={11} className="text-gray-400 flex-shrink-0 -mt-0.5" />
-                        <span className="font-normal">{item.time.split(" ")[1]}</span>
-                      </>
-                    )}
+                    <span className="flex items-center gap-1">
+                      <Clock size={11} className="text-gray-400 flex-shrink-0 -mt-0.5" />
+                      <span>{formatVietnameseDate(item.time)}</span>
+                    </span>
                   </div>
                 </div>
               </Link>
@@ -141,13 +138,10 @@ export function CategoryContent({ featured, initialList, ads = [] }: CategoryCon
                   <div className="flex items-center gap-1.5 text-gray-400 font-semibold text-[10px] mt-1">
                     <span className="text-[#df3232] font-bold">{formatCategory(item.category)}</span>
                     <span className="text-gray-200 font-normal">|</span>
-                    <span>{item.time.split(" ")[0]}</span>
-                    {item.time.includes(" ") && (
-                      <>
-                        <Clock size={11} className="text-gray-400 flex-shrink-0 -mt-0.5" />
-                        <span className="font-normal">{item.time.split(" ")[1]}</span>
-                      </>
-                    )}
+                    <span className="flex items-center gap-1">
+                      <Clock size={11} className="text-gray-400 flex-shrink-0 -mt-0.5" />
+                      <span>{formatVietnameseDate(item.time)}</span>
+                    </span>
                   </div>
                 </div>
               </Link>

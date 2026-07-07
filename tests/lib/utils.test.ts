@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { cn, formatCategory } from '@/lib/utils'
+import { cn, formatCategory, formatVietnameseDate } from '@/lib/utils'
 
 describe('cn', () => {
   it('merges class names', () => {
@@ -44,3 +44,20 @@ describe('formatCategory', () => {
     expect(formatCategory('')).toBe('')
   })
 })
+
+describe('formatVietnameseDate', () => {
+  it('formats UTC ISO strings to ICT (GMT+7) date time format', () => {
+    // 2026-07-01 17:05:55.625 UTC -> 2026-07-02 00:05:55.625 ICT
+    expect(formatVietnameseDate('2026-07-01T17:05:55.625Z')).toBe('00:05 - 02/07/2026')
+  })
+
+  it('formats ICT ISO strings correctly', () => {
+    expect(formatVietnameseDate('2026-07-08T00:24:36+07:00')).toBe('00:24 - 08/07/2026')
+  })
+
+  it('handles invalid date strings gracefully by returning original input', () => {
+    expect(formatVietnameseDate('not-a-date')).toBe('not-a-date')
+    expect(formatVietnameseDate('')).toBe('')
+  })
+})
+

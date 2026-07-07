@@ -8,7 +8,7 @@ import {
   getPublicAds,
 } from "@/lib/api/news";
 import { Clock, Link2, Star } from "lucide-react";
-import { formatCategory } from "@/lib/utils";
+import { formatCategory, formatVietnameseDate } from "@/lib/utils";
 import AdBanner from "@/components/AdBanner";
 import MobileAdsStack from "@/components/MobileAdsStack";
 import ViewTracker from "@/components/ViewTracker";
@@ -187,13 +187,10 @@ export default async function PostDetailPage({ params }: PageProps) {
                 {formatCategory(article.category)}
               </Link>
               <span className="text-gray-300">&#8226;</span>
-              <span className="text-[11px]">{article.time.split(" ")[0]}</span>
-              {article.time.includes(" ") && (
-                <>
-                  <Clock size={11} className="text-gray-400 ml-1.5" />
-                  <span className="text-[11px] font-normal">{article.time.split(" ")[1]}</span>
-                </>
-              )}
+              <span className="flex items-center gap-1 text-[11px]">
+                <Clock size={11} className="text-gray-400" />
+                <span>{formatVietnameseDate(article.time)}</span>
+              </span>
             </div>
 
             {/* Title */}
@@ -341,13 +338,10 @@ export default async function PostDetailPage({ params }: PageProps) {
                             {formatCategory(item.category)}
                           </Link>
                           <span className="text-gray-300">&#8226;</span>
-                          <span className="text-gray-400 font-normal">{item.time.split(" ")[0]}</span>
-                          {item.time.includes(" ") && (
-                            <>
-                              <Clock size={10} className="text-gray-400 ml-1" />
-                              <span className="text-gray-400 font-normal">{item.time.split(" ")[1]}</span>
-                            </>
-                          )}
+                          <span className="flex items-center gap-1 text-gray-400 font-normal">
+                            <Clock size={10} className="text-gray-400" />
+                            <span>{formatVietnameseDate(item.time)}</span>
+                          </span>
                         </div>
                       </div>
                     );
@@ -395,13 +389,10 @@ export default async function PostDetailPage({ params }: PageProps) {
                             {formatCategory(item.category)}
                           </Link>
                           <span className="text-gray-300">&#8226;</span>
-                          <span className="text-gray-400 font-normal">{item.time.split(" ")[0]}</span>
-                          {item.time.includes(" ") && (
-                            <>
-                              <Clock size={10} className="text-gray-400 ml-1" />
-                              <span className="text-gray-400 font-normal">{item.time.split(" ")[1]}</span>
-                            </>
-                          )}
+                          <span className="flex items-center gap-1 text-gray-400 font-normal">
+                            <Clock size={10} className="text-gray-400" />
+                            <span>{formatVietnameseDate(item.time)}</span>
+                          </span>
                         </div>
                       </div>
                     );

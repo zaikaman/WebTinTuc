@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
 
-import { formatCategory } from "@/lib/utils";
+import { formatCategory, formatVietnameseDate } from "@/lib/utils";
 import type { Article } from "@/lib/types/news";
 
 interface FeaturedCarouselProps {
@@ -143,13 +143,10 @@ export function FeaturedCarousel({ articles }: FeaturedCarouselProps) {
             {formatCategory(currentArticle.category)}
           </Link>
           <span className="text-gray-300">&#8226;</span>
-          <span>{currentArticle.time.split(" ")[0]}</span>
-          {currentArticle.time.includes(" ") && (
-            <span className="flex items-center gap-0.5 ml-1 text-gray-400">
-              <Clock size={11} className="mr-0.5" />
-              <span>{currentArticle.time.split(" ")[1]}</span>
-            </span>
-          )}
+          <span className="flex items-center gap-1 text-gray-400">
+            <Clock size={11} className="mr-0.5" />
+            <span>{formatVietnameseDate(currentArticle.time)}</span>
+          </span>
         </div>
 
         {/* Title Link */}

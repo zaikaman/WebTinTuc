@@ -119,7 +119,7 @@ describe('getSiteSettings', () => {
 
     expect(result.settings.brand.name).toBe('MySite')
     expect(result.categories).toHaveLength(2)
-    expect(result.categories[0]).toEqual({ label: 'TIN TỨC', href: '/tin-tuc' })
+    expect(result.categories[0]).toEqual({ label: 'Tin tức', href: '/tin-tuc' })
   })
 
   it('returns fallback defaults on error', async () => {
@@ -149,7 +149,7 @@ describe('getSiteSettings', () => {
     const { getSiteSettings } = await import('@/lib/api/news')
     const result = await getSiteSettings()
 
-    expect(result.categories).toHaveLength(6)
+    expect(result.categories).toHaveLength(10)
   })
 })
 

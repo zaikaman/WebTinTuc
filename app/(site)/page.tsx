@@ -3,7 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { getHomeFeed } from "@/lib/api/news";
 import { Clock } from "lucide-react";
-import { formatCategory } from "@/lib/utils";
+import { formatCategory, formatVietnameseDate } from "@/lib/utils";
 import { FeaturedCarousel } from "@/components/FeaturedCarousel";
 import { getPublicAds } from "@/lib/api/news";
 import AdBanner from "@/components/AdBanner";
@@ -147,13 +147,10 @@ export default async function HomePage() {
                             {formatCategory(article.category)}
                           </Link>
                           <span className="text-gray-300">&#8226;</span>
-                          <span>{article.time.split(" ")[0]}</span>
-                          {article.time.includes(" ") && (
-                            <span className="flex items-center gap-0.5 ml-1 text-gray-400">
-                              <Clock size={11} className="mr-0.5" />
-                              <span>{article.time.split(" ")[1]}</span>
-                            </span>
-                          )}
+                          <span className="flex items-center gap-1 text-gray-400">
+                            <Clock size={11} className="mr-0.5" />
+                            <span>{formatVietnameseDate(article.time)}</span>
+                          </span>
                         </div>
                       </div>
                     </div>
