@@ -10,6 +10,7 @@ import {
 import { Clock, Link2, Star } from "lucide-react";
 import { formatCategory } from "@/lib/utils";
 import AdBanner from "@/components/AdBanner";
+import MobileAdsStack from "@/components/MobileAdsStack";
 import ViewTracker from "@/components/ViewTracker";
 
 export const revalidate = 60;
@@ -294,27 +295,8 @@ export default async function PostDetailPage({ params }: PageProps) {
                 className="hidden md:flex w-full rounded border border-gray-200 bg-gray-50 shadow-sm overflow-hidden aspect-[650/300]" 
               />
 
-              {/* Mobile View: Swipable vertical ads */}
-              <div className="flex md:hidden gap-3.5 my-2.5 overflow-x-auto scrollbar-none snap-x snap-mandatory">
-                <AdBanner 
-                  position="sidebar_1" 
-                  ads={ads} 
-                  fallbackImg="/zento_cabinet_ad.webp" 
-                  className="w-[46%] min-w-[140px] flex-shrink-0 snap-start rounded border border-gray-200 bg-gray-50 shadow-xs overflow-hidden aspect-[300/600]" 
-                />
-                <AdBanner 
-                  position="sidebar_2" 
-                  ads={ads} 
-                  fallbackImg="/ztc_bathtub_ad.webp" 
-                  className="w-[46%] min-w-[140px] flex-shrink-0 snap-start rounded border border-gray-200 bg-gray-50 shadow-xs overflow-hidden aspect-[300/600]" 
-                />
-                <AdBanner 
-                  position="sidebar_3" 
-                  ads={ads} 
-                  fallbackImg="/zento_toilet_ad.webp" 
-                  className="w-[46%] min-w-[140px] flex-shrink-0 snap-start rounded border border-gray-200 bg-gray-50 shadow-xs overflow-hidden aspect-[300/600]" 
-                />
-              </div>
+              {/* Mobile View: Interactive Stacked Ads */}
+              <MobileAdsStack ads={ads} />
             </div>
 
             {/* Recommendations Grid */}

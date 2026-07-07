@@ -8,6 +8,7 @@ import type { Article } from "@/lib/types/news";
 import { formatCategory } from "@/lib/utils";
 import { FeaturedCarousel } from "@/components/FeaturedCarousel";
 import AdBanner from "@/components/AdBanner";
+import MobileAdsStack from "@/components/MobileAdsStack";
 
 interface CategoryContentProps {
   featured: Article;
@@ -68,51 +69,8 @@ export function CategoryContent({ featured, initialList, ads = [] }: CategoryCon
             <FeaturedCarousel articles={carouselArticles} />
           )}
 
-          {/* Swipable QC container on mobile immediately below Featured Carousel */}
-          <div className="flex gap-3.5 my-2.5 md:hidden overflow-x-auto scrollbar-none snap-x snap-mandatory">
-            <div className="w-[46%] min-w-[140px] flex-shrink-0 snap-start relative overflow-hidden rounded border border-gray-200 bg-gray-50 shadow-xs aspect-[300/600]">
-              <a href="#" className="block w-full h-full">
-                <Image
-                  src="/zento_cabinet_ad.webp"
-                  alt="Quảng cáo 1"
-                  fill
-                  sizes="(max-width: 768px) 46vw, 300px"
-                  className="object-cover"
-                />
-              </a>
-              <div className="absolute top-1 right-1 bg-black/45 text-white/90 text-[8px] px-1 py-0.5 rounded-sm select-none z-10">
-                QC
-              </div>
-            </div>
-            <div className="w-[46%] min-w-[140px] flex-shrink-0 snap-start relative overflow-hidden rounded border border-gray-200 bg-gray-50 shadow-xs aspect-[300/600]">
-              <a href="#" className="block w-full h-full">
-                <Image
-                  src="/ztc_bathtub_ad.webp"
-                  alt="Quảng cáo 2"
-                  fill
-                  sizes="(max-width: 768px) 46vw, 300px"
-                  className="object-cover"
-                />
-              </a>
-              <div className="absolute top-1 right-1 bg-black/45 text-white/90 text-[8px] px-1 py-0.5 rounded-sm select-none z-10">
-                QC
-              </div>
-            </div>
-            <div className="w-[46%] min-w-[140px] flex-shrink-0 snap-start relative overflow-hidden rounded border border-gray-200 bg-gray-50 shadow-xs aspect-[300/600]">
-              <a href="#" className="block w-full h-full">
-                <Image
-                  src="/zento_toilet_ad.webp"
-                  alt="Quảng cáo 3"
-                  fill
-                  sizes="(max-width: 768px) 46vw, 300px"
-                  className="object-cover"
-                />
-              </a>
-              <div className="absolute top-1 right-1 bg-black/45 text-white/90 text-[8px] px-1 py-0.5 rounded-sm select-none z-10">
-                QC
-              </div>
-            </div>
-          </div>
+          {/* Interactive Stacked Ads container on mobile immediately below Featured Carousel */}
+          <MobileAdsStack ads={ads} />
 
           {/* List Part 1 (First 6 items) */}
           <div className="bg-white md:border md:border-gray-200 p-0 md:p-4 rounded-sm md:shadow-sm flex flex-col gap-4">

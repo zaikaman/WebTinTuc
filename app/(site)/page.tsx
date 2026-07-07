@@ -7,6 +7,7 @@ import { formatCategory } from "@/lib/utils";
 import { FeaturedCarousel } from "@/components/FeaturedCarousel";
 import { getPublicAds } from "@/lib/api/news";
 import AdBanner from "@/components/AdBanner";
+import MobileAdsStack from "@/components/MobileAdsStack";
 
 export const revalidate = 60;
 
@@ -85,27 +86,8 @@ export default async function HomePage() {
             <FeaturedCarousel articles={carouselArticles} />
           )}
 
-          {/* Swipable QC container on mobile immediately below Featured Carousel */}
-          <div className="flex gap-3.5 my-2.5 md:hidden overflow-x-auto scrollbar-none snap-x snap-mandatory">
-            <AdBanner 
-              position="sidebar_1" 
-              ads={ads} 
-              fallbackImg="/zento_cabinet_ad.webp" 
-              className="w-[46%] min-w-[140px] flex-shrink-0 snap-start rounded border border-gray-200 bg-gray-50 shadow-xs overflow-hidden aspect-[300/600]" 
-            />
-            <AdBanner 
-              position="sidebar_2" 
-              ads={ads} 
-              fallbackImg="/ztc_bathtub_ad.webp" 
-              className="w-[46%] min-w-[140px] flex-shrink-0 snap-start rounded border border-gray-200 bg-gray-50 shadow-xs overflow-hidden aspect-[300/600]" 
-            />
-            <AdBanner 
-              position="sidebar_3" 
-              ads={ads} 
-              fallbackImg="/zento_toilet_ad.webp" 
-              className="w-[46%] min-w-[140px] flex-shrink-0 snap-start rounded border border-gray-200 bg-gray-50 shadow-xs overflow-hidden aspect-[300/600]" 
-            />
-          </div>
+          {/* Interactive Stacked Ads container on mobile immediately below Featured Carousel */}
+          <MobileAdsStack ads={ads} />
 
           {/* "MỚI NHẤT" Category Header */}
           <div className="flex items-center gap-2 border-b-2 border-[#e24a48] pb-1 mt-2 mb-1">
