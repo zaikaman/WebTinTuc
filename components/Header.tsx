@@ -52,6 +52,7 @@ export function Header({ brand, categories }: HeaderProps) {
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [desktopMenuOpen, setDesktopMenuOpen] = useState(false);
 
   // Search States
   const [query, setQuery] = useState("");
@@ -64,6 +65,8 @@ export function Header({ brand, categories }: HeaderProps) {
   const desktopSearchRef = useRef<HTMLDivElement>(null);
   const mobileSearchRef = useRef<HTMLDivElement>(null);
   const mobileDrawerRef = useRef<HTMLDivElement>(null);
+  const desktopMenuRef = useRef<HTMLDivElement>(null);
+  const desktopMenuButtonRef = useRef<HTMLButtonElement>(null);
 
   // Highlight helper function for search suggestions (accent-insensitive)
   // Centers the visible text around the matched keyword if the title is very long
@@ -182,13 +185,22 @@ export function Header({ brand, categories }: HeaderProps) {
       ) {
         setShowSuggestionsFor(null);
       }
+      if (
+        desktopMenuOpen &&
+        desktopMenuRef.current &&
+        !desktopMenuRef.current.contains(event.target as Node) &&
+        desktopMenuButtonRef.current &&
+        !desktopMenuButtonRef.current.contains(event.target as Node)
+      ) {
+        setDesktopMenuOpen(false);
+      }
     }
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [showSuggestionsFor]);
+  }, [showSuggestionsFor, desktopMenuOpen]);
 
   // Sync search input query state with URL when navigating
   useEffect(() => {
@@ -201,6 +213,7 @@ export function Header({ brand, categories }: HeaderProps) {
     setShowSuggestionsFor(null);
     setMobileSearchOpen(false);
     setMobileMenuOpen(false);
+    setDesktopMenuOpen(false);
   }, [pathname, searchParams]);
 
   // Debounced fetch search suggestions
@@ -545,7 +558,7 @@ export function Header({ brand, categories }: HeaderProps) {
         
         {/* Divided categories navigation */}
         <nav className="flex-1 flex h-full text-xs font-bold tracking-wide">
-          {categories.map((item) => {
+          {categories.slice(0, 6).map((item) => {
             const isActive = item.href ? pathname === item.href : false;
 
             return (
@@ -559,7 +572,7 @@ export function Header({ brand, categories }: HeaderProps) {
                     : "text-white hover:bg-[#333333] hover:text-[#ffd600]"
                 }`}
               >
-                <span>{item.label}</span>
+                <span>{item.label.toUpperCase()}</span>
                 {isActive && (
                   <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#df3232]" />
                 )}
@@ -568,10 +581,71 @@ export function Header({ brand, categories }: HeaderProps) {
           })}
         </nav>
 
-        {/* Hamburger menu icon in the right corner (not clickable yet) */}
-        <div className="h-full w-[48px] flex items-center justify-center border-l border-[#2d2d2d] text-white flex-shrink-0 cursor-default">
-          <Menu className="h-[18px] w-[18px]" />
-        </div>
+        {/* Hamburger menu icon in the right corner */}
+        <button
+          ref={desktopMenuButtonRef}
+          onClick={() => setDesktopMenuOpen(!desktopMenuOpen)}
+          className={`h-full w-[48px] flex items-center justify-center border-l border-[#2d2d2d] hover:bg-[#333333] transition-colors text-white flex-shrink-0 cursor-pointer ${
+            desktopMenuOpen ? "bg-[#333333]" : ""
+          }`}
+          aria-label={desktopMenuOpen ? "Close menu" : "Open menu"}
+        >
+          {desktopMenuOpen ? (
+            <X className="h-[18px] w-[18px]" />
+          ) : (
+            <Menu className="h-[18px] w-[18px]" />
+          )}
+        </button>
+
+        {/* All Categories Dropdown (Desktop only) */}
+        {desktopMenuOpen && (
+          <div
+            ref={desktopMenuRef}
+            className="hidden md:block absolute top-[38px] left-0 right-0 bg-[#333333] border-b border-[#2d2d2d] shadow-2xl z-50 origin-top overflow-hidden"
+            style={{
+              animation: "fadeInSlideDown 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards"
+            }}
+          >
+            <div className="w-full px-6 py-6 text-left">
+              {/* Header Title with vertical accent line */}
+              <div className="flex items-center gap-2 mb-5 select-none">
+                <div className="w-[3px] h-[16px] bg-[#df3232]" />
+                <h3 className="text-white text-sm font-black italic tracking-wide uppercase">
+                  Tất cả danh mục
+                </h3>
+              </div>
+
+              {/* Grid of Categories */}
+              <div className="grid grid-cols-5 gap-x-6 gap-y-3.5">
+                {categories.map((item) => {
+                  const isActive = item.href ? pathname === item.href : false;
+                  return (
+                    <Link
+                      key={item.label}
+                      href={item.href ?? "/"}
+                      prefetch={true}
+                      onClick={() => setDesktopMenuOpen(false)}
+                      className={`flex items-center text-xs font-bold transition-all duration-200 py-1 hover:translate-x-1 group ${
+                        isActive
+                          ? "text-[#df3232]"
+                          : "text-[#d1d1d1] hover:text-[#ffd600]"
+                      }`}
+                    >
+                      <span className={`mr-2.5 transition-colors duration-200 ${
+                        isActive 
+                          ? "text-[#df3232]" 
+                          : "text-white/20 group-hover:text-[#ffd600]"
+                      }`}>
+                        |
+                      </span>
+                      <span>{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Mobile Fullscreen Menu Drawer (md:hidden) */}

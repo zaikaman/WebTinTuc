@@ -94,16 +94,15 @@ const getSiteSettingsCached = unstable_cache(
     try {
       const [settingsData, categoriesData] = await Promise.all([
         siteSettingsService.getSiteSettings(),
-        categoryService.listPublicCategories(20)
+        categoryService.listPublicCategories(100)
       ]);
 
       const data = settingsData || {};
       const categoriesItems = Array.isArray(categoriesData) ? categoriesData : [];
       
       const dynamicPrimaryLinks = categoriesItems
-        .slice(0, 6)
         .map((cat: { name: string; slug: string }) => ({
-            label: cat.name.toUpperCase(),
+            label: cat.name,
             href: `/${cat.slug}`,
           }));
 
