@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { NextRequest } from 'next/server'
 import { requireAdmin } from '@/server/auth'
 import { actionResponse, fail, ok, parseQuery } from '@/server/http'

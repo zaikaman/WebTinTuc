@@ -287,8 +287,8 @@ interface Ad {
   startDate: string;
   endDate: string;
   status: "Hoạt động" | "Ngừng hoạt động" | "Chờ chạy" | "Đã kết thúc" | string;
-  image?: string;
-  link?: string;
+  image?: string | undefined;
+  link?: string | undefined;
 }
 
 interface AdminAccount {
@@ -1902,9 +1902,88 @@ export default function AdminDashboard() {
     setDeleteConfirmOpen(true);
   };
 
+  const handleCategoryPriorityChange = async (catId: number, newPriority: number) => {
+    const originalCategories = [...categories];
+    
+    // Update local state optimistically
+    setCategories(prev =>
+      prev.map(cat => (cat.id === catId ? { ...cat, priority: newPriority } : cat))
+    );
+    
+    try {
+      await updateAdminCategory(catId, { priority: newPriority });
+      toast.success("Cập nhật priority thành công!");
+    } catch (err) {
+      setCategories(originalCategories);
+      toast.error("Lỗi khi cập nhật priority!");
+      console.error(err);
+    }
+  };
+
+  const handleCategoryStatusToggle = async (cat: Category) => {
+    const originalCategories = [...categories];
+    const newStatusLabel = cat.status === "Hoạt động" ? "Ngừng hoạt động" : "Hoạt động";
+    const apiStatus = newStatusLabel === "Hoạt động" ? "active" : "inactive";
+    
+    // Update local state optimistically
+    setCategories(prev =>
+      prev.map(c => (c.id === cat.id ? { ...c, status: newStatusLabel } : c))
+    );
+    
+    try {
+      await updateAdminCategory(cat.id, { status: apiStatus });
+      toast.success(`Đã đổi trạng thái sang "${newStatusLabel}"`);
+    } catch (err) {
+      setCategories(originalCategories);
+      toast.error("Lỗi khi đổi trạng thái danh mục!");
+      console.error(err);
+    }
+  };
+
+  const handleAdStatusToggle = async (ad: Ad) => {
+    const originalAds = [...ads];
+    const isCurrentActive = ad.status === "Hoạt động" || ad.status === "Chờ chạy";
+    const nextDbStatus = isCurrentActive ? "inactive" : "active";
+    
+    // Compute optimistic status label
+    const now = new Date();
+    const startDateStr = ad.startDate ? ad.startDate.split('T')[0] : null;
+    const endDateStr = ad.endDate ? ad.endDate.split('T')[0] : null;
+    const start = startDateStr ? new Date(startDateStr + 'T00:00:00') : null;
+    const end = endDateStr ? new Date(endDateStr + 'T23:59:59') : null;
+    
+    let optimisticStatus = "Ngừng hoạt động";
+    if (nextDbStatus === "active") {
+      if (end && end < now) optimisticStatus = "Đã kết thúc";
+      else if (start && start > now) optimisticStatus = "Chờ chạy";
+      else optimisticStatus = "Hoạt động";
+    }
+    
+    // Update local state optimistically
+    setAds(prev =>
+      prev.map(a => (a.id === ad.id ? { ...a, status: optimisticStatus } : a))
+    );
+    
+    try {
+      await updateAdminAd(ad.id, { status: nextDbStatus });
+      toast.success(`Đã đổi trạng thái quảng cáo sang "${optimisticStatus}"`);
+    } catch (err) {
+      setAds(originalAds);
+      toast.error("Lỗi khi đổi trạng thái quảng cáo!");
+      console.error(err);
+    }
+  };
+
   const executeDelete = async () => {
     if (activeTab !== "accounts" && targetIdToDelete === null) return;
     if (activeTab === "accounts" && targetAccountIdToDelete === null) return;
+
+    const originalCategories = [...categories];
+    const originalAds = [...ads];
+    const originalAccounts = [...accounts];
+
+    // Close confirmation dialog immediately
+    setDeleteConfirmOpen(false);
 
     try {
       setIsDeleting(true);
@@ -1913,23 +1992,28 @@ export default function AdminDashboard() {
         toast.success("Xóa bài viết thành công!");
         loadPosts();
       } else if (activeTab === "categories" && targetIdToDelete !== null) {
-        await deleteAdminCategory(targetIdToDelete);
+        const idToDelete = targetIdToDelete;
+        setCategories(prev => prev.filter(c => c.id !== idToDelete));
+        await deleteAdminCategory(idToDelete);
         toast.success("Xóa danh mục thành công!");
-        loadCategories();
       } else if (activeTab === "ads" && targetIdToDelete !== null) {
-        await deleteAdminAd(targetIdToDelete);
+        const idToDelete = targetIdToDelete;
+        setAds(prev => prev.filter(a => a.id !== idToDelete));
+        await deleteAdminAd(idToDelete);
         toast.success("Xóa quảng cáo thành công!");
-        loadAds();
       } else if (activeTab === "accounts" && targetAccountIdToDelete !== null) {
-        await deleteAdminAccount(targetAccountIdToDelete);
+        const idToDelete = targetAccountIdToDelete;
+        setAccounts(prev => prev.filter(acc => acc.id !== idToDelete));
+        await deleteAdminAccount(idToDelete);
         toast.success("Xóa tài khoản thành công!");
-        loadAccounts();
       }
     } catch (err) {
       toast.error("Lỗi khi xóa!");
+      if (activeTab === "categories") setCategories(originalCategories);
+      if (activeTab === "ads") setAds(originalAds);
+      if (activeTab === "accounts") setAccounts(originalAccounts);
     } finally {
       setIsDeleting(false);
-      setDeleteConfirmOpen(false);
       setTargetIdToDelete(null);
       setTargetAccountIdToDelete(null);
     }
@@ -1976,30 +2060,67 @@ export default function AdminDashboard() {
         toast.error("Vui lòng nhập tên danh mục!");
         return;
       }
-      try {
-        setIsCategorySaving(true);
-        toast.loading(dialogMode === "add" ? "Đang thêm danh mục..." : "Đang cập nhật...", { id: "cat-submit" });
-        const payload = {
-          name: categoryForm.name,
-          priority: Number(categoryForm.priority) || 0,
-          status: categoryForm.status === "Hoạt động" ? "active" : "inactive"
+      const originalCategories = [...categories];
+      const payload = {
+        name: categoryForm.name,
+        priority: Number(categoryForm.priority) || 0,
+        status: categoryForm.status === "Hoạt động" ? "active" : "inactive"
+      };
+
+      setCategoryDialogOpen(false);
+
+      if (dialogMode === "add") {
+        const tempId = -Date.now();
+        const tempItem: Category = {
+          id: tempId,
+          name: payload.name,
+          priority: payload.priority,
+          status: categoryForm.status || "Hoạt động",
+          postCount: 0
         };
-        
-        if (dialogMode === "add") {
-          await createAdminCategory(payload as any);
+        setCategories(prev => [tempItem, ...prev]);
+
+        toast.loading("Đang thêm danh mục...", { id: "cat-submit" });
+        setIsCategorySaving(true);
+        createAdminCategory(payload as any).then((newCat: any) => {
           toast.success("Thêm danh mục mới thành công!", { id: "cat-submit" });
-        } else {
-          if (editId) {
-            await updateAdminCategory(editId, payload as any);
+          setCategories(prev =>
+            prev.map(c => c.id === tempId ? {
+              id: newCat.id,
+              name: newCat.name,
+              postCount: newCat.postCount || 0,
+              priority: newCat.priority || 0,
+              status: newCat.status === "active" ? "Hoạt động" : "Ngừng hoạt động"
+            } : c)
+          );
+        }).catch(() => {
+          setCategories(originalCategories);
+          toast.error("Có lỗi xảy ra, vui lòng thử lại!", { id: "cat-submit" });
+        }).finally(() => {
+          setIsCategorySaving(false);
+        });
+      } else {
+        if (editId) {
+          setCategories(prev =>
+            prev.map(c => c.id === editId ? {
+              ...c,
+              name: payload.name,
+              priority: payload.priority,
+              status: categoryForm.status || "Hoạt động"
+            } : c)
+          );
+
+          toast.loading("Đang cập nhật...", { id: "cat-submit" });
+          setIsCategorySaving(true);
+          updateAdminCategory(editId, payload as any).then(() => {
             toast.success("Cập nhật danh mục thành công!", { id: "cat-submit" });
-          }
+          }).catch(() => {
+            setCategories(originalCategories);
+            toast.error("Có lỗi xảy ra, vui lòng thử lại!", { id: "cat-submit" });
+          }).finally(() => {
+            setIsCategorySaving(false);
+          });
         }
-        loadCategories();
-        setCategoryDialogOpen(false);
-      } catch (err) {
-        toast.error("Có lỗi xảy ra, vui lòng thử lại!", { id: "cat-submit" });
-      } finally {
-        setIsCategorySaving(false);
       }
     } else if (activeTab === "accounts") {
       if (!accountForm.username?.trim()) {
@@ -2018,76 +2139,179 @@ export default function AdminDashboard() {
         toast.error("Vui lòng nhập mật khẩu!");
         return;
       }
-      try {
+
+      const originalAccounts = [...accounts];
+      setAccountDialogOpen(false);
+
+      if (dialogMode === "add") {
+        const payload = {
+          email: accountForm.email.trim(),
+          password: accountForm.password?.trim(),
+          username: accountForm.username.trim(),
+          display_name: accountForm.display_name.trim(),
+          role: accountForm.role || "admin"
+        };
+        const tempId = `temp-${Date.now()}`;
+        const tempItem: AdminAccount = {
+          id: tempId,
+          username: payload.username,
+          display_name: payload.display_name,
+          email: payload.email,
+          role: payload.role,
+          created_at: new Date().toISOString()
+        };
+        setAccounts(prev => [tempItem, ...prev]);
+
+        toast.loading("Đang thêm tài khoản...", { id: "account-submit" });
         setIsAccountSaving(true);
-        toast.loading(dialogMode === "add" ? "Đang thêm tài khoản..." : "Đang cập nhật...", { id: "account-submit" });
-        
-        if (dialogMode === "add") {
-          const payload = {
+        createAdminAccount(payload).then((newAcc: any) => {
+          toast.success("Thêm tài khoản mới thành công!", { id: "account-submit" });
+          setAccounts(prev =>
+            prev.map(acc => acc.id === tempId ? {
+              id: newAcc.id,
+              username: newAcc.username,
+              display_name: newAcc.display_name,
+              email: newAcc.email,
+              role: newAcc.role,
+              created_at: newAcc.created_at
+            } : acc)
+          );
+        }).catch(() => {
+          setAccounts(originalAccounts);
+          toast.error("Có lỗi xảy ra, vui lòng thử lại!", { id: "account-submit" });
+        }).finally(() => {
+          setIsAccountSaving(false);
+        });
+      } else {
+        if (editAccountId) {
+          const payload: any = {
             email: accountForm.email.trim(),
-            password: accountForm.password?.trim(),
             username: accountForm.username.trim(),
             display_name: accountForm.display_name.trim(),
             role: accountForm.role || "admin"
           };
-          await createAdminAccount(payload);
-          toast.success("Thêm tài khoản mới thành công!", { id: "account-submit" });
-        } else {
-          if (editAccountId) {
-            const payload: any = {
-              email: accountForm.email.trim(),
-              username: accountForm.username.trim(),
-              display_name: accountForm.display_name.trim(),
-              role: accountForm.role || "admin"
-            };
-            if (accountForm.password?.trim()) {
-              payload.password = accountForm.password.trim();
-            }
-            await updateAdminAccount(editAccountId, payload);
-            toast.success("Cập nhật tài khoản thành công!", { id: "account-submit" });
+          if (accountForm.password?.trim()) {
+            payload.password = accountForm.password.trim();
           }
+
+          setAccounts(prev =>
+            prev.map(acc => acc.id === editAccountId ? {
+              ...acc,
+              username: payload.username,
+              display_name: payload.display_name,
+              email: payload.email,
+              role: payload.role
+            } : acc)
+          );
+
+          toast.loading("Đang cập nhật...", { id: "account-submit" });
+          setIsAccountSaving(true);
+          updateAdminAccount(editAccountId, payload).then(() => {
+            toast.success("Cập nhật tài khoản thành công!", { id: "account-submit" });
+          }).catch(err => {
+            setAccounts(originalAccounts);
+            toast.error(err.message || "Có lỗi xảy ra, vui lòng thử lại!", { id: "account-submit" });
+          }).finally(() => {
+            setIsAccountSaving(false);
+          });
         }
-        loadAccounts();
-        setAccountDialogOpen(false);
-      } catch (err: any) {
-        toast.error(err.message || "Có lỗi xảy ra, vui lòng thử lại!", { id: "account-submit" });
-      } finally {
-        setIsAccountSaving(false);
       }
     } else if (activeTab === "ads") {
       if (!adForm.name?.trim()) {
         toast.error("Vui lòng nhập tên quảng cáo!");
         return;
       }
-      try {
-        setIsAdSaving(true);
-        toast.loading(dialogMode === "add" ? "Đang thêm quảng cáo..." : "Đang cập nhật...", { id: "ad-submit" });
-        const payload = {
-          name: adForm.name,
-          position: adForm.position || "header",
-          type: "image",
-          media_key: adForm.image || null,
-          target_url: adForm.link || null,
-          starts_at: adForm.startDate ? new Date(adForm.startDate + 'T00:00:00').toISOString() : null,
-          ends_at: adForm.endDate ? new Date(adForm.endDate + 'T23:59:59').toISOString() : null,
-          status: adForm.status === "Ngừng hoạt động" || adForm.status === "Đã kết thúc" ? "inactive" : "active"
+      const originalAds = [...ads];
+      const payload = {
+        name: adForm.name,
+        position: adForm.position || "header",
+        type: "image",
+        media_key: adForm.image || null,
+        target_url: adForm.link || null,
+        starts_at: adForm.startDate ? new Date(adForm.startDate + 'T00:00:00').toISOString() : null,
+        ends_at: adForm.endDate ? new Date(adForm.endDate + 'T23:59:59').toISOString() : null,
+        status: adForm.status === "Ngừng hoạt động" || adForm.status === "Đã kết thúc" ? "inactive" : "active"
+      };
+
+      setAdDialogOpen(false);
+
+      const now = new Date();
+      const startDateStr = adForm.startDate ? adForm.startDate.split('T')[0] : null;
+      const endDateStr = adForm.endDate ? adForm.endDate.split('T')[0] : null;
+      const start = startDateStr ? new Date(startDateStr + 'T00:00:00') : null;
+      const end = endDateStr ? new Date(endDateStr + 'T23:59:59') : null;
+
+      let computedStatus = "Ngừng hoạt động";
+      if (payload.status === "active") {
+        if (end && end < now) computedStatus = "Đã kết thúc";
+        else if (start && start > now) computedStatus = "Chờ chạy";
+        else computedStatus = "Hoạt động";
+      }
+
+      if (dialogMode === "add") {
+        const tempId = -Date.now();
+        const tempItem: Ad = {
+          id: tempId,
+          name: payload.name,
+          position: payload.position,
+          clicks: 0,
+          startDate: adForm.startDate || "",
+          endDate: adForm.endDate || "",
+          status: computedStatus,
+          image: adForm.image,
+          link: adForm.link
         };
-        
-        if (dialogMode === "add") {
-          await createAdminAd(payload as any);
+        setAds(prev => [tempItem, ...prev]);
+
+        toast.loading("Đang thêm quảng cáo...", { id: "ad-submit" });
+        setIsAdSaving(true);
+        createAdminAd(payload as any).then((newAd: any) => {
           toast.success("Thêm quảng cáo mới thành công!", { id: "ad-submit" });
-        } else {
-          if (editId) {
-            await updateAdminAd(editId, payload as any);
+          setAds(prev =>
+            prev.map(a => a.id === tempId ? {
+              id: newAd.id,
+              name: newAd.name,
+              position: newAd.position,
+              clicks: newAd.clicks || 0,
+              startDate: newAd.starts_at ? newAd.starts_at.split('T')[0] : "",
+              endDate: newAd.ends_at ? newAd.ends_at.split('T')[0] : "",
+              status: computedStatus,
+              image: newAd.media_key || undefined,
+              link: newAd.target_url || undefined
+            } : a)
+          );
+        }).catch(() => {
+          setAds(originalAds);
+          toast.error("Có lỗi xảy ra, vui lòng thử lại!", { id: "ad-submit" });
+        }).finally(() => {
+          setIsAdSaving(false);
+        });
+      } else {
+        if (editId) {
+          setAds(prev =>
+            prev.map(a => a.id === editId ? {
+              ...a,
+              name: payload.name,
+              position: payload.position,
+              startDate: adForm.startDate || "",
+              endDate: adForm.endDate || "",
+              status: computedStatus,
+              image: adForm.image,
+              link: adForm.link
+            } : a)
+          );
+
+          toast.loading("Đang cập nhật...", { id: "ad-submit" });
+          setIsAdSaving(true);
+          updateAdminAd(editId, payload as any).then(() => {
             toast.success("Cập nhật quảng cáo thành công!", { id: "ad-submit" });
-          }
+          }).catch(() => {
+            setAds(originalAds);
+            toast.error("Có lỗi xảy ra, vui lòng thử lại!", { id: "ad-submit" });
+          }).finally(() => {
+            setIsAdSaving(false);
+          });
         }
-        loadAds();
-        setAdDialogOpen(false);
-      } catch (err) {
-        toast.error("Có lỗi xảy ra, vui lòng thử lại!", { id: "ad-submit" });
-      } finally {
-        setIsAdSaving(false);
       }
     }
     setDialogOpen(false);
@@ -5077,17 +5301,35 @@ export default function AdminDashboard() {
                               <td className="py-4 px-4 text-right text-gray-900 font-mono font-bold">
                                 {cat.postCount}
                               </td>
-                              <td className="py-4 px-4 text-center text-gray-600 font-bold">{cat.priority}</td>
                               <td className="py-4 px-4 text-center">
-                                <span
-                                  className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-bold ${
+                                <div className="inline-block relative">
+                                  <select
+                                    value={cat.priority}
+                                    onChange={(e) => handleCategoryPriorityChange(cat.id, Number(e.target.value))}
+                                    className="px-2.5 py-1 text-xs font-bold text-gray-700 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-[#E55956] appearance-none pr-6 cursor-pointer hover:bg-gray-100 transition-colors"
+                                  >
+                                    {Array.from({ length: 11 }).map((_, i) => (
+                                      <option key={i} value={i}>
+                                        {i}
+                                      </option>
+                                    ))}
+                                  </select>
+                                  <ChevronDown size={10} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                                </div>
+                              </td>
+                              <td className="py-4 px-4 text-center">
+                                <button
+                                  type="button"
+                                  onClick={() => handleCategoryStatusToggle(cat)}
+                                  title="Click để đổi trạng thái"
+                                  className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-bold transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer shadow-sm ${
                                     cat.status === "Hoạt động"
-                                      ? "bg-emerald-100 text-emerald-800"
-                                      : "bg-red-100 text-red-800"
+                                      ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
+                                      : "bg-red-100 text-red-800 hover:bg-red-200"
                                   }`}
                                 >
                                   {cat.status}
-                                </span>
+                                </button>
                               </td>
                               <td className="py-4 px-6 text-center">
                                 <div className="flex items-center justify-center gap-2.5">
@@ -5194,19 +5436,22 @@ export default function AdminDashboard() {
                                 {formatDateForDisplay(ad.endDate)}
                               </td>
                               <td className="py-4 px-4 text-center">
-                                <span
-                                  className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-bold ${
+                                <button
+                                  type="button"
+                                  onClick={() => handleAdStatusToggle(ad)}
+                                  title="Click để đổi trạng thái"
+                                  className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-bold transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer shadow-sm ${
                                     ad.status === "Hoạt động"
-                                      ? "bg-emerald-100 text-emerald-800"
+                                      ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
                                       : ad.status === "Chờ chạy"
-                                      ? "bg-blue-100 text-blue-800"
+                                      ? "bg-blue-100 text-blue-800 hover:bg-blue-200"
                                       : ad.status === "Đã kết thúc"
-                                      ? "bg-gray-100 text-gray-800"
-                                      : "bg-red-100 text-red-800"
+                                      ? "bg-gray-100 text-gray-800 hover:bg-gray-200"
+                                      : "bg-red-100 text-red-800 hover:bg-red-200"
                                   }`}
                                 >
                                   {ad.status}
-                                </span>
+                                </button>
                               </td>
                               <td className="py-4 px-6 text-center">
                                 <div className="flex items-center justify-center gap-2.5">
@@ -5667,7 +5912,7 @@ export default function AdminDashboard() {
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm font-bold text-gray-900">
                 <div className="flex items-center gap-2">
-                  <span className="flex-shrink-0 text-gray-800 w-8 text-left">Từ:</span>
+                  <span className="flex-shrink-0 text-gray-800 w-8 text-left">Từ</span>
                   <input
                     type="date"
                     value={adForm.startDate || ""}
@@ -5677,7 +5922,7 @@ export default function AdminDashboard() {
                   />
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="flex-shrink-0 text-gray-800 w-8 text-left">Đến:</span>
+                  <span className="flex-shrink-0 text-gray-800 w-8 text-left">Đến</span>
                   <input
                     type="date"
                     value={adForm.endDate || ""}
