@@ -72,7 +72,7 @@ export function Header({ brand, categories }: HeaderProps) {
   // Centers the visible text around the matched keyword if the title is very long
   const highlightText = (text: string, highlight: string) => {
     if (!highlight.trim()) return <span>{text}</span>;
-    
+
     // Build an accent-insensitive regex pattern mapping letters to their diacritic character classes
     const pattern = escapeRegExp(highlight)
       .replace(/[aàáảãạăằắẳẵặâầấẩẫậAÀÁẢÃẠĂẰẮẲẴẶÂẦẤẨẪẬ]/g, "[aàáảãạăằắẳẵặâầấẩẫậAÀÁẢÃẠĂẰẮẲẴẶÂẦẤẨẪẬ]")
@@ -339,27 +339,25 @@ export function Header({ brand, categories }: HeaderProps) {
               }, 100);
             }
           }}
-          className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
-            mobileSearchOpen ? "bg-white/20 text-white" : "hover:bg-white/10 text-white"
-          }`}
+          className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${mobileSearchOpen ? "bg-white/20 text-white" : "hover:bg-white/10 text-white"
+            }`}
           aria-label="Toggle search"
         >
           {mobileSearchOpen ? <X size={20} /> : <Search size={20} />}
         </button>
 
         {/* Sliding Search Overlay on Mobile */}
-        <div 
+        <div
           ref={mobileSearchRef}
-          className={`absolute top-full left-0 right-0 bg-[#e24a48] border-t border-white/15 shadow-lg px-4 py-3 transition-all duration-300 ease-in-out z-30 ${
-            mobileSearchOpen 
-              ? "opacity-100 translate-y-0 visible" 
+          className={`absolute top-full left-0 right-0 bg-[#e24a48] border-t border-white/15 shadow-lg px-4 py-3 transition-all duration-300 ease-in-out z-30 ${mobileSearchOpen
+              ? "opacity-100 translate-y-0 visible"
               : "opacity-0 -translate-y-2 pointer-events-none invisible"
-          }`}
+            }`}
         >
           <div className="flex h-[36px] items-center rounded-lg border border-white/20 bg-white/10 px-3 shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)] focus-within:bg-white focus-within:border-white focus-within:text-gray-900 group relative">
-            <Search 
-              size={14} 
-              className="mr-2 text-white/80 group-focus-within:text-gray-500 cursor-pointer hover:text-gray-600 transition-colors" 
+            <Search
+              size={14}
+              className="mr-2 text-white/80 group-focus-within:text-gray-500 cursor-pointer hover:text-gray-600 transition-colors"
               onClick={() => {
                 if (query.trim()) {
                   router.push(`/search?q=${encodeURIComponent(query.trim())}`);
@@ -403,9 +401,8 @@ export function Header({ brand, categories }: HeaderProps) {
                       <Link
                         href={`/posts/${item.slug || item.id}`}
                         onClick={handleSuggestionClick}
-                        className={`flex items-center gap-2.5 px-3 py-2.5 hover:bg-gray-50 transition-colors text-left ${
-                          idx === activeSuggestionIndex ? "bg-gray-100" : ""
-                        }`}
+                        className={`flex items-center gap-2.5 px-3 py-2.5 hover:bg-gray-50 transition-colors text-left ${idx === activeSuggestionIndex ? "bg-gray-100" : ""
+                          }`}
                       >
                         <div className="flex-1 min-w-0">
                           <span className="block text-[11.5px] font-bold text-gray-900 truncate">
@@ -453,9 +450,9 @@ export function Header({ brand, categories }: HeaderProps) {
           <div className="w-full grid grid-cols-[minmax(260px,1fr)_auto] items-center gap-5 lg:gap-7">
             <div ref={desktopSearchRef} className="flex justify-center relative w-full max-w-[760px]">
               <div className="flex h-[34px] w-full items-center rounded-[17px] border border-[#d5d5d5] bg-[#f0eeee] px-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] transition-colors focus-within:border-white focus-within:bg-white relative z-10">
-                <Search 
-                  size={15} 
-                  className="mr-2.5 flex-shrink-0 text-[#4c6281] cursor-pointer hover:text-[#df3232] transition-colors" 
+                <Search
+                  size={15}
+                  className="mr-2.5 flex-shrink-0 text-[#4c6281] cursor-pointer hover:text-[#df3232] transition-colors"
                   onClick={() => {
                     if (query.trim()) {
                       router.push(`/search?q=${encodeURIComponent(query.trim())}`);
@@ -499,9 +496,8 @@ export function Header({ brand, categories }: HeaderProps) {
                           <Link
                             href={`/posts/${item.slug || item.id}`}
                             onClick={handleSuggestionClick}
-                            className={`flex items-center gap-3 px-3.5 py-2.5 hover:bg-gray-50 transition-colors text-left ${
-                              idx === activeSuggestionIndex ? "bg-gray-100" : ""
-                            }`}
+                            className={`flex items-center gap-3 px-3.5 py-2.5 hover:bg-gray-50 transition-colors text-left ${idx === activeSuggestionIndex ? "bg-gray-100" : ""
+                              }`}
                           >
                             {item.thumbnail_key ? (
                               <div className="relative w-10 h-7 flex-shrink-0 rounded border border-gray-100 overflow-hidden bg-gray-50">
@@ -544,9 +540,21 @@ export function Header({ brand, categories }: HeaderProps) {
                 </span>
               ) : null}
               <div className="flex items-center gap-2.5">
-                {brand.socialLinks.map((item) => (
-                  <HeaderSocialLink key={`${item.label}-${item.href}`} item={item} />
-                ))}
+                {brand.socialLinks.map((item) => {
+                  if (item.platform === "zalo") {
+                    return (
+                      <div key={`${item.label}-${item.href}`} className="flex items-center gap-4 lg:gap-5">
+                        <span className="whitespace-nowrap text-sm font-bold text-white select-none cursor-default">
+                          Liên hệ quảng cáo
+                        </span>
+                        <HeaderSocialLink item={item} />
+                      </div>
+                    );
+                  }
+                  return (
+                    <HeaderSocialLink key={`${item.label}-${item.href}`} item={item} />
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -558,14 +566,13 @@ export function Header({ brand, categories }: HeaderProps) {
         <Link
           href="/"
           prefetch={true}
-          className={`bg-[#333333] h-full w-[48px] flex items-center justify-center hover:bg-[#df3232] transition-colors border-r border-[#2d2d2d] flex-shrink-0 ${
-            pathname === "/" ? "text-[#df3232]" : "text-white"
-          }`}
+          className={`bg-[#333333] h-full w-[48px] flex items-center justify-center hover:bg-[#df3232] transition-colors border-r border-[#2d2d2d] flex-shrink-0 ${pathname === "/" ? "text-[#df3232]" : "text-white"
+            }`}
           aria-label="Home"
         >
           <HomeIcon className="h-[18px] w-[18px] text-white" />
         </Link>
-        
+
         {/* Divided categories navigation */}
         <nav className="flex-1 flex h-full text-xs font-bold tracking-wide">
           {categories.slice(0, 6).map((item) => {
@@ -576,11 +583,10 @@ export function Header({ brand, categories }: HeaderProps) {
                 key={item.label}
                 href={item.href ?? '/'}
                 prefetch={true}
-                className={`flex-1 h-full flex items-center justify-center transition-colors border-r border-[#2d2d2d] last:border-r-0 text-center whitespace-nowrap relative ${
-                  isActive
+                className={`flex-1 h-full flex items-center justify-center transition-colors border-r border-[#2d2d2d] last:border-r-0 text-center whitespace-nowrap relative ${isActive
                     ? "text-[#df3232] bg-[#333333]"
                     : "text-white hover:bg-[#333333] hover:text-[#ffd600]"
-                }`}
+                  }`}
               >
                 <span>{item.label.toUpperCase()}</span>
                 {isActive && (
@@ -595,9 +601,8 @@ export function Header({ brand, categories }: HeaderProps) {
         <button
           ref={desktopMenuButtonRef}
           onClick={() => setDesktopMenuOpen(!desktopMenuOpen)}
-          className={`h-full w-[48px] flex items-center justify-center border-l border-[#2d2d2d] hover:bg-[#333333] transition-colors text-white flex-shrink-0 cursor-pointer ${
-            desktopMenuOpen ? "bg-[#333333]" : ""
-          }`}
+          className={`h-full w-[48px] flex items-center justify-center border-l border-[#2d2d2d] hover:bg-[#333333] transition-colors text-white flex-shrink-0 cursor-pointer ${desktopMenuOpen ? "bg-[#333333]" : ""
+            }`}
           aria-label={desktopMenuOpen ? "Close menu" : "Open menu"}
         >
           {desktopMenuOpen ? (
@@ -635,17 +640,15 @@ export function Header({ brand, categories }: HeaderProps) {
                       href={item.href ?? "/"}
                       prefetch={true}
                       onClick={() => setDesktopMenuOpen(false)}
-                      className={`flex items-center text-xs font-bold transition-all duration-200 py-1 hover:translate-x-1 group ${
-                        isActive
+                      className={`flex items-center text-xs font-bold transition-all duration-200 py-1 hover:translate-x-1 group ${isActive
                           ? "text-[#df3232]"
                           : "text-[#d1d1d1] hover:text-[#ffd600]"
-                      }`}
+                        }`}
                     >
-                      <span className={`mr-2.5 transition-colors duration-200 ${
-                        isActive 
-                          ? "text-[#df3232]" 
+                      <span className={`mr-2.5 transition-colors duration-200 ${isActive
+                          ? "text-[#df3232]"
                           : "text-white/20 group-hover:text-[#ffd600]"
-                      }`}>
+                        }`}>
                         |
                       </span>
                       <span>{item.label}</span>
@@ -659,22 +662,20 @@ export function Header({ brand, categories }: HeaderProps) {
       </div>
 
       {/* Mobile Fullscreen Menu Drawer (md:hidden) */}
-      <div 
-        className={`fixed inset-0 z-50 md:hidden transition-all duration-300 ${
-          mobileMenuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-        }`}
+      <div
+        className={`fixed inset-0 z-50 md:hidden transition-all duration-300 ${mobileMenuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+          }`}
       >
         {/* Dark backdrop overlay */}
-        <div 
+        <div
           className="absolute inset-0 bg-black/60 backdrop-blur-xs transition-opacity duration-300"
           onClick={() => setMobileMenuOpen(false)}
         />
-        
+
         {/* Drawer panel content */}
-        <div 
-          className={`absolute top-0 left-0 h-full w-[280px] max-w-[80vw] bg-[#1a1a1c] text-white shadow-2xl p-5 flex flex-col justify-between transform transition-transform duration-300 ease-out z-10 ${
-            mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
-          }`}
+        <div
+          className={`absolute top-0 left-0 h-full w-[280px] max-w-[80vw] bg-[#1a1a1c] text-white shadow-2xl p-5 flex flex-col justify-between transform transition-transform duration-300 ease-out z-10 ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+            }`}
         >
           <div className="flex flex-col gap-5 overflow-y-auto scrollbar-none flex-1">
             {/* Header branding & close button */}
@@ -696,8 +697,8 @@ export function Header({ brand, categories }: HeaderProps) {
                   </span>
                 </div>
               </div>
-              
-              <button 
+
+              <button
                 onClick={() => setMobileMenuOpen(false)}
                 className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-colors"
                 aria-label="Close menu"
@@ -709,9 +710,9 @@ export function Header({ brand, categories }: HeaderProps) {
             {/* Quick Search */}
             <div className="flex flex-col gap-1.5" ref={mobileDrawerRef}>
               <div className="bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 flex items-center gap-2 focus-within:bg-white/10 transition-colors">
-                <Search 
-                  size={14} 
-                  className="text-gray-400 flex-shrink-0 cursor-pointer hover:text-white" 
+                <Search
+                  size={14}
+                  className="text-gray-400 flex-shrink-0 cursor-pointer hover:text-white"
                   onClick={() => {
                     if (query.trim()) {
                       router.push(`/search?q=${encodeURIComponent(query.trim())}`);
@@ -755,9 +756,8 @@ export function Header({ brand, categories }: HeaderProps) {
                           <Link
                             href={`/posts/${item.slug || item.id}`}
                             onClick={handleSuggestionClick}
-                            className={`block w-full px-3 py-2 text-[11px] hover:bg-white/5 transition-colors text-left font-semibold ${
-                              idx === activeSuggestionIndex ? "bg-white/10 text-white" : "text-gray-300"
-                            }`}
+                            className={`block w-full px-3 py-2 text-[11px] hover:bg-white/5 transition-colors text-left font-semibold ${idx === activeSuggestionIndex ? "bg-white/10 text-white" : "text-gray-300"
+                              }`}
                           >
                             <span className="block truncate">{item.title}</span>
                           </Link>
@@ -782,11 +782,10 @@ export function Header({ brand, categories }: HeaderProps) {
                     href={item.href ?? '/'}
                     prefetch={true}
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-bold transition-all ${
-                      isActive
+                    className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-bold transition-all ${isActive
                         ? "bg-[#df3232] text-white shadow-md shadow-[#df3232]/10"
                         : "text-gray-300 hover:bg-white/5 hover:text-white"
-                    }`}
+                      }`}
                   >
                     <span>{item.label}</span>
                     <ChevronRight size={12} className={isActive ? "text-white" : "text-gray-500"} />

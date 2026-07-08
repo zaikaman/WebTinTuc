@@ -12,27 +12,60 @@ export async function listAdminAccounts(options: AccountListOptions = {}) {
   const page = options.page ?? 1
   const limit = options.limit ?? 20
 
-  // 1. Fetch profiles with role = 'admin'
+  // Build profiles query with role = 'admin'
   let query = supabaseAdmin
     .from('profiles')
-    .select('*')
+    .select('*', { count: 'exact' })
     .eq('role', 'admin')
 
   if (options.search) {
     query = query.or(`username.ilike.%${options.search}%,display_name.ilike.%${options.search}%`)
   }
 
-  const { data: profiles, error: profileError } = await query
-  if (profileError) throw profileError
+  // Apply sorting (newest first)
+  query = query.order('created_at', { ascending: false })
 
-  // 2. Fetch all auth users to match emails
-  const { data: authData, error: authError } = await supabaseAdmin.auth.admin.listUsers()
-  if (authError) throw authError
+  let profiles: any[]
+  let totalCount: number | null
 
-  const userMap = new Map(authData.users.map(u => [u.id, u.email]))
+  if (options.search) {
+    // When searching, fetch ALL matching profiles first (in-memory email filter may be needed)
+    const { data, error, count } = await query
+    if (error) throw error
+    profiles = data || []
+    totalCount = count
+  } else {
+    // No search: apply DB-level pagination — only fetch the current page
+    const { from, to } = toRange(page, limit)
+    const { data, error, count } = await query.range(from, to)
+    if (error) throw error
+    profiles = data || []
+    totalCount = count
+  }
 
-  // 3. Merge profiles and auth emails
-  let mergedItems = (profiles || []).map(p => ({
+  // Fetch auth user emails ONLY for the profiles in this result set
+  const profileIds = profiles.map(p => p.id)
+  const emailMap = new Map<string, string | null>()
+
+  if (profileIds.length > 0) {
+    const authResults = await Promise.all(
+      profileIds.map(id =>
+        supabaseAdmin.auth.admin.getUserById(id)
+          .then(({ data, error }) => ({
+            id,
+            email: data?.user?.email || null,
+            error
+          }))
+      )
+    )
+    // Silently handle individual lookup errors (one bad user shouldn't break the list)
+    for (const result of authResults) {
+      emailMap.set(result.id, result.email)
+    }
+  }
+
+  // Merge profiles and auth emails
+  let mergedItems = profiles.map(p => ({
     id: p.id,
     username: p.username,
     display_name: p.display_name,
@@ -40,30 +73,26 @@ export async function listAdminAccounts(options: AccountListOptions = {}) {
     role: p.role,
     created_at: p.created_at,
     updated_at: p.updated_at,
-    email: userMap.get(p.id) || null
+    email: emailMap.get(p.id) || null
   }))
 
-  // If search query is provided, check if it matches the email address in memory
+  // If search is provided, also filter by email address in memory
+  // (username/display_name were already filtered at the DB level)
   if (options.search) {
     const searchLower = options.search.toLowerCase()
-    mergedItems = mergedItems.filter(item => 
-      item.username?.toLowerCase().includes(searchLower) ||
-      item.display_name?.toLowerCase().includes(searchLower) ||
+    mergedItems = mergedItems.filter(item =>
       item.email?.toLowerCase().includes(searchLower)
     )
+
+    // Apply in-memory pagination on search results
+    totalCount = mergedItems.length
+    const { from, to } = toRange(page, limit)
+    mergedItems = mergedItems.slice(from, to + 1)
   }
 
-  // 4. Sort by created_at desc (newest first)
-  mergedItems.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-
-  // 5. Paginate in-memory
-  const count = mergedItems.length
-  const { from, to } = toRange(page, limit)
-  const items = mergedItems.slice(from, to + 1)
-
   return {
-    items,
-    meta: pageMeta(count, page, limit)
+    items: mergedItems,
+    meta: pageMeta(totalCount ?? mergedItems.length, page, limit)
   }
 }
 

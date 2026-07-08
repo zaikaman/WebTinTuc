@@ -38,7 +38,16 @@ describe('adminAccountRepository', () => {
     
     mockAuthAdmin = {
       listUsers: vi.fn().mockResolvedValue({ data: { users: [] }, error: null }),
-      getUserById: vi.fn().mockResolvedValue({ data: { user: null }, error: null }),
+      getUserById: vi.fn().mockImplementation((id: string) => {
+        const users: Record<string, { id: string; email: string }> = {
+          'u1': { id: 'u1', email: 'admin1@example.com' },
+          'u2': { id: 'u2', email: 'admin2@example.com' }
+        }
+        return Promise.resolve({
+          data: { user: users[id] || null },
+          error: null
+        })
+      }),
       createUser: vi.fn().mockResolvedValue({ data: { user: null }, error: null }),
       updateUserById: vi.fn().mockResolvedValue({ data: { user: null }, error: null }),
       deleteUser: vi.fn().mockResolvedValue({ error: null })
@@ -49,32 +58,32 @@ describe('adminAccountRepository', () => {
     } as any
   })
 
-  it('listAdminAccounts merges profiles and auth emails', async () => {
+  it('listAdminAccounts uses DB-level pagination and only fetches auth users for current page', async () => {
+    // Profiles are ordered as the DB would return them after .order('created_at', { ascending: false })
     const profiles = [
-      { id: 'u1', username: 'admin1', display_name: 'Admin One', role: 'admin', created_at: '2026-01-01' },
-      { id: 'u2', username: 'admin2', display_name: 'Admin Two', role: 'admin', created_at: '2026-01-02' }
+      { id: 'u2', username: 'admin2', display_name: 'Admin Two', role: 'admin', created_at: '2026-01-02' },
+      { id: 'u1', username: 'admin1', display_name: 'Admin One', role: 'admin', created_at: '2026-01-01' }
     ]
-    mockQuery.mockResolvedValue({ data: profiles, error: null })
-    
-    mockAuthAdmin.listUsers.mockResolvedValue({
-      data: {
-        users: [
-          { id: 'u1', email: 'admin1@example.com' },
-          { id: 'u2', email: 'admin2@example.com' }
-        ]
-      },
-      error: null
-    })
+    // Must include 'count' for pagination metadata
+    mockQuery.mockResolvedValue({ data: profiles, error: null, count: 2 })
 
     const { listAdminAccounts } = await import('@/server/repositories/admin-account.repository')
     const result = await listAdminAccounts()
 
     expect(result.items).toHaveLength(2)
-    // Sorted by created_at desc
+    // Sorted by created_at desc (applied via DB .order())
     expect(result.items[0].username).toBe('admin2')
     expect(result.items[0].email).toBe('admin2@example.com')
     expect(result.items[1].username).toBe('admin1')
     expect(result.items[1].email).toBe('admin1@example.com')
+    expect(result.meta.total).toBe(2)
+
+    // Should NOT have called listUsers (which fetches ALL auth users)
+    expect(mockAuthAdmin.listUsers).not.toHaveBeenCalled()
+    // Should have called getUserById for each profile individually
+    expect(mockAuthAdmin.getUserById).toHaveBeenCalledTimes(2)
+    expect(mockAuthAdmin.getUserById).toHaveBeenCalledWith('u1')
+    expect(mockAuthAdmin.getUserById).toHaveBeenCalledWith('u2')
   })
 
   it('getAdminAccountById fetches profile and auth user', async () => {
