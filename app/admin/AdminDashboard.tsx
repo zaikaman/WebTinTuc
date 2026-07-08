@@ -4,12 +4,6 @@ import React, { useState, useMemo, useRef, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import type { Post, Category, Ad, AdminAccount, TabType, MediaItem } from "@/components/admin/AdminTypes";
 import { htmlToBlocks, blocksToHtml, formatDateForDisplay, getCategoryStyles } from "@/components/admin/AdminUtils";
-import {
-  PostsTableSkeleton,
-  CategoriesTableSkeleton,
-  AdsTableSkeleton,
-  AccountsTableSkeleton,
-} from "@/components/admin/SkeletonLoaders";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import AdminLogin from "@/components/admin/AdminLogin";
 import DeleteConfirmDialog from "@/components/admin/DeleteConfirmDialog";
@@ -25,15 +19,10 @@ import FormDialog from "@/components/admin/FormDialog";
 import DashboardTab from "@/components/admin/DashboardTab";
 import LogoFooterTab from "@/components/admin/LogoFooterTab";
 import MediaTab from "@/components/admin/MediaTab";
+import DefaultTab from "@/components/admin/DefaultTab";
 import {
   Loader2,
   Image as ImageIcon,
-  Search,
-  SquarePen,
-  Trash2,
-  Plus,
-  ChevronLeft,
-  ChevronRight,
   Menu,
   LayoutDashboard,
   ArrowLeft,
@@ -50,11 +39,9 @@ import {
   Video,
   Upload,
   ChevronDown,
-  LogOut,
-  ExternalLink,
-  RotateCcw
+  LogOut
 } from "lucide-react";
-import { getAdminSettings, updateAdminSettings, getAdminMedia, uploadAdminMedia, deleteAdminMedia, createAdminFolder, getAdminDashboardStats, getAdminCategories, createAdminCategory, updateAdminCategory, deleteAdminCategory, getAdminArticles, getAdminArticleById, createAdminArticle, updateAdminArticle, deleteAdminArticle, restoreAdminArticle, getAdminAds, createAdminAd, updateAdminAd, deleteAdminAd, getAdminAccounts, createAdminAccount, updateAdminAccount, deleteAdminAccount } from "@/lib/api/adminClient";
+import { getAdminSettings, updateAdminSettings, getAdminMedia, uploadAdminMedia, deleteAdminMedia, createAdminFolder, getAdminDashboardStats, getAdminCategories, createAdminCategory, updateAdminCategory, deleteAdminCategory, getAdminArticles, getAdminArticleById, createAdminArticle, updateAdminArticle, deleteAdminArticle, getAdminAds, createAdminAd, updateAdminAd, deleteAdminAd, getAdminAccounts, createAdminAccount, updateAdminAccount, deleteAdminAccount } from "@/lib/api/adminClient";
 import { toast } from "sonner";
 import { mockSiteSettings } from "@/lib/mockSiteSettings";
 import { supabase } from "@/lib/supabase/client";
@@ -601,7 +588,6 @@ export default function AdminDashboard() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const [isMediaUploading, setIsMediaUploading] = useState(false);
-  const [restoringPostId, setRestoringPostId] = useState<number | null>(null);
   const [deletingMediaKey, setDeletingMediaKey] = useState<string | null>(null);
 
 
@@ -1124,20 +1110,6 @@ export default function AdminDashboard() {
     } else {
       setAdForm(item);
       setAdDialogOpen(true);
-    }
-  };
-
-  const executeRestore = async (id: number) => {
-    try {
-      setRestoringPostId(id);
-      toast.loading("Đang khôi phục...", { id: "restore-post" });
-      await restoreAdminArticle(id);
-      toast.success("Khôi phục bài viết thành công!", { id: "restore-post" });
-      loadPosts();
-    } catch (err) {
-      toast.error("Lỗi khi khôi phục bài viết!", { id: "restore-post" });
-    } finally {
-      setRestoringPostId(null);
     }
   };
 
@@ -2575,603 +2547,54 @@ export default function AdminDashboard() {
               }}
             />
           ) : (
-          <>
-            {/* HEADER ACTION BANNER */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-150 shadow-sm">
-              <div>
-                <h2 className="text-lg font-bold text-gray-900">
-                  {activeTab === "posts" && "Danh sách tất cả bài viết trên hệ thống"}
-                  {activeTab === "categories" && "Quản lý luồng chủ đề danh mục tin tức"}
-                  {activeTab === "ads" && "Theo dõi hiệu suất và vị trí các banner quảng cáo"}
-                  {activeTab === "accounts" && "Danh sách tất cả tài khoản quản trị viên trên hệ thống"}
-                </h2>
-                <p className="text-xs text-gray-500 mt-1">
-                  Dễ dàng tìm kiếm, lọc, thêm mới hoặc cập nhật các bản ghi theo thời gian thực.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleOpenAddDialog}
-                className="flex items-center justify-center gap-2 px-5 py-2.5 bg-[#E55956] hover:bg-[#cb4643] active:scale-[0.98] text-white text-sm font-bold rounded-xl shadow-md transition-all self-start sm:self-center"
-              >
-                <Plus size={16} />
-                <span>
-                  {activeTab === "posts" && "Thêm bài viết"}
-                  {activeTab === "categories" && "Thêm danh mục"}
-                  {activeTab === "ads" && "Thêm quảng cáo"}
-                  {activeTab === "accounts" && "Thêm tài khoản"}
-                </span>
-              </button>
-            </div>
-
-            {/* FILTER BAR SECTION */}
-            <div className="bg-white p-5 rounded-2xl border border-gray-150 shadow-sm flex flex-col gap-4">
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 items-end">
-
-                {/* Search Field (Always present) */}
-                <div className={activeTab === "posts" ? "md:col-span-4" : "md:col-span-12"}>
-                  <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">
-                    Tìm kiếm thông tin
-                  </label>
-                  <div className="relative">
-                    <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder={
-                        activeTab === "posts"
-                          ? "Tìm kiếm tiêu đề bài viết..."
-                          : activeTab === "categories"
-                            ? "Tìm tên danh mục, ID..."
-                            : activeTab === "ads"
-                              ? "Tìm kiếm tên AD, vị trí, ID..."
-                              : "Tìm kiếm username, tên hiển thị, email..."
-                      }
-                      className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-gray-50/50"
-                    />
-                  </div>
-                </div>
-
-                {/* Date & Category filters only for POSTS */}
-                {activeTab === "posts" && (
-                  <>
-                    <div className="md:col-span-2">
-                      <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">
-                        Ngày bắt đầu
-                      </label>
-                      <div className="relative">
-                        <input
-                          type="date"
-                          value={postStartDate}
-                          onChange={(e) => setPostStartDate(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-gray-50/50"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="md:col-span-2">
-                      <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">
-                        Ngày kết thúc
-                      </label>
-                      <div className="relative">
-                        <input
-                          type="date"
-                          value={postEndDate}
-                          onChange={(e) => setPostEndDate(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-gray-50/50"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="md:col-span-2">
-                      <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">
-                        Danh mục
-                      </label>
-                      <select
-                        value={postCategoryFilter}
-                        onChange={(e) => setPostCategoryFilter(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-gray-50/50"
-                      >
-                        <option value="all">Tất cả</option>
-                        {categoryOptions.map(cat => (
-                          <option key={cat} value={cat}>
-                            {cat}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="md:col-span-2 flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => resetFilters()}
-                        className="flex-1 py-2 border border-gray-200 hover:bg-gray-50 text-gray-600 text-sm font-bold rounded-xl transition-all"
-                      >
-                        Xóa bộ lọc
-                      </button>
-                    </div>
-
-                    {activeTab === "posts" && (
-                      <div className="md:col-span-9 flex items-center mt-2">
-                        <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-600 font-medium select-none w-max">
-                          <input
-                            type="checkbox"
-                            checked={hideDeletedPosts}
-                            onChange={(e) => setHideDeletedPosts(e.target.checked)}
-                            className="w-4 h-4 rounded text-[#E55956] focus:ring-[#E55956] cursor-pointer"
-                          />
-                          Ẩn bài viết đã xóa
-                        </label>
-                      </div>
-                    )}
-                  </>
-                )}
-
-              </div>
-            </div>
-
-            {/* DATA TABLE WRAPPER */}
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-              <div className="overflow-x-auto">
-
-                {/* VIEW: POSTS TABLE */}
-                {activeTab === "posts" && (
-                  <table className="w-full min-w-[900px] text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-gray-200 bg-gray-50/75 text-gray-500 font-bold text-xs uppercase tracking-wider whitespace-nowrap">
-                        <th className="py-4 px-6 w-16 text-center">ID</th>
-                        <th className="py-4 px-4 min-w-[280px]">Tiêu đề bài viết</th>
-                        <th className="py-4 px-4 w-40">Danh mục</th>
-                        <th className="py-4 px-4 w-32 text-right">Lượt xem</th>
-                        <th className="py-4 px-4 w-36 text-center">Trạng thái</th>
-                        <th className="py-4 px-4 w-40 text-center">Ngày tạo</th>
-                        <th className="py-4 px-6 w-28 text-center">Thao tác</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-150">
-                      {postsLoading ? (
-                        <PostsTableSkeleton />
-                      ) : paginatedPosts.length > 0 ? (
-                        paginatedPosts.map((post) => (
-                          <tr key={post.id} className={`transition-colors text-sm font-medium whitespace-nowrap ${post.isDeleted ? 'opacity-50 bg-red-50/20' : 'hover:bg-gray-50/50'}`}>
-                            <td className="py-4 px-6 text-center text-gray-400 font-bold">{post.id}</td>
-                            <td className="py-4 px-4 whitespace-normal">
-                              <div className="text-gray-900 font-semibold line-clamp-2 max-w-[450px]">
-                                {post.title}
-                                {post.isDeleted && <span className="ml-2 px-2 py-0.5 text-[10px] bg-red-100 text-red-600 rounded whitespace-nowrap align-middle font-bold">Đã xóa</span>}
-                              </div>
-                            </td>
-                            <td className="py-4 px-4 text-gray-600">{post.category}</td>
-                            <td className="py-4 px-4 text-right text-gray-900 font-mono font-bold">
-                              {post.views.toLocaleString("en-US")}
-                            </td>
-                            <td className="py-4 px-4 text-center">
-                              <span
-                                className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-bold ${post.status === "Đã đăng"
-                                  ? "bg-emerald-100 text-emerald-800"
-                                  : "bg-amber-100 text-amber-800"
-                                  }`}
-                              >
-                                {post.status}
-                              </span>
-                            </td>
-                            <td className="py-4 px-4 text-center text-gray-500">
-                              {formatDateForDisplay(post.createdAt)}
-                            </td>
-                            <td className="py-4 px-6 text-center">
-                              <div className="flex items-center justify-center gap-2.5">
-                                <button
-                                  type="button"
-                                  onClick={() => handleOpenEditDialog(post)}
-                                  className="p-1.5 border border-amber-200 text-amber-600 rounded-lg hover:bg-amber-50 transition-colors"
-                                >
-                                  <SquarePen size={15} />
-                                </button>
-                                {post.isDeleted ? (
-                                  <button
-                                    type="button"
-                                    onClick={() => executeRestore(post.id)}
-                                    disabled={restoringPostId === post.id}
-                                    className="p-1.5 border border-emerald-200 text-emerald-600 rounded-lg hover:bg-emerald-50 transition-colors disabled:opacity-75 disabled:cursor-not-allowed"
-                                    title="Khôi phục bài viết"
-                                  >
-                                    {restoringPostId === post.id ? (
-                                      <Loader2 size={15} className="animate-spin" />
-                                    ) : (
-                                      <RotateCcw size={15} />
-                                    )}
-                                  </button>
-                                ) : (
-                                  <button
-                                    type="button"
-                                    onClick={() => handleConfirmDelete(post.id)}
-                                    className="p-1.5 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
-                                    title="Xóa bài viết"
-                                  >
-                                    <Trash2 size={15} />
-                                  </button>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan={7} className="py-12 text-center text-gray-400 font-bold">
-                            Không tìm thấy bài viết nào tương ứng.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                )}
-
-                {/* VIEW: CATEGORIES TABLE */}
-                {activeTab === "categories" && (
-                  <table className="w-full min-w-[800px] text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-gray-200 bg-gray-50/75 text-gray-500 font-bold text-xs uppercase tracking-wider whitespace-nowrap">
-                        <th className="py-4 px-6 w-16 text-center">ID</th>
-                        <th className="py-4 px-4 min-w-[200px]">Tên danh mục</th>
-                        <th className="py-4 px-4 w-44 text-right">Số bài viết</th>
-                        <th className="py-4 px-4 w-40 text-center">Priority</th>
-                        <th className="py-4 px-4 w-40 text-center">Trạng thái</th>
-                        <th className="py-4 px-6 w-28 text-center">Thao tác</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-150">
-                      {categoriesLoading ? (
-                        <CategoriesTableSkeleton />
-                      ) : paginatedCategories.length > 0 ? (
-                        paginatedCategories.map((cat) => (
-                          <tr key={cat.id} className="hover:bg-gray-50/50 transition-colors text-sm font-medium whitespace-nowrap">
-                            <td className="py-4 px-6 text-center text-gray-400 font-bold">{cat.id}</td>
-                            <td className="py-4 px-4 text-gray-900 font-semibold whitespace-normal">{cat.name}</td>
-                            <td className="py-4 px-4 text-right text-gray-900 font-mono font-bold">
-                              {cat.postCount}
-                            </td>
-                            <td className="py-4 px-4 text-center">
-                              <div className="inline-block relative">
-                                <select
-                                  value={cat.priority}
-                                  onChange={(e) => handleCategoryPriorityChange(cat.id, Number(e.target.value))}
-                                  className="px-2.5 py-1 text-xs font-bold text-gray-700 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-[#E55956] appearance-none pr-6 cursor-pointer hover:bg-gray-100 transition-colors"
-                                >
-                                  {Array.from({ length: 11 }).map((_, i) => (
-                                    <option key={i} value={i}>
-                                      {i}
-                                    </option>
-                                  ))}
-                                </select>
-                                <ChevronDown size={10} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                              </div>
-                            </td>
-                            <td className="py-4 px-4 text-center">
-                              <button
-                                type="button"
-                                onClick={() => handleCategoryStatusToggle(cat)}
-                                title="Click để đổi trạng thái"
-                                className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-bold transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer shadow-sm ${cat.status === "Hoạt động"
-                                  ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
-                                  : "bg-red-100 text-red-800 hover:bg-red-200"
-                                  }`}
-                              >
-                                {cat.status}
-                              </button>
-                            </td>
-                            <td className="py-4 px-6 text-center">
-                              <div className="flex items-center justify-center gap-2.5">
-                                <button
-                                  type="button"
-                                  onClick={() => handleOpenEditDialog(cat)}
-                                  className="p-1.5 border border-amber-200 text-amber-600 rounded-lg hover:bg-amber-50 transition-colors"
-                                >
-                                  <SquarePen size={15} />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleConfirmDelete(cat.id)}
-                                  className="p-1.5 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
-                                >
-                                  <Trash2 size={15} />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan={6} className="py-12 text-center text-gray-400 font-bold">
-                            Không tìm thấy danh mục nào tương ứng.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                )}
-
-                {/* VIEW: ADS TABLE */}
-                {activeTab === "ads" && (
-                  <table className="w-full min-w-[950px] text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-gray-200 bg-gray-50/75 text-gray-500 font-bold text-xs uppercase tracking-wider whitespace-nowrap">
-                        <th className="py-4 px-6 w-16 text-center">ID</th>
-                        <th className="py-4 px-4 min-w-[250px]">Tên AD</th>
-                        <th className="py-4 px-4 w-36">Vị trí</th>
-                        <th className="py-4 px-4 w-32 text-right">Clicks</th>
-                        <th className="py-4 px-4 w-36 text-center">Thời gian BĐ</th>
-                        <th className="py-4 px-4 w-36 text-center">Thời gian KT</th>
-                        <th className="py-4 px-4 w-36 text-center">Trạng thái</th>
-                        <th className="py-4 px-6 w-28 text-center">Thao tác</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-150">
-                      {adsLoading ? (
-                        <AdsTableSkeleton />
-                      ) : paginatedAds.length > 0 ? (
-                        paginatedAds.map((ad) => (
-                          <tr key={ad.id} className="hover:bg-gray-50/50 transition-colors text-sm font-medium whitespace-nowrap">
-                            <td className="py-4 px-6 text-center text-gray-400 font-bold">{ad.id}</td>
-                            <td className="py-4 px-4 whitespace-normal">
-                              <div className="flex items-center gap-3">
-                                {ad.image ? (
-                                  ad.link ? (
-                                    <a
-                                      href={ad.link}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="relative w-12 h-7 rounded overflow-hidden border border-gray-200 flex-shrink-0 cursor-pointer hover:opacity-85 transition-opacity"
-                                      title="Click to visit link"
-                                    >
-                                      <img src={ad.image} alt={ad.name} className="w-full h-full object-cover" />
-                                    </a>
-                                  ) : (
-                                    <div className="relative w-12 h-7 rounded overflow-hidden border border-gray-200 flex-shrink-0">
-                                      <img src={ad.image} alt={ad.name} className="w-full h-full object-cover" />
-                                    </div>
-                                  )
-                                ) : (
-                                  <div className="w-12 h-7 rounded bg-gray-100 border border-gray-200 flex-shrink-0 flex items-center justify-center text-[10px] text-gray-400 font-bold">
-                                    No Image
-                                  </div>
-                                )}
-                                <div className="flex flex-col min-w-0">
-                                  <span className="text-gray-900 font-semibold truncate max-w-[200px]" title={ad.name}>{ad.name}</span>
-                                  {ad.link ? (
-                                    <a
-                                      href={ad.link}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="text-[10px] text-[#E55956] hover:underline flex items-center gap-0.5 mt-0.5 font-bold"
-                                    >
-                                      <ExternalLink size={10} className="flex-shrink-0" />
-                                      <span className="truncate max-w-[150px]">{ad.link}</span>
-                                    </a>
-                                  ) : (
-                                    <span className="text-[10px] text-gray-400 font-medium mt-0.5">(Không có link)</span>
-                                  )}
-                                </div>
-                              </div>
-                            </td>
-                            <td className="py-4 px-4 text-gray-600 font-bold">{ad.position}</td>
-                            <td className="py-4 px-4 text-right text-gray-900 font-mono font-bold">
-                              {ad.clicks.toLocaleString("en-US")}
-                            </td>
-                            <td className="py-4 px-4 text-center text-gray-500">
-                              {formatDateForDisplay(ad.startDate)}
-                            </td>
-                            <td className="py-4 px-4 text-center text-gray-500">
-                              {formatDateForDisplay(ad.endDate)}
-                            </td>
-                            <td className="py-4 px-4 text-center">
-                              <button
-                                type="button"
-                                onClick={() => handleAdStatusToggle(ad)}
-                                title="Click để đổi trạng thái"
-                                className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-bold transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer shadow-sm ${ad.status === "Hoạt động"
-                                  ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
-                                  : ad.status === "Chờ chạy"
-                                    ? "bg-blue-100 text-blue-800 hover:bg-blue-200"
-                                    : ad.status === "Đã kết thúc"
-                                      ? "bg-gray-100 text-gray-800 hover:bg-gray-200"
-                                      : "bg-red-100 text-red-800 hover:bg-red-200"
-                                  }`}
-                              >
-                                {ad.status}
-                              </button>
-                            </td>
-                            <td className="py-4 px-6 text-center">
-                              <div className="flex items-center justify-center gap-2.5">
-                                <button
-                                  type="button"
-                                  onClick={() => handleOpenEditDialog(ad)}
-                                  className="p-1.5 border border-amber-200 text-amber-600 rounded-lg hover:bg-amber-50 transition-colors"
-                                >
-                                  <SquarePen size={15} />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleConfirmDelete(ad.id)}
-                                  className="p-1.5 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
-                                >
-                                  <Trash2 size={15} />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan={8} className="py-12 text-center text-gray-400 font-bold">
-                            Không tìm thấy quảng cáo nào tương ứng.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                )}
-
-                {/* VIEW: ACCOUNTS TABLE */}
-                {activeTab === "accounts" && (
-                  <table className="w-full min-w-[800px] text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-gray-200 bg-gray-50/75 text-gray-500 font-bold text-xs uppercase tracking-wider whitespace-nowrap">
-                        <th className="py-4 px-6 w-16 text-center">STT</th>
-                        <th className="py-4 px-4 min-w-[200px]">Tên đăng nhập</th>
-                        <th className="py-4 px-4 min-w-[200px]">Tên hiển thị</th>
-                        <th className="py-4 px-4 w-44">Email</th>
-                        <th className="py-4 px-4 w-32 text-center">Vai trò</th>
-                        <th className="py-4 px-4 w-40 text-center">Ngày tạo</th>
-                        <th className="py-4 px-6 w-28 text-center">Thao tác</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-150">
-                      {accountsLoading ? (
-                        <AccountsTableSkeleton />
-                      ) : paginatedAccounts.length > 0 ? (
-                        paginatedAccounts.map((acc, index) => (
-                          <tr key={acc.id} className="hover:bg-gray-50/50 transition-colors text-sm font-medium whitespace-nowrap">
-                            <td className="py-4 px-6 text-center text-gray-400 font-bold">
-                              {(accountsPage - 1) * itemsPerPage + index + 1}
-                            </td>
-                            <td className="py-4 px-4 text-gray-900 font-semibold">{acc.username}</td>
-                            <td className="py-4 px-4 text-gray-750">{acc.display_name}</td>
-                            <td className="py-4 px-4 text-gray-600">{acc.email || "(Chưa cấu hình)"}</td>
-                            <td className="py-4 px-4 text-center">
-                              <span className="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800 uppercase tracking-wide">
-                                {acc.role}
-                              </span>
-                            </td>
-                            <td className="py-4 px-4 text-center text-gray-500">
-                              {formatDateForDisplay(acc.created_at ? acc.created_at.split("T")[0] : "")}
-                            </td>
-                            <td className="py-4 px-6 text-center">
-                              <div className="flex items-center justify-center gap-2.5">
-                                <button
-                                  type="button"
-                                  onClick={() => handleOpenEditDialog(acc)}
-                                  className="p-1.5 border border-amber-200 text-amber-600 rounded-lg hover:bg-amber-50 transition-colors"
-                                  title="Sửa tài khoản"
-                                >
-                                  <SquarePen size={15} />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleConfirmDeleteAccount(acc.id)}
-                                  className="p-1.5 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
-                                  title="Xóa tài khoản"
-                                >
-                                  <Trash2 size={15} />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan={7} className="py-12 text-center text-gray-400 font-bold">
-                            Không tìm thấy tài khoản nào tương ứng.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                )}
-
-              </div>
-
-              {/* PAGINATION CONTROLLER */}
-              <div className="py-4 px-6 border-t border-gray-150 flex items-center justify-center">
-                <div className="inline-flex items-center bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden divide-x divide-gray-200">
-
-                  {/* Prev Button */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (activeTab === "posts" && postsPage > 1) setPostsPage(postsPage - 1);
-                      if (activeTab === "categories" && categoriesPage > 1) setCategoriesPage(categoriesPage - 1);
-                      if (activeTab === "ads" && adsPage > 1) setAdsPage(adsPage - 1);
-                      if (activeTab === "accounts" && accountsPage > 1) setAccountsPage(accountsPage - 1);
-                    }}
-                    disabled={
-                      (activeTab === "posts" && postsPage === 1) ||
-                      (activeTab === "categories" && categoriesPage === 1) ||
-                      (activeTab === "ads" && adsPage === 1) ||
-                      (activeTab === "accounts" && accountsPage === 1)
-                    }
-                    className="px-3 py-2 hover:bg-gray-50 text-gray-500 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
-                  >
-                    <ChevronLeft size={16} />
-                  </button>
-
-                  {/* Page Numbers */}
-                  {Array.from({
-                    length:
-                      activeTab === "posts"
-                        ? postsTotalPages
-                        : activeTab === "categories"
-                          ? categoriesTotalPages
-                          : activeTab === "ads"
-                            ? adsTotalPages
-                            : accountsTotalPages
-                  }).map((_, idx) => {
-                    const pageNumber = idx + 1;
-                    const isCurrent =
-                      activeTab === "posts"
-                        ? postsPage === pageNumber
-                        : activeTab === "categories"
-                          ? categoriesPage === pageNumber
-                          : activeTab === "ads"
-                            ? adsPage === pageNumber
-                            : accountsPage === pageNumber;
-
-                    return (
-                      <button
-                        key={pageNumber}
-                        type="button"
-                        onClick={() => {
-                          if (activeTab === "posts") setPostsPage(pageNumber);
-                          if (activeTab === "categories") setCategoriesPage(pageNumber);
-                          if (activeTab === "ads") setAdsPage(pageNumber);
-                          if (activeTab === "accounts") setAccountsPage(pageNumber);
-                        }}
-                        className={`px-4 py-2 text-xs font-bold transition-all ${isCurrent
-                          ? "bg-[#E55956] text-white"
-                          : "text-gray-700 hover:bg-gray-50"
-                          }`}
-                      >
-                        {pageNumber}
-                      </button>
-                    );
-                  })}
-
-                  {/* Next Button */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (activeTab === "posts" && postsPage < postsTotalPages) setPostsPage(postsPage + 1);
-                      if (activeTab === "categories" && categoriesPage < categoriesTotalPages) setCategoriesPage(categoriesPage + 1);
-                      if (activeTab === "ads" && adsPage < adsTotalPages) setAdsPage(adsPage + 1);
-                      if (activeTab === "accounts" && accountsPage < accountsTotalPages) setAccountsPage(accountsPage + 1);
-                    }}
-                    disabled={
-                      (activeTab === "posts" && postsPage === postsTotalPages) ||
-                      (activeTab === "categories" && categoriesPage === categoriesTotalPages) ||
-                      (activeTab === "ads" && adsPage === adsTotalPages) ||
-                      (activeTab === "accounts" && accountsPage === accountsTotalPages)
-                    }
-                    className="px-3 py-2 hover:bg-gray-50 text-gray-500 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
-                  >
-                    <ChevronRight size={16} />
-                  </button>
-
-                </div>
-              </div>
-
-            </div>
-          </>
+            <DefaultTab
+              activeTab={activeTab}
+              searchQuery={searchQuery}
+              onSearchQueryChange={setSearchQuery}
+              postStartDate={postStartDate}
+              onPostStartDateChange={setPostStartDate}
+              postEndDate={postEndDate}
+              onPostEndDateChange={setPostEndDate}
+              postCategoryFilter={postCategoryFilter}
+              onPostCategoryFilterChange={setPostCategoryFilter}
+              categoryOptions={categoryOptions}
+              onResetFilters={resetFilters}
+              hideDeletedPosts={hideDeletedPosts}
+              onHideDeletedPostsChange={setHideDeletedPosts}
+              onOpenAddDialog={handleOpenAddDialog}
+              postsLoading={postsLoading}
+              paginatedPosts={paginatedPosts}
+              postsPage={postsPage}
+              postsTotalPages={postsTotalPages}
+              onPostsPageChange={setPostsPage}
+              onPostEdit={(post) => handleOpenEditDialog(post)}
+              onPostDelete={(id) => handleConfirmDelete(id)}
+              categoriesLoading={categoriesLoading}
+              paginatedCategories={paginatedCategories}
+              categoriesPage={categoriesPage}
+              categoriesTotalPages={categoriesTotalPages}
+              onCategoriesPageChange={setCategoriesPage}
+              onCategoryEdit={(cat) => handleOpenEditDialog(cat)}
+              onCategoryDelete={(id) => handleConfirmDelete(id)}
+              onCategoryPriorityChange={handleCategoryPriorityChange}
+              onCategoryStatusToggle={handleCategoryStatusToggle}
+              adsLoading={adsLoading}
+              paginatedAds={paginatedAds}
+              adsPage={adsPage}
+              adsTotalPages={adsTotalPages}
+              onAdsPageChange={setAdsPage}
+              onAdEdit={(ad) => handleOpenEditDialog(ad)}
+              onAdDelete={(id) => handleConfirmDelete(id)}
+              onAdStatusToggle={handleAdStatusToggle}
+              accountsLoading={accountsLoading}
+              paginatedAccounts={paginatedAccounts}
+              accountsPage={accountsPage}
+              accountsTotalPages={accountsTotalPages}
+              onAccountsPageChange={setAccountsPage}
+              onAccountEdit={(acc) => handleOpenEditDialog(acc)}
+              onAccountDelete={(id) => handleConfirmDeleteAccount(id)}
+              formatDateForDisplay={formatDateForDisplay}
+            />
           )}
         </main>
 
