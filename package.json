@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "set NEXT_DIST_DIR=.next-dev&& next dev --turbo",
+    "dev": "set NEXT_DIST_DIR=.next-dev&& next dev",
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
