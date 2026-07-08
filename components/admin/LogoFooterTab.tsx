@@ -43,6 +43,7 @@ export default function LogoFooterTab({
   footerEmail,
   footerLicense,
   footerResponsible,
+  onLogoUrlChange,
   onLogoWebsiteNameChange,
   onHeaderZaloUrlChange,
   onHeaderEmailUrlChange,

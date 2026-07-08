@@ -90,3 +90,15 @@ export interface TopPost {
   category: string;
   views: number;
 }
+
+export interface AdminDashboardData {
+  dashboard: {
+    recentActivities: Array<{
+      type: string;
+      title: string;
+      status?: string;
+      createdAt: string;
+    }>;
+  };
+}
+

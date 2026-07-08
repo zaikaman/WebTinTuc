@@ -11,12 +11,10 @@ import LogoutDialog from "@/components/admin/LogoutDialog";
 import ImageDialog from "@/components/admin/ImageDialog";
 import VideoDialog from "@/components/admin/VideoDialog";
 import CropDialog from "@/components/admin/CropDialog";
-import FolderDialog from "@/components/admin/FolderDialog";
 import AccountDialog from "@/components/admin/AccountDialog";
 import CategoryDialog from "@/components/admin/CategoryDialog";
 import AdDialog from "@/components/admin/AdDialog";
 import FormDialog from "@/components/admin/FormDialog";
-import MediaTab from "@/components/admin/MediaTab";
 import DefaultTab from "@/components/admin/DefaultTab";
 import {
   Loader2,
@@ -39,7 +37,7 @@ import {
   ChevronDown,
   LogOut
 } from "lucide-react";
-import { getAdminSettings, getAdminMedia, uploadAdminMedia, deleteAdminMedia, createAdminFolder, getAdminCategories, createAdminCategory, updateAdminCategory, deleteAdminCategory, getAdminArticles, getAdminArticleById, createAdminArticle, updateAdminArticle, deleteAdminArticle, getAdminAds, createAdminAd, updateAdminAd, deleteAdminAd, getAdminAccounts, createAdminAccount, updateAdminAccount, deleteAdminAccount } from "@/lib/api/adminClient";
+import { getAdminSettings, getAdminMedia, uploadAdminMedia, getAdminCategories, createAdminCategory, updateAdminCategory, deleteAdminCategory, getAdminArticles, getAdminArticleById, createAdminArticle, updateAdminArticle, deleteAdminArticle, getAdminAds, createAdminAd, updateAdminAd, deleteAdminAd, getAdminAccounts, createAdminAccount, updateAdminAccount, deleteAdminAccount } from "@/lib/api/adminClient";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase/client";
 
@@ -215,14 +213,6 @@ export default function AdminDashboard() {
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
   const [mediaLoading, setMediaLoading] = useState(false);
 
-  const [mediaSort, setMediaSort] = useState<"newest" | "oldest" | "az">("newest");
-
-  const [mediaSearchQuery, setMediaSearchQuery] = useState("");
-  const [mediaTypeFilter, setMediaTypeFilter] = useState<"all" | "image" | "video">("all");
-  const [activeFolder, setActiveFolder] = useState<string>("");
-  const [folders, setFolders] = useState<string[]>([]);
-  const [folderDialogOpen, setFolderDialogOpen] = useState(false);
-  const [newFolderName, setNewFolderName] = useState("");
   const [imageDialogOpen, setImageDialogOpen] = useState(false);
   const [imageUrl, setImageUrl] = useState("");
   const [imageCaption, setImageCaption] = useState("");
@@ -234,19 +224,6 @@ export default function AdminDashboard() {
   const [cropImageUrl, setCropImageUrl] = useState("");
   const [cropImageElementId, setCropImageElementId] = useState("");
   const [cropArea, setCropArea] = useState({ x: 10, y: 10, width: 80, height: 80 });
-
-  const loadFolders = async () => {
-    try {
-      const res = await getAdminMedia("");
-      if (res && res.subFolders) {
-        const uniqueFolders = Array.from(new Set([
-          ...res.subFolders.map((sf) => sf.name),
-          "articles", "ads", "categories" // default folders
-        ]));
-        setFolders(uniqueFolders);
-      }
-    } catch (err) { }
-  };
 
   const loadMedia = async () => {
     try {
@@ -380,10 +357,6 @@ export default function AdminDashboard() {
     }
     if (activeTab === "categories") {
       loadCategories();
-    }
-    if (activeTab === "media") {
-      loadMedia();
-      loadFolders();
     }
     if (activeTab === "ads") {
       loadAds();
@@ -530,18 +503,13 @@ export default function AdminDashboard() {
   const [isAccountSaving, setIsAccountSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const [isMediaUploading, setIsMediaUploading] = useState(false);
-  const [deletingMediaKey, setDeletingMediaKey] = useState<string | null>(null);
-
 
   // Pagination states
   const [postsPage, setPostsPage] = useState(1);
   const [categoriesPage, setCategoriesPage] = useState(1);
   const [adsPage, setAdsPage] = useState(1);
-  const [mediaPage, setMediaPage] = useState(1);
   const [accountsPage, setAccountsPage] = useState(1);
   const itemsPerPage = 6;
-  const mediaItemsPerPage = 6;
 
   // Dialog / Modal Form states
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -734,39 +702,7 @@ export default function AdminDashboard() {
   const adsTotalPages = Math.ceil(filteredAds.length / itemsPerPage) || 1;
   const accountsTotalPages = Math.ceil(filteredAccounts.length / itemsPerPage) || 1;
 
-  const filteredMedia = useMemo(() => {
-    const filtered = mediaItems.filter((item) => {
-      const matchesSearch = item.title.toLowerCase().includes(mediaSearchQuery.toLowerCase()) ||
-        item.url.toLowerCase().includes(mediaSearchQuery.toLowerCase());
-      const matchesType = mediaTypeFilter === "all" || item.type === mediaTypeFilter;
-      const matchesFolder = activeFolder ? (item.folder === activeFolder) : true;
-      return matchesSearch && matchesType && matchesFolder;
-    });
 
-    return filtered.sort((a, b) => {
-      if (mediaSort === "newest") {
-        return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
-      }
-      if (mediaSort === "oldest") {
-        return new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
-      }
-      if (mediaSort === "az") {
-        return a.title.localeCompare(b.title);
-      }
-      return 0;
-    });
-  }, [mediaItems, mediaSearchQuery, mediaTypeFilter, activeFolder, mediaSort]);
-
-  const paginatedMedia = useMemo(() => {
-    const start = (mediaPage - 1) * mediaItemsPerPage;
-    return filteredMedia.slice(start, start + mediaItemsPerPage);
-  }, [filteredMedia, mediaPage]);
-
-  const mediaTotalPages = Math.ceil(filteredMedia.length / mediaItemsPerPage) || 1;
-
-  useEffect(() => {
-    setMediaPage(1);
-  }, [mediaSearchQuery, mediaTypeFilter, activeFolder]);
 
   // Categories list options
   const categoryOptions = useMemo(() => {
@@ -1481,40 +1417,7 @@ export default function AdminDashboard() {
     setImageFileName("");
   };
 
-  const handleMediaDirectUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
 
-    try {
-      setIsMediaUploading(true);
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const isVideo = file.type.startsWith("video/");
-        const isImage = file.type.startsWith("image/");
-
-        if (!isImage && !isVideo) {
-          toast.error(`File "${file.name}" không hợp lệ!`);
-          continue;
-        }
-
-        toast.loading(`Đang tải lên ${file.name}...`, { id: `upload-${file.name}` });
-        try {
-          const formData = new FormData();
-          formData.append("file", file);
-          if (activeFolder) formData.append("folder", activeFolder);
-
-          await uploadAdminMedia(formData);
-          toast.success(`Tải lên thành công: ${file.name}`, { id: `upload-${file.name}` });
-        } catch (err: any) {
-          toast.error(`Lỗi tải lên ${file.name}: ${err.message}`, { id: `upload-${file.name}` });
-        }
-      }
-    } finally {
-      setIsMediaUploading(false);
-      loadMedia();
-      e.target.value = "";
-    }
-  };
 
   const insertHtmlToEditor = (html: string) => {
     console.log("insertHtmlToEditor: HTML to insert is", html);
@@ -2152,116 +2055,54 @@ export default function AdminDashboard() {
 
         {/* CONTAINER CONTENT */}
         <main className="flex-1 p-6 md:p-8 max-w-7xl w-full mx-auto space-y-6">
-          {activeTab === "media" ? (
-            <MediaTab
-              loading={mediaLoading}
-              isUploading={isMediaUploading}
-              mediaTypeFilter={mediaTypeFilter}
-              onMediaTypeFilterChange={setMediaTypeFilter as any}
-              mediaSearchQuery={mediaSearchQuery}
-              onMediaSearchQueryChange={setMediaSearchQuery}
-              folders={folders}
-              activeFolder={activeFolder}
-              onActiveFolderChange={setActiveFolder}
-              onFolderDelete={(folderName) => {
-                if (confirm(`Bạn có chắc chắn muốn xóa thư mục "${folderName}" khỏi danh sách hiển thị?`)) {
-                  setFolders(prev => prev.filter(f => f !== folderName));
-                  if (activeFolder === folderName) setActiveFolder("");
-                  toast.success(`Đã xóa thư mục: ${folderName}`);
-                }
-              }}
-              onOpenFolderDialog={() => {
-                setNewFolderName("");
-                setFolderDialogOpen(true);
-              }}
-              mediaSort={mediaSort}
-              onMediaSortChange={setMediaSort as any}
-              filteredMedia={filteredMedia}
-              paginatedMedia={paginatedMedia}
-              mediaPage={mediaPage}
-              mediaTotalPages={mediaTotalPages}
-              onMediaPageChange={setMediaPage}
-              deletingMediaKey={deletingMediaKey}
-              onMediaDelete={(key) => {
-                if (confirm("Bạn có chắc chắn muốn xóa file media này không?")) {
-                  (async () => {
-                    try {
-                      setDeletingMediaKey(key);
-                      toast.loading("Đang xóa...", { id: "media-delete" });
-                      await deleteAdminMedia(key);
-                      toast.success("Đã xóa file media thành công!", { id: "media-delete" });
-                      loadMedia();
-                    } catch (err) {
-                      toast.error("Lỗi khi xóa file media!", { id: "media-delete" });
-                    } finally {
-                      setDeletingMediaKey(null);
-                    }
-                  })();
-                }
-              }}
-              onMediaCopyUrl={(url) => {
-                const copyUrl = url.startsWith("blob:") || url.startsWith("data:") || url.startsWith("http") ? url : (window.location.origin + url);
-                navigator.clipboard.writeText(copyUrl);
-                toast.success("Đã sao chép link media vào bộ nhớ tạm!");
-              }}
-              onMediaPreview={(url) => {
-                const previewUrl = url.startsWith("blob:") || url.startsWith("data:") || url.startsWith("http") ? url : (window.location.origin + url);
-                window.open(previewUrl, '_blank');
-              }}
-              onUploadClick={() => {
-                document.getElementById("media-direct-upload")?.click();
-              }}
-            />
-          ) : (
-            <DefaultTab
-              activeTab={activeTab}
-              searchQuery={searchQuery}
-              onSearchQueryChange={setSearchQuery}
-              postStartDate={postStartDate}
-              onPostStartDateChange={setPostStartDate}
-              postEndDate={postEndDate}
-              onPostEndDateChange={setPostEndDate}
-              postCategoryFilter={postCategoryFilter}
-              onPostCategoryFilterChange={setPostCategoryFilter}
-              categoryOptions={categoryOptions}
-              onResetFilters={resetFilters}
-              hideDeletedPosts={hideDeletedPosts}
-              onHideDeletedPostsChange={setHideDeletedPosts}
-              onOpenAddDialog={handleOpenAddDialog}
-              postsLoading={postsLoading}
-              paginatedPosts={paginatedPosts}
-              postsPage={postsPage}
-              postsTotalPages={postsTotalPages}
-              onPostsPageChange={setPostsPage}
-              onPostEdit={(post) => handleOpenEditDialog(post)}
-              onPostDelete={(id) => handleConfirmDelete(id)}
-              categoriesLoading={categoriesLoading}
-              paginatedCategories={paginatedCategories}
-              categoriesPage={categoriesPage}
-              categoriesTotalPages={categoriesTotalPages}
-              onCategoriesPageChange={setCategoriesPage}
-              onCategoryEdit={(cat) => handleOpenEditDialog(cat)}
-              onCategoryDelete={(id) => handleConfirmDelete(id)}
-              onCategoryPriorityChange={handleCategoryPriorityChange}
-              onCategoryStatusToggle={handleCategoryStatusToggle}
-              adsLoading={adsLoading}
-              paginatedAds={paginatedAds}
-              adsPage={adsPage}
-              adsTotalPages={adsTotalPages}
-              onAdsPageChange={setAdsPage}
-              onAdEdit={(ad) => handleOpenEditDialog(ad)}
-              onAdDelete={(id) => handleConfirmDelete(id)}
-              onAdStatusToggle={handleAdStatusToggle}
-              accountsLoading={accountsLoading}
-              paginatedAccounts={paginatedAccounts}
-              accountsPage={accountsPage}
-              accountsTotalPages={accountsTotalPages}
-              onAccountsPageChange={setAccountsPage}
-              onAccountEdit={(acc) => handleOpenEditDialog(acc)}
-              onAccountDelete={(id) => handleConfirmDeleteAccount(id)}
-              formatDateForDisplay={formatDateForDisplay}
-            />
-          )}
+          <DefaultTab
+            activeTab={activeTab}
+            searchQuery={searchQuery}
+            onSearchQueryChange={setSearchQuery}
+            postStartDate={postStartDate}
+            onPostStartDateChange={setPostStartDate}
+            postEndDate={postEndDate}
+            onPostEndDateChange={setPostEndDate}
+            postCategoryFilter={postCategoryFilter}
+            onPostCategoryFilterChange={setPostCategoryFilter}
+            categoryOptions={categoryOptions}
+            onResetFilters={resetFilters}
+            hideDeletedPosts={hideDeletedPosts}
+            onHideDeletedPostsChange={setHideDeletedPosts}
+            onOpenAddDialog={handleOpenAddDialog}
+            postsLoading={postsLoading}
+            paginatedPosts={paginatedPosts}
+            postsPage={postsPage}
+            postsTotalPages={postsTotalPages}
+            onPostsPageChange={setPostsPage}
+            onPostEdit={(post) => handleOpenEditDialog(post)}
+            onPostDelete={(id) => handleConfirmDelete(id)}
+            categoriesLoading={categoriesLoading}
+            paginatedCategories={paginatedCategories}
+            categoriesPage={categoriesPage}
+            categoriesTotalPages={categoriesTotalPages}
+            onCategoriesPageChange={setCategoriesPage}
+            onCategoryEdit={(cat) => handleOpenEditDialog(cat)}
+            onCategoryDelete={(id) => handleConfirmDelete(id)}
+            onCategoryPriorityChange={handleCategoryPriorityChange}
+            onCategoryStatusToggle={handleCategoryStatusToggle}
+            adsLoading={adsLoading}
+            paginatedAds={paginatedAds}
+            adsPage={adsPage}
+            adsTotalPages={adsTotalPages}
+            onAdsPageChange={setAdsPage}
+            onAdEdit={(ad) => handleOpenEditDialog(ad)}
+            onAdDelete={(id) => handleConfirmDelete(id)}
+            onAdStatusToggle={handleAdStatusToggle}
+            accountsLoading={accountsLoading}
+            paginatedAccounts={paginatedAccounts}
+            accountsPage={accountsPage}
+            accountsTotalPages={accountsTotalPages}
+            onAccountsPageChange={setAccountsPage}
+            onAccountEdit={(acc) => handleOpenEditDialog(acc)}
+            onAccountDelete={(id) => handleConfirmDeleteAccount(id)}
+            formatDateForDisplay={formatDateForDisplay}
+          />
         </main>
 
       </div>
@@ -2344,37 +2185,7 @@ export default function AdminDashboard() {
         onConfirm={handleLogout}
       />
 
-      {/* ==========================================
-        MODAL: CREATE FOLDER DIALOG
-        ========================================== */}
-      <FolderDialog
-        open={folderDialogOpen}
-        onOpenChange={setFolderDialogOpen}
-        newFolderName={newFolderName}
-        onFolderNameChange={setNewFolderName}
-        activeFolder={activeFolder}
-        onCreateFolder={async () => {
-          try {
-            toast.loading("Đang tạo thư mục...", { id: "media-folder" });
-            await createAdminFolder(newFolderName.trim(), activeFolder);
-            toast.success(`Đã thêm thư mục: ${newFolderName.trim()}`, { id: "media-folder" });
-            setFolderDialogOpen(false);
-            setNewFolderName("");
-            await loadFolders();
-          } catch (err) {
-            toast.error("Lỗi khi tạo thư mục!", { id: "media-folder" });
-          }
-        }}
-      />
 
-      <input
-        type="file"
-        id="media-direct-upload"
-        className="hidden"
-        multiple
-        accept="image/*,video/*"
-        onChange={handleMediaDirectUpload}
-      />
 
     </div>
   );
