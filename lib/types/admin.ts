@@ -107,6 +107,10 @@ export interface AdminDashboardStats {
   totalAds: number
   totalViews: number
   totalClicks: number
+  prevYearViews?: number
+  prevYearClicks?: number
+  periodArticles?: number
+  prevPeriodArticles?: number
   todayViews: number
   yesterdayViews: number
   todayClicks: number

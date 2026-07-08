@@ -92,7 +92,20 @@ export const moveAdminMedia = (fromKey: string, toKey: string) => fetchAdmin<{ s
 
 export const createAdminFolder = (folderName: string, parentPrefix: string = "") => fetchAdmin<{ success: boolean; key: string }>("/storage/folder", { method: "POST", body: JSON.stringify({ folderName, parentPrefix }) });
 
-export const getAdminDashboardStats = () => fetchAdmin<AdminDashboardStats>("/dashboard");
+export const getAdminDashboardStats = (params?: {
+  timeFilter?: string
+  day?: string
+  month?: string
+  year?: string
+}) => {
+  const queryParts: string[] = []
+  if (params?.timeFilter) queryParts.push(`timeFilter=${params.timeFilter}`)
+  if (params?.day) queryParts.push(`day=${params.day}`)
+  if (params?.month) queryParts.push(`month=${params.month}`)
+  if (params?.year) queryParts.push(`year=${params.year}`)
+  const qs = queryParts.length > 0 ? `?${queryParts.join('&')}` : ''
+  return fetchAdmin<AdminDashboardStats>(`/dashboard${qs}`)
+}
 
 // ACCOUNTS
 export const getAdminAccounts = (qs = "") => fetchAdmin<{ items: AdminAccount[] }>(`/accounts${qs}`);

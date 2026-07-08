@@ -19,6 +19,7 @@ interface DashboardTabProps {
   categoryStats: Array<{ name: string; count: number; percentage: number }>;
   topPosts: Array<{ title: string; views: number; category: string; id?: number }>;
   onExportReport: () => void;
+  onApplyFilter: () => void;
   getCategoryStyles: (name: string) => { color: string; bg: string; icon: React.ComponentType<{ className?: string }> };
 }
 
@@ -37,6 +38,7 @@ export default function DashboardTab({
   categoryStats,
   topPosts,
   onExportReport,
+  onApplyFilter,
   getCategoryStyles,
 }: DashboardTabProps) {
   if (loading) {
@@ -144,11 +146,7 @@ export default function DashboardTab({
             type="button"
             onClick={() => {
               if (dashboardDay || dashboardMonth || dashboardYear) {
-                const parts: string[] = [];
-                if (dashboardDay) parts.push(dashboardDay);
-                if (dashboardMonth) parts.push(dashboardMonth);
-                if (dashboardYear) parts.push(dashboardYear);
-                // toast goes here — we'll leave it for the parent
+                onApplyFilter();
               }
             }}
             className="px-5 py-2.5 bg-gray-900 hover:bg-black active:scale-[0.98] text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center justify-center h-[38px]"

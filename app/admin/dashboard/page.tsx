@@ -44,10 +44,15 @@ export default function DashboardPage() {
   const [dashboardYear, setDashboardYear] = useState("");
 
   // --- Data fetching ---
-  const loadDashboardStats = useCallback(async () => {
+  const loadDashboardStats = useCallback(async (params?: {
+    timeFilter?: string;
+    day?: string;
+    month?: string;
+    year?: string;
+  }) => {
     try {
       setDashboardLoading(true);
-      const res = await getAdminDashboardStats();
+      const res = await getAdminDashboardStats(params);
       if (res) {
         setDashboardData(res);
       }
@@ -58,11 +63,37 @@ export default function DashboardPage() {
     }
   }, []);
 
+  const handleTimeFilterChange = useCallback((filter: string) => {
+    setDashboardDay("");
+    setDashboardMonth("");
+    setDashboardYear("");
+    setTimeFilter(filter as any);
+  }, []);
+
+  const handleApplyFilter = useCallback(() => {
+    let newTimeFilter: "today" | "week" | "month" | "year" = "month";
+    if (dashboardDay) {
+      newTimeFilter = "today";
+    } else if (dashboardMonth) {
+      newTimeFilter = "month";
+    } else if (dashboardYear) {
+      newTimeFilter = "year";
+    }
+
+    setTimeFilter(newTimeFilter);
+    loadDashboardStats({
+      timeFilter: newTimeFilter,
+      day: dashboardDay,
+      month: dashboardMonth,
+      year: dashboardYear
+    });
+  }, [dashboardDay, dashboardMonth, dashboardYear, loadDashboardStats]);
+
   useEffect(() => {
     if (auth.isLoggedIn && auth.isAuthVerified) {
-      loadDashboardStats();
+      loadDashboardStats({ timeFilter });
     }
-  }, [auth.isLoggedIn, auth.isAuthVerified, loadDashboardStats]);
+  }, [auth.isLoggedIn, auth.isAuthVerified, timeFilter, loadDashboardStats]);
 
   // --- Memoized dashboard stats ---
   const dashboardStats = useMemo(() => {
@@ -95,6 +126,7 @@ export default function DashboardPage() {
     };
 
     const totalArticles = dashboardData.totalArticles || 0;
+    const currPosts = dashboardData.periodArticles !== undefined ? dashboardData.periodArticles : totalArticles;
 
     switch (timeFilter) {
       case "today": {
@@ -105,7 +137,7 @@ export default function DashboardPage() {
         return {
           views: currViews.toLocaleString("vi-VN") + " lượt",
           viewsVal: formatViews(currViews),
-          posts: totalArticles,
+          posts: currPosts,
           clicks: currClicks.toLocaleString("vi-VN"),
           viewsChange: getPercentageChange(currViews, prevViews),
           postsChange: `Tổng: ${totalArticles}`,
@@ -123,7 +155,7 @@ export default function DashboardPage() {
         return {
           views: currViews.toLocaleString("vi-VN") + " lượt",
           viewsVal: formatViews(currViews),
-          posts: totalArticles,
+          posts: currPosts,
           clicks: currClicks.toLocaleString("vi-VN"),
           viewsChange: getPercentageChange(currViews, prevViews),
           postsChange: `Tổng: ${totalArticles}`,
@@ -141,7 +173,7 @@ export default function DashboardPage() {
         return {
           views: currViews.toLocaleString("vi-VN") + " lượt",
           viewsVal: formatViews(currViews),
-          posts: totalArticles,
+          posts: currPosts,
           clicks: currClicks.toLocaleString("vi-VN"),
           viewsChange: getPercentageChange(currViews, prevViews),
           postsChange: `Tổng: ${totalArticles}`,
@@ -154,18 +186,20 @@ export default function DashboardPage() {
       case "year":
       default: {
         const currViews = dashboardData.totalViews || 0;
+        const prevViews = dashboardData.prevYearViews || 0;
         const currClicks = dashboardData.totalClicks || 0;
+        const prevClicks = dashboardData.prevYearClicks || 0;
         return {
           views: currViews.toLocaleString("vi-VN") + " lượt",
           viewsVal: formatViews(currViews),
-          posts: totalArticles,
+          posts: currPosts,
           clicks: currClicks.toLocaleString("vi-VN"),
-          viewsChange: "+0%",
+          viewsChange: getPercentageChange(currViews, prevViews),
           postsChange: `Tổng: ${totalArticles}`,
-          clicksChange: "+0%",
-          isViewsUp: true,
+          clicksChange: getPercentageChange(currClicks, prevClicks),
+          isViewsUp: currViews >= prevViews,
           isPostsUp: true,
-          isClicksUp: true,
+          isClicksUp: currClicks >= prevClicks,
         };
       }
     }
@@ -350,7 +384,7 @@ export default function DashboardPage() {
             stats={dashboardStats}
             dashboardData={dashboardData}
             timeFilter={timeFilter}
-            onTimeFilterChange={(filter) => setTimeFilter(filter as any)}
+            onTimeFilterChange={handleTimeFilterChange}
             dashboardDay={dashboardDay}
             onDashboardDayChange={setDashboardDay}
             dashboardMonth={dashboardMonth}
@@ -360,6 +394,7 @@ export default function DashboardPage() {
             categoryStats={categoryStats}
             topPosts={topPosts}
             onExportReport={handleExportReport}
+            onApplyFilter={handleApplyFilter}
             getCategoryStyles={getCategoryStyles}
           />
         </main>
