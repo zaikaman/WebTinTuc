@@ -86,7 +86,7 @@ export async function listPublicArticles(options: ArticleListOptions = {}) {
 
   let query = supabaseAdmin
     .from('articles')
-    .select(`id, title, slug, summary, thumbnail_key, category_id, author_id, views, status, featured, created_at, updated_at, published_at, deleted_at, seo_title, seo_description, ${categorySelect}, profiles(*)`, countOption ? { count: countOption } : undefined)
+    .select(`id, title, slug, summary, thumbnail_key, category_id, author_id, views, status, featured, created_at, updated_at, published_at, ${categorySelect}, profiles(username, display_name)`, countOption ? { count: countOption } : undefined)
     .eq('status', 'published')
     .is('deleted_at', null)
     .range(from, to)
