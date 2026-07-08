@@ -281,7 +281,7 @@ export async function listTrendingArticles(limit = 10, days = 7) {
       const article = articleMap.get(row.article_id)
       return article ? { ...article, trending_views: row.total_views } : null
     })
-    .filter((a): a is Exclude<typeof a, null> => a !== null)
+    .filter(<T>(a: T): a is NonNullable<T> => a !== null)
 }
 
 export async function incrementArticleViews(id: number, count: number) {

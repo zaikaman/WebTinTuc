@@ -224,9 +224,6 @@ export async function getDashboardStats() {
       articleStatsData,
       // Fetch all ad stats from last 60 days in exactly 1 query to avoid N queries
       adStatsData,
-      // Fetch all-time totals
-      allTimeArticleStats,
-      allTimeAdStats
     ] = await Promise.all([
       countRows('articles', (query) => query.is('deleted_at', null)),
       countRows('categories', (query) => query.is('deleted_at', null)),
@@ -238,9 +235,7 @@ export async function getDashboardStats() {
       supabaseAdmin.from('ads').select('id, name, created_at, status').is('deleted_at', null).order('created_at', { ascending: false }).limit(5),
       supabaseAdmin.from('categories').select('id, name, created_at').is('deleted_at', null).order('created_at', { ascending: false }).limit(5),
       supabaseAdmin.from('article_stats_daily').select('date, views').gte('date', prevMonthStart),
-      supabaseAdmin.from('ad_stats_daily').select('date, clicks').gte('date', prevMonthStart),
-      supabaseAdmin.from('article_stats_daily').select('views'),
-      supabaseAdmin.from('ad_stats_daily').select('clicks')
+      supabaseAdmin.from('ad_stats_daily').select('date, clicks').gte('date', prevMonthStart)
     ])
 
     totalArticles = countArt
@@ -253,11 +248,8 @@ export async function getDashboardStats() {
     latestAds = latAd
     latestCategories = latCat
 
-    // Compute all-time sums
-    totalViews = (allTimeArticleStats.data ?? []).reduce((sum, row) => sum + Number(row.views ?? 0), 0)
-    totalClicks = (allTimeAdStats.data ?? []).reduce((sum, row) => sum + Number(row.clicks ?? 0), 0)
-
     // Compute daily stats ranges in JS from the 60-day query data (saves 12+ SQL queries!)
+    // totalViews and totalClicks are derived from the same 60-day window to avoid full table scans
     const articleStats = articleStatsData.data ?? []
     for (const row of articleStats) {
       const date = row.date
@@ -271,7 +263,12 @@ export async function getDashboardStats() {
       if (date >= prevMonthStart && date < monthStart) prevMonthViews += views
     }
 
+    // Compute totals from the 60-day window (same data, no extra query)
+    totalViews = articleStats.reduce((sum, row) => sum + Number(row.views ?? 0), 0)
+
     const adStats = adStatsData.data ?? []
+    totalClicks = adStats.reduce((sum, row) => sum + Number(row.clicks ?? 0), 0)
+
     for (const row of adStats) {
       const date = row.date
       const clicks = Number(row.clicks ?? 0)
