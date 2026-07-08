@@ -5,7 +5,6 @@ import { usePathname, useRouter } from "next/navigation";
 import type { Post, Category, Ad, AdminAccount, TabType } from "@/components/admin/AdminTypes";
 import { htmlToBlocks, blocksToHtml, formatDateForDisplay, getCategoryStyles } from "@/components/admin/AdminUtils";
 import {
-  LogoFooterSkeleton,
   PostsTableSkeleton,
   CategoriesTableSkeleton,
   AdsTableSkeleton,
@@ -24,6 +23,7 @@ import CategoryDialog from "@/components/admin/CategoryDialog";
 import AdDialog from "@/components/admin/AdDialog";
 import FormDialog from "@/components/admin/FormDialog";
 import DashboardTab from "@/components/admin/DashboardTab";
+import LogoFooterTab from "@/components/admin/LogoFooterTab";
 import {
   Loader2,
   Image as ImageIcon,
@@ -50,7 +50,6 @@ import {
   Video,
   Upload,
   ChevronDown,
-  Download,
   Eye,
   LogOut,
   Copy,
@@ -2456,292 +2455,79 @@ export default function AdminDashboard() {
             getCategoryStyles={getCategoryStyles}
           />
           ) : activeTab === "logo-footer" ? (
-          settingsLoading ? (
-          <LogoFooterSkeleton />
-          ) : (
-          <div className="space-y-6">
-            {/* CARD 1: Header action */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-150 shadow-sm">
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">
-                  Quản lý Footer & Nhận diện
-                </h2>
-                <p className="text-xs text-gray-500 mt-1 font-medium">
-                  Chỉnh sửa thông tin hiển thị cuối trang và logo website
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={async () => {
-                  try {
-                    setIsSettingsSaving(true);
-                    toast.loading("Đang lưu cấu hình...", { id: "save-logo-footer" });
-                    const updatedPayload = {
-                      brand: {
-                        name: logoWebsiteName,
-                        logo_url: logoUrl,
-                        copyright: footerOperator,
-                        utilityLinks: [],
-                        socialLinks: [
-                          {
-                            label: "Zalo",
-                            href: headerZaloUrl || "https://zalo.me",
-                            platform: "zalo"
-                          },
-                          {
-                            label: "Email",
-                            href: headerEmailUrl || "mailto:quangcao@linhka.vn",
-                            platform: "email"
-                          }
-                        ]
-                      },
-                      footer: {
-                        address: footerAddress,
-                        phone: footerPhone,
-                        email: footerEmail,
-                        license: footerLicense,
-                        responsible: footerResponsible
-                      }
-                    };
-                    await updateAdminSettings(updatedPayload);
-                    cachedSettings = updatedPayload; // Cập nhật cache tức thời
-                    toast.success("Lưu thay đổi thành công!", { id: "save-logo-footer" });
-                  } catch (err) {
-                    toast.error("Lỗi khi lưu cấu hình!", { id: "save-logo-footer" });
-                  } finally {
-                    setIsSettingsSaving(false);
+            <LogoFooterTab
+            loading={settingsLoading}
+            isSaving={isSettingsSaving}
+            logoUrl={logoUrl}
+            logoWebsiteName={logoWebsiteName}
+            headerZaloUrl={headerZaloUrl}
+            headerEmailUrl={headerEmailUrl}
+            footerOperator={footerOperator}
+            footerAddress={footerAddress}
+            footerPhone={footerPhone}
+            footerEmail={footerEmail}
+            footerLicense={footerLicense}
+            footerResponsible={footerResponsible}
+            onLogoUrlChange={setLogoUrl}
+            onLogoWebsiteNameChange={setLogoWebsiteName}
+            onHeaderZaloUrlChange={setHeaderZaloUrl}
+            onHeaderEmailUrlChange={setHeaderEmailUrl}
+            onFooterOperatorChange={setFooterOperator}
+            onFooterAddressChange={setFooterAddress}
+            onFooterPhoneChange={setFooterPhone}
+            onFooterEmailChange={setFooterEmail}
+            onFooterLicenseChange={setFooterLicense}
+            onFooterResponsibleChange={setFooterResponsible}
+            onSave={async () => {
+              try {
+                setIsSettingsSaving(true);
+                toast.loading("Đang lưu cấu hình...", { id: "save-logo-footer" });
+                const updatedPayload = {
+                  brand: {
+                    name: logoWebsiteName,
+                    logo_url: logoUrl,
+                    copyright: footerOperator,
+                    utilityLinks: [],
+                    socialLinks: [
+                      { label: "Zalo", href: headerZaloUrl || "https://zalo.me", platform: "zalo" },
+                      { label: "Email", href: headerEmailUrl || "mailto:quangcao@linhka.vn", platform: "email" }
+                    ]
+                  },
+                  footer: {
+                    address: footerAddress,
+                    phone: footerPhone,
+                    email: footerEmail,
+                    license: footerLicense,
+                    responsible: footerResponsible
                   }
-                }}
-                disabled={isSettingsSaving}
-                className="flex items-center justify-center gap-2 px-5 py-2.5 bg-[#E55956] hover:bg-[#cb4643] active:scale-[0.98] text-white text-sm font-bold rounded-xl shadow-md transition-all self-start sm:self-center disabled:opacity-70 disabled:cursor-not-allowed"
-              >
-                {isSettingsSaving ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Download size={16} />
-                )}
-                <span>Lưu thay đổi</span>
-              </button>
-            </div>
-
-            {/* CARD 2: Logo Website */}
-            <div className="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm space-y-4">
-              <h3 className="text-lg font-bold text-gray-900">
-                Logo website
-              </h3>
-
-              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
-                {/* Dashed Upload Box */}
-                <div className="flex flex-col items-center flex-shrink-0">
-                  <label
-                    htmlFor="logo-upload-input"
-                    className="w-[90px] h-[90px] border-2 border-dashed border-gray-200 hover:border-[#E55956] rounded-xl flex items-center justify-center bg-gray-50/50 cursor-pointer overflow-hidden transition-all group relative"
-                  >
-                    {logoUrl ? (
-                      <img
-                        src={logoUrl}
-                        alt="Logo Preview"
-                        className="w-full h-full object-contain"
-                      />
-                    ) : (
-                      <div className="flex flex-col items-center justify-center text-gray-400 group-hover:text-[#E55956] transition-colors">
-                        <Upload size={20} />
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px] font-bold">
-                      Đổi ảnh
-                    </div>
-                  </label>
-                  <input
-                    type="file"
-                    id="logo-upload-input"
-                    accept="image/*"
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        toast.loading("Đang tải ảnh logo lên...", { id: "upload-logo" });
-                        try {
-                          const formData = new FormData();
-                          formData.append("file", file);
-                          formData.append("folder", "settings");
-                          const res = await uploadAdminMedia(formData);
-                          if (res && res.url) {
-                            setLogoUrl(res.url);
-                            toast.success("Đã tải logo lên thành công!", { id: "upload-logo" });
-                          } else {
-                            throw new Error("Không nhận được URL từ server");
-                          }
-                        } catch (err: any) {
-                          toast.error("Tải logo thất bại: " + (err.message || err), { id: "upload-logo" });
-                        }
-                      }
-                    }}
-                    className="hidden"
-                  />
-                  <div className="flex flex-col items-center gap-1 mt-2">
-                    <button
-                      type="button"
-                      onClick={() => document.getElementById("logo-upload-input")?.click()}
-                      className="text-[#E55956] hover:text-[#cb4643] text-xs font-bold transition-colors cursor-pointer"
-                    >
-                      Đổi logo
-                    </button>
-                    {logoUrl && (
-                      <button
-                        type="button"
-                        onClick={() => setLogoUrl(null)}
-                        className="text-red-500 hover:text-red-600 text-xs font-bold transition-colors cursor-pointer"
-                      >
-                        Xóa logo
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Logo name input */}
-                <div className="w-full sm:flex-1 space-y-1.5">
-                  <label className="block text-sm font-bold text-gray-600">
-                    Tên website
-                  </label>
-                  <input
-                    type="text"
-                    value={logoWebsiteName}
-                    onChange={(e) => setLogoWebsiteName(e.target.value)}
-                    placeholder="Nhập tên website..."
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white font-medium text-gray-800"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* CARD 2.5: Cấu hình Mạng xã hội Header */}
-            <div className="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm space-y-5">
-              <h3 className="text-lg font-bold text-gray-900">
-                Cấu hình Mạng xã hội Header
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <div className="space-y-1.5">
-                  <label className="block text-sm font-bold text-gray-600">
-                    Link Zalo (Header)
-                  </label>
-                  <input
-                    type="text"
-                    value={headerZaloUrl}
-                    onChange={(e) => setHeaderZaloUrl(e.target.value)}
-                    placeholder="VD: https://zalo.me/sdt"
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white font-medium text-gray-800"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="block text-sm font-bold text-gray-600">
-                    Link Email (Header)
-                  </label>
-                  <input
-                    type="text"
-                    value={headerEmailUrl}
-                    onChange={(e) => setHeaderEmailUrl(e.target.value)}
-                    placeholder="VD: mailto:quangcao@linhka.vn"
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white font-medium text-gray-800"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* CARD 3: Thông tin Footer */}
-            <div className="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm space-y-5">
-              <h3 className="text-lg font-bold text-gray-900">
-                Thông tin Footer
-              </h3>
-
-              <div className="space-y-4">
-                {/* Don vi van hanh */}
-                <div className="space-y-1.5">
-                  <label className="block text-sm font-bold text-gray-600">
-                    Đơn vị vận hành
-                  </label>
-                  <input
-                    type="text"
-                    value={footerOperator}
-                    onChange={(e) => setFooterOperator(e.target.value)}
-                    placeholder="Nhập đơn vị vận hành..."
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white font-medium text-gray-800"
-                  />
-                </div>
-
-                {/* Dia chi */}
-                <div className="space-y-1.5">
-                  <label className="block text-sm font-bold text-gray-600">
-                    Địa chỉ
-                  </label>
-                  <input
-                    type="text"
-                    value={footerAddress}
-                    onChange={(e) => setFooterAddress(e.target.value)}
-                    placeholder="Nhập địa chỉ..."
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white font-medium text-gray-800"
-                  />
-                </div>
-
-                {/* Nguoi chiu trach nhiem */}
-                <div className="space-y-1.5">
-                  <label className="block text-sm font-bold text-gray-600">
-                    Người chịu trách nhiệm nội dung
-                  </label>
-                  <input
-                    type="text"
-                    value={footerResponsible}
-                    onChange={(e) => setFooterResponsible(e.target.value)}
-                    placeholder="Nhập người chịu trách nhiệm..."
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white font-medium text-gray-800"
-                  />
-                </div>
-
-                {/* So dien thoai */}
-                <div className="space-y-1.5">
-                  <label className="block text-sm font-bold text-gray-600">
-                    Số điện thoại
-                  </label>
-                  <input
-                    type="text"
-                    value={footerPhone}
-                    onChange={(e) => setFooterPhone(e.target.value)}
-                    placeholder="Nhập số điện thoại..."
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white font-medium text-gray-800"
-                  />
-                </div>
-
-                {/* Email */}
-                <div className="space-y-1.5">
-                  <label className="block text-sm font-bold text-gray-600">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    value={footerEmail}
-                    onChange={(e) => setFooterEmail(e.target.value)}
-                    placeholder="Nhập địa chỉ email..."
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white font-medium text-gray-800"
-                  />
-                </div>
-
-                {/* Giay phep */}
-                <div className="space-y-1.5">
-                  <label className="block text-sm font-bold text-gray-600">
-                    Giấy phép thiết lập trang TTDT
-                  </label>
-                  <input
-                    type="text"
-                    value={footerLicense}
-                    onChange={(e) => setFooterLicense(e.target.value)}
-                    placeholder="Nhập số giấy phép..."
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white font-medium text-gray-800"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-          )
+                };
+                await updateAdminSettings(updatedPayload);
+                cachedSettings = updatedPayload;
+                toast.success("Lưu thay đổi thành công!", { id: "save-logo-footer" });
+              } catch (err) {
+                toast.error("Lỗi khi lưu cấu hình!", { id: "save-logo-footer" });
+              } finally {
+                setIsSettingsSaving(false);
+              }
+            }}
+            onUploadLogo={async (file) => {
+              toast.loading("Đang tải ảnh logo lên...", { id: "upload-logo" });
+              try {
+                const formData = new FormData();
+                formData.append("file", file);
+                formData.append("folder", "settings");
+                const res = await uploadAdminMedia(formData);
+                if (res && res.url) {
+                  setLogoUrl(res.url);
+                  toast.success("Đã tải logo lên thành công!", { id: "upload-logo" });
+                } else {
+                  throw new Error("Không nhận được URL từ server");
+                }
+              } catch (err: any) {
+                toast.error("Tải logo thất bại: " + (err.message || err), { id: "upload-logo" });
+              }
+            }}
+          />
           ) : activeTab === "media" ? (
           <div className="space-y-5 animate-fade-in">
             {/* Header Panel */}
