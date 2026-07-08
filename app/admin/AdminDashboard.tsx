@@ -808,8 +808,6 @@ export default function AdminDashboard() {
   const [footerLicense, setFooterLicense] = useState(() => cachedSettings?.footer?.license || "Số bao nhiêu ....");
 
   // Header Contact & Social states
-  const [headerAdsContactText, setHeaderAdsContactText] = useState(() => cachedSettings?.brand?.utilityLinks?.[0]?.label || "Liên hệ quảng cáo");
-  const [headerAdsContactUrl, setHeaderAdsContactUrl] = useState(() => cachedSettings?.brand?.utilityLinks?.[0]?.href || "");
   const [headerZaloUrl, setHeaderZaloUrl] = useState(() => cachedSettings?.brand?.socialLinks?.find((l: any) => l.platform === 'zalo')?.href || "https://zalo.me");
   const [headerEmailUrl, setHeaderEmailUrl] = useState(() => cachedSettings?.brand?.socialLinks?.find((l: any) => l.platform === 'email')?.href || "mailto:quangcao@linhka.vn");
 
@@ -1128,8 +1126,6 @@ export default function AdminDashboard() {
             setLogoWebsiteName(res.brand.name || "Tên Web");
             setLogoUrl(res.brand.logo_url || null);
             setFooterOperator(res.brand.copyright || "");
-            setHeaderAdsContactText(res.brand.utilityLinks?.[0]?.label || "Liên hệ quảng cáo");
-            setHeaderAdsContactUrl(res.brand.utilityLinks?.[0]?.href || "");
             setHeaderZaloUrl(res.brand.socialLinks?.find((l: any) => l.platform === 'zalo')?.href || "https://zalo.me");
             setHeaderEmailUrl(res.brand.socialLinks?.find((l: any) => l.platform === 'email')?.href || "mailto:quangcao@linhka.vn");
           }
@@ -1299,7 +1295,7 @@ export default function AdminDashboard() {
   const [mediaPage, setMediaPage] = useState(1);
   const [accountsPage, setAccountsPage] = useState(1);
   const itemsPerPage = 6;
-  const mediaItemsPerPage = 9;
+  const mediaItemsPerPage = 6;
 
   // Dialog / Modal Form states
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -4416,12 +4412,7 @@ export default function AdminDashboard() {
                             name: logoWebsiteName,
                             logo_url: logoUrl,
                             copyright: footerOperator,
-                            utilityLinks: [
-                              {
-                                label: headerAdsContactText,
-                                href: headerAdsContactUrl || ""
-                              }
-                            ],
+                            utilityLinks: [],
                             socialLinks: [
                               {
                                 label: "Zalo",
@@ -4554,36 +4545,12 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              {/* CARD 2.5: Cấu hình Liên hệ & Mạng xã hội Header */}
+              {/* CARD 2.5: Cấu hình Mạng xã hội Header */}
               <div className="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm space-y-5">
                 <h3 className="text-lg font-bold text-gray-900">
-                  Cấu hình Liên hệ & Mạng xã hội Header
+                  Cấu hình Mạng xã hội Header
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div className="space-y-1.5">
-                    <label className="block text-sm font-bold text-gray-600">
-                      Chữ hiển thị Liên hệ quảng cáo
-                    </label>
-                    <input
-                      type="text"
-                      value={headerAdsContactText}
-                      onChange={(e) => setHeaderAdsContactText(e.target.value)}
-                      placeholder="VD: Liên hệ quảng cáo"
-                      className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white font-medium text-gray-800"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="block text-sm font-bold text-gray-600">
-                      Link Liên hệ quảng cáo
-                    </label>
-                    <input
-                      type="text"
-                      value={headerAdsContactUrl}
-                      onChange={(e) => setHeaderAdsContactUrl(e.target.value)}
-                      placeholder="VD: https://zalo.me/... hoặc để trống"
-                      className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white font-medium text-gray-800"
-                    />
-                  </div>
                   <div className="space-y-1.5">
                     <label className="block text-sm font-bold text-gray-600">
                       Link Zalo (Header)
