@@ -16,7 +16,6 @@ import AccountDialog from "@/components/admin/AccountDialog";
 import CategoryDialog from "@/components/admin/CategoryDialog";
 import AdDialog from "@/components/admin/AdDialog";
 import FormDialog from "@/components/admin/FormDialog";
-import LogoFooterTab from "@/components/admin/LogoFooterTab";
 import MediaTab from "@/components/admin/MediaTab";
 import DefaultTab from "@/components/admin/DefaultTab";
 import {
@@ -40,12 +39,9 @@ import {
   ChevronDown,
   LogOut
 } from "lucide-react";
-import { getAdminSettings, updateAdminSettings, getAdminMedia, uploadAdminMedia, deleteAdminMedia, createAdminFolder, getAdminCategories, createAdminCategory, updateAdminCategory, deleteAdminCategory, getAdminArticles, getAdminArticleById, createAdminArticle, updateAdminArticle, deleteAdminArticle, getAdminAds, createAdminAd, updateAdminAd, deleteAdminAd, getAdminAccounts, createAdminAccount, updateAdminAccount, deleteAdminAccount } from "@/lib/api/adminClient";
+import { getAdminSettings, getAdminMedia, uploadAdminMedia, deleteAdminMedia, createAdminFolder, getAdminCategories, createAdminCategory, updateAdminCategory, deleteAdminCategory, getAdminArticles, getAdminArticleById, createAdminArticle, updateAdminArticle, deleteAdminArticle, getAdminAds, createAdminAd, updateAdminAd, deleteAdminAd, getAdminAccounts, createAdminAccount, updateAdminAccount, deleteAdminAccount } from "@/lib/api/adminClient";
 import { toast } from "sonner";
-import { mockSiteSettings } from "@/lib/mockSiteSettings";
 import { supabase } from "@/lib/supabase/client";
-
-let cachedSettings: any = null;
 
 export default function AdminDashboard() {
   // ==========================================
@@ -197,24 +193,27 @@ export default function AdminDashboard() {
   // LOGO & FOOTER + MEDIA MANAGER STATES
   // ==========================================
 
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [logoWebsiteName, setLogoWebsiteName] = useState("Tên Web");
+
+  useEffect(() => {
+    if (!isLoggedIn || !isAuthVerified) return;
+    const fetchLogoSettings = async () => {
+      try {
+        const res = await getAdminSettings();
+        if (res && res.brand) {
+          setLogoWebsiteName(res.brand.name || "Tên Web");
+          setLogoUrl(res.brand.logo_url || null);
+        }
+      } catch (err) {
+        console.error("Error loading logo settings:", err);
+      }
+    };
+    fetchLogoSettings();
+  }, [isLoggedIn, isAuthVerified]);
+
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
   const [mediaLoading, setMediaLoading] = useState(false);
-
-  const [, setSiteSettings] = useState(() => cachedSettings || mockSiteSettings);
-
-  // Simplified Logo & Footer states matching screenshot
-  const [logoWebsiteName, setLogoWebsiteName] = useState(() => cachedSettings?.brand?.name || "Tên Web");
-  const [logoUrl, setLogoUrl] = useState<string | null>(() => cachedSettings?.brand?.logo_url || null);
-  const [footerOperator, setFooterOperator] = useState(() => cachedSettings?.brand?.copyright || "Công ty TNHH PHD STUDIO");
-  const [footerAddress, setFooterAddress] = useState(() => cachedSettings?.footer?.address || "246 Lê Đình Cẩn, phường Tân Tạo, quận Bình Tân, Thành phố Hồ Chí Minh");
-  const [footerResponsible, setFooterResponsible] = useState(() => cachedSettings?.footer?.responsible || "Ông Phạm Hải Đăng");
-  const [footerPhone, setFooterPhone] = useState(() => cachedSettings?.footer?.phone || "0327906965");
-  const [footerEmail, setFooterEmail] = useState(() => cachedSettings?.footer?.email || "congtyphdstudio@gmail.com");
-  const [footerLicense, setFooterLicense] = useState(() => cachedSettings?.footer?.license || "Số bao nhiêu ....");
-
-  // Header Contact & Social states
-  const [headerZaloUrl, setHeaderZaloUrl] = useState(() => cachedSettings?.brand?.socialLinks?.find((l: any) => l.platform === 'zalo')?.href || "https://zalo.me");
-  const [headerEmailUrl, setHeaderEmailUrl] = useState(() => cachedSettings?.brand?.socialLinks?.find((l: any) => l.platform === 'email')?.href || "mailto:quangcao@linhka.vn");
 
   const [mediaSort, setMediaSort] = useState<"newest" | "oldest" | "az">("newest");
 
@@ -393,36 +392,6 @@ export default function AdminDashboard() {
       loadAccounts();
     }
 
-    // Luôn tải Site Settings khi admin đăng nhập thành công để hiển thị đúng tên website/logo ở Sidebar
-    if (activeTab === "logo-footer" || !cachedSettings) {
-      if (activeTab === "logo-footer") {
-        setSettingsLoading(true);
-      }
-      getAdminSettings().then(res => {
-        if (res) {
-          cachedSettings = res;
-          setSiteSettings(res as any);
-          if (res.brand) {
-            setLogoWebsiteName(res.brand.name || "Tên Web");
-            setLogoUrl(res.brand.logo_url || null);
-            setFooterOperator(res.brand.copyright || "");
-            setHeaderZaloUrl(res.brand.socialLinks?.find((l: any) => l.platform === 'zalo')?.href || "https://zalo.me");
-            setHeaderEmailUrl(res.brand.socialLinks?.find((l: any) => l.platform === 'email')?.href || "mailto:quangcao@linhka.vn");
-          }
-          if (res.footer) {
-            setFooterAddress(res.footer.address || "");
-            setFooterPhone(res.footer.phone || "");
-            setFooterEmail(res.footer.email || "");
-            setFooterLicense(res.footer.license || "");
-            setFooterResponsible(res.footer.responsible || "");
-          }
-        }
-      }).catch(() => { }).finally(() => {
-        if (activeTab === "logo-footer") {
-          setSettingsLoading(false);
-        }
-      });
-    }
   }, [activeTab, isLoggedIn, isAuthVerified]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentView, setCurrentView] = useState<"list" | "editor">("list");
@@ -554,12 +523,10 @@ export default function AdminDashboard() {
   const [adsLoading, setAdsLoading] = useState(true);
   const [postsLoading, setPostsLoading] = useState(true);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
-  const [settingsLoading, setSettingsLoading] = useState(true);
   const [accountsLoading, setAccountsLoading] = useState(true);
   const [isPostSaving, setIsPostSaving] = useState(false);
   const [isCategorySaving, setIsCategorySaving] = useState(false);
   const [isAdSaving, setIsAdSaving] = useState(false);
-  const [isSettingsSaving, setIsSettingsSaving] = useState(false);
   const [isAccountSaving, setIsAccountSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -2185,81 +2152,7 @@ export default function AdminDashboard() {
 
         {/* CONTAINER CONTENT */}
         <main className="flex-1 p-6 md:p-8 max-w-7xl w-full mx-auto space-y-6">
-          {activeTab === "logo-footer" ? (
-            <LogoFooterTab
-            loading={settingsLoading}
-            isSaving={isSettingsSaving}
-            logoUrl={logoUrl}
-            logoWebsiteName={logoWebsiteName}
-            headerZaloUrl={headerZaloUrl}
-            headerEmailUrl={headerEmailUrl}
-            footerOperator={footerOperator}
-            footerAddress={footerAddress}
-            footerPhone={footerPhone}
-            footerEmail={footerEmail}
-            footerLicense={footerLicense}
-            footerResponsible={footerResponsible}
-            onLogoUrlChange={setLogoUrl}
-            onLogoWebsiteNameChange={setLogoWebsiteName}
-            onHeaderZaloUrlChange={setHeaderZaloUrl}
-            onHeaderEmailUrlChange={setHeaderEmailUrl}
-            onFooterOperatorChange={setFooterOperator}
-            onFooterAddressChange={setFooterAddress}
-            onFooterPhoneChange={setFooterPhone}
-            onFooterEmailChange={setFooterEmail}
-            onFooterLicenseChange={setFooterLicense}
-            onFooterResponsibleChange={setFooterResponsible}
-            onSave={async () => {
-              try {
-                setIsSettingsSaving(true);
-                toast.loading("Đang lưu cấu hình...", { id: "save-logo-footer" });
-                const updatedPayload = {
-                  brand: {
-                    name: logoWebsiteName,
-                    logo_url: logoUrl,
-                    copyright: footerOperator,
-                    utilityLinks: [],
-                    socialLinks: [
-                      { label: "Zalo", href: headerZaloUrl || "https://zalo.me", platform: "zalo" },
-                      { label: "Email", href: headerEmailUrl || "mailto:quangcao@linhka.vn", platform: "email" }
-                    ]
-                  },
-                  footer: {
-                    address: footerAddress,
-                    phone: footerPhone,
-                    email: footerEmail,
-                    license: footerLicense,
-                    responsible: footerResponsible
-                  }
-                };
-                await updateAdminSettings(updatedPayload);
-                cachedSettings = updatedPayload;
-                toast.success("Lưu thay đổi thành công!", { id: "save-logo-footer" });
-              } catch (err) {
-                toast.error("Lỗi khi lưu cấu hình!", { id: "save-logo-footer" });
-              } finally {
-                setIsSettingsSaving(false);
-              }
-            }}
-            onUploadLogo={async (file) => {
-              toast.loading("Đang tải ảnh logo lên...", { id: "upload-logo" });
-              try {
-                const formData = new FormData();
-                formData.append("file", file);
-                formData.append("folder", "settings");
-                const res = await uploadAdminMedia(formData);
-                if (res && res.url) {
-                  setLogoUrl(res.url);
-                  toast.success("Đã tải logo lên thành công!", { id: "upload-logo" });
-                } else {
-                  throw new Error("Không nhận được URL từ server");
-                }
-              } catch (err: any) {
-                toast.error("Tải logo thất bại: " + (err.message || err), { id: "upload-logo" });
-              }
-            }}
-          />
-          ) : activeTab === "media" ? (
+          {activeTab === "media" ? (
             <MediaTab
               loading={mediaLoading}
               isUploading={isMediaUploading}
