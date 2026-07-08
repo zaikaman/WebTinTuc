@@ -16,10 +16,6 @@ export class ApiError extends Error {
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "");
 const DEFAULT_API_TIMEOUT_MS = 8000;
 
-export function isRemoteApiEnabled() {
-  return process.env.NEXT_PUBLIC_USE_MOCKS === "false" && Boolean(API_BASE_URL);
-}
-
 export async function apiGet<T>(path: string, init?: RequestInit): Promise<T> {
   if (!API_BASE_URL) {
     throw new ApiError("NEXT_PUBLIC_API_BASE_URL is not configured.", 500);

@@ -16,40 +16,6 @@ describe('ApiError', () => {
   })
 })
 
-describe('isRemoteApiEnabled', () => {
-  const originalEnv = process.env
-
-  beforeEach(() => {
-    vi.resetModules()
-    process.env = { ...originalEnv }
-  })
-
-  afterEach(() => {
-    process.env = originalEnv
-  })
-
-  it('returns false when NEXT_PUBLIC_USE_MOCKS is not false', async () => {
-    process.env.NEXT_PUBLIC_USE_MOCKS = 'true'
-    process.env.NEXT_PUBLIC_API_BASE_URL = 'http://api.example.com'
-    const { isRemoteApiEnabled } = await import('@/lib/api/http')
-    expect(isRemoteApiEnabled()).toBe(false)
-  })
-
-  it('returns false when API_BASE_URL is not set', async () => {
-    process.env.NEXT_PUBLIC_USE_MOCKS = 'false'
-    delete process.env.NEXT_PUBLIC_API_BASE_URL
-    const { isRemoteApiEnabled } = await import('@/lib/api/http')
-    expect(isRemoteApiEnabled()).toBe(false)
-  })
-
-  it('returns true when USE_MOCKS is false and API_BASE_URL is set', async () => {
-    process.env.NEXT_PUBLIC_USE_MOCKS = 'false'
-    process.env.NEXT_PUBLIC_API_BASE_URL = 'http://api.example.com'
-    const { isRemoteApiEnabled } = await import('@/lib/api/http')
-    expect(isRemoteApiEnabled()).toBe(true)
-  })
-})
-
 describe('apiGet', () => {
   const originalFetch = globalThis.fetch
   const originalEnv = process.env
