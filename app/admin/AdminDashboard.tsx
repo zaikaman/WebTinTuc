@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import type { Post, Category, Ad, AdminAccount, TabType } from "@/components/admin/AdminTypes";
+import type { Post, Category, Ad, AdminAccount, TabType, MediaItem } from "@/components/admin/AdminTypes";
 import { htmlToBlocks, blocksToHtml, formatDateForDisplay, getCategoryStyles } from "@/components/admin/AdminUtils";
 import {
   PostsTableSkeleton,
@@ -24,6 +24,7 @@ import AdDialog from "@/components/admin/AdDialog";
 import FormDialog from "@/components/admin/FormDialog";
 import DashboardTab from "@/components/admin/DashboardTab";
 import LogoFooterTab from "@/components/admin/LogoFooterTab";
+import MediaTab from "@/components/admin/MediaTab";
 import {
   Loader2,
   Image as ImageIcon,
@@ -34,7 +35,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Menu,
-  X,
   LayoutDashboard,
   ArrowLeft,
   Save,
@@ -50,9 +50,7 @@ import {
   Video,
   Upload,
   ChevronDown,
-  Eye,
   LogOut,
-  Copy,
   ExternalLink,
   RotateCcw
 } from "lucide-react";
@@ -212,18 +210,6 @@ export default function AdminDashboard() {
   // ==========================================
   // LOGO & FOOTER + MEDIA MANAGER STATES
   // ==========================================
-  interface MediaItem {
-    id: number;
-    key: string;
-    title: string;
-    type: "image" | "video";
-    url: string;
-    size: string;
-    dimensions?: string;
-    duration?: string;
-    createdAt: string;
-    folder?: string;
-  }
 
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
   const [mediaLoading, setMediaLoading] = useState(false);
@@ -2529,388 +2515,65 @@ export default function AdminDashboard() {
             }}
           />
           ) : activeTab === "media" ? (
-          <div className="space-y-5 animate-fade-in">
-            {/* Header Panel */}
-            <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h2 className="text-xl font-bold text-gray-900 tracking-tight">Thư viện Media</h2>
-                <p className="text-xs text-gray-500 font-semibold mt-1">Ảnh & video lưu trữ trên Cloudflare R2</p>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  document.getElementById("media-direct-upload")?.click();
-                }}
-                disabled={isMediaUploading}
-                className="flex items-center justify-center gap-2 px-5 py-2.5 bg-[#eb5757] hover:bg-[#d94848] text-white text-xs font-bold rounded-xl shadow-sm transition-all self-start sm:self-center disabled:opacity-75 disabled:cursor-not-allowed"
-              >
-                {isMediaUploading ? (
-                  <Loader2 size={14} className="animate-spin" />
-                ) : (
-                  <Upload size={14} />
-                )}
-                <span>{isMediaUploading ? "Đang tải lên..." : "Thêm media"}</span>
-              </button>
-              <input
-                type="file"
-                id="media-direct-upload"
-                className="hidden"
-                multiple
-                accept="image/*,video/*"
-                onChange={handleMediaDirectUpload}
-              />
-            </div>
-
-            {/* Filter & Search Bar Panel */}
-            <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-              {/* Filter by Types */}
-              <div className="flex flex-col gap-1.5">
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Lọc</span>
-                <div className="flex gap-2">
-                  {[
-                    { id: "all", label: "Tất cả" },
-                    { id: "image", label: "Ảnh" },
-                    { id: "video", label: "Video" }
-                  ].map((type) => (
-                    <button
-                      key={type.id}
-                      type="button"
-                      onClick={() => setMediaTypeFilter(type.id as any)}
-                      className={`px-5 py-2 rounded-xl text-xs font-bold transition-all ${mediaTypeFilter === type.id
-                        ? "bg-[#eb5757] text-white shadow-sm"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                        }`}
-                    >
-                      {type.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Search */}
-              <div className="flex flex-col gap-1.5 w-full md:w-[350px]">
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Tìm kiếm thông tin</span>
-                <div className="relative">
-                  <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 font-bold" />
-                  <input
-                    type="text"
-                    value={mediaSearchQuery}
-                    onChange={(e) => setMediaSearchQuery(e.target.value)}
-                    placeholder="Tìm kiếm"
-                    className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-full text-xs outline-none focus:border-[#eb5757] focus:ring-1 focus:ring-[#eb5757]/15 transition-all bg-white"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Split Content Area */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-              {/* Left Column: Cây thư mục */}
-              <div className="lg:col-span-3 bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                <div className="flex items-center justify-between p-4 border-b border-gray-150 bg-gray-50/50">
-                  <h3 className="text-sm font-bold text-gray-800">Cây thư mục</h3>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setNewFolderName("");
-                      setFolderDialogOpen(true);
-                    }}
-                    className="p-1 border border-gray-300 hover:border-gray-400 rounded transition-colors hover:bg-gray-50 flex items-center justify-center"
-                  >
-                    <Plus size={12} className="text-gray-700 font-bold" />
-                  </button>
-                </div>
-
-                <div className="p-4 space-y-2">
-                  {/* Root Folder Item */}
-                  <div
-                    onClick={() => setActiveFolder("")}
-                    className={`flex items-center gap-1.5 cursor-pointer font-bold text-xs transition-all ${!activeFolder ? "text-[#eb5757]" : "text-gray-800 hover:text-gray-900"
-                      }`}
-                  >
-                    <ChevronDown size={14} className={!activeFolder ? "text-[#eb5757]" : "text-gray-500"} />
-                    <span>Root</span>
-                  </div>
-
-                  {/* Subdirectories */}
-                  <div className="pl-4 mt-1.5 space-y-1 border-l border-gray-100 ml-1.5">
-                    {folders.map((folderName) => {
-                      const isActive = activeFolder === folderName;
-                      return (
-                        <div
-                          key={folderName}
-                          className={`group/folder flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all ${isActive
-                            ? "bg-[#ffe4e4] text-[#eb5757]"
-                            : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
-                            }`}
-                        >
-                          <div
-                            onClick={() => setActiveFolder(folderName)}
-                            className="flex items-center gap-1.5 flex-1"
-                          >
-                            <ChevronRight size={12} className={isActive ? "text-[#eb5757]" : "text-gray-400"} />
-                            <span>{folderName}</span>
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (confirm(`Bạn có chắc chắn muốn xóa thư mục "${folderName}" khỏi danh sách hiển thị?`)) {
-                                setFolders(prev => prev.filter(f => f !== folderName));
-                                if (activeFolder === folderName) setActiveFolder("");
-                                toast.success(`Đã xóa thư mục: ${folderName}`);
-                              }
-                            }}
-                            className="opacity-0 group-hover/folder:opacity-100 p-0.5 hover:text-red-650 transition-opacity flex items-center justify-center"
-                            title="Ẩn thư mục"
-                          >
-                            <X size={10} className="font-bold text-gray-500 hover:text-red-650" />
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Column: Main Content */}
-              <div className="lg:col-span-9 bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-col gap-4 min-h-[500px]">
-                {/* Breadcrumb row */}
-                <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-gray-800">
-                    <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
-                    </svg>
-                    <span className="cursor-pointer hover:text-gray-900" onClick={() => setActiveFolder("")}>Root</span>
-                    {activeFolder && (
-                      <>
-                        <ChevronRight size={12} className="text-gray-450" />
-                        <span className="text-gray-900">{activeFolder}</span>
-                      </>
-                    )}
-                  </div>
-
-                  {/* Sorting select */}
-                  <div className="relative">
-                    <select
-                      value={mediaSort}
-                      onChange={(e) => setMediaSort(e.target.value as any)}
-                      className="pl-3 pr-7 py-1 border border-gray-300 rounded-lg text-xs font-bold text-gray-700 appearance-none bg-white focus:outline-none min-w-[90px] cursor-pointer"
-                    >
-                      <option value="newest">Mới nhất</option>
-                      <option value="oldest">Cũ nhất</option>
-                      <option value="az">Tên A-Z</option>
-                    </select>
-                    <ChevronDown size={11} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                  </div>
-                </div>
-
-                {/* Actions Row */}
-                <div className="flex items-center gap-2 text-xs font-bold text-gray-800 py-1">
-                  <input type="checkbox" className="w-4 h-4 rounded border-gray-300 text-[#eb5757] focus:ring-[#eb5757]/20 cursor-pointer" />
-                  <span>Chọn tất cả</span>
-                  <span className="text-gray-500 font-medium ml-1.5">{filteredMedia.length} file</span>
-                </div>
-
-                {/* Cards Grid */}
-                {mediaLoading ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4.5">
-                    {[...Array(6)].map((_, i) => (
-                      <div key={i} className="border border-gray-250 rounded-xl overflow-hidden bg-white shadow-sm flex flex-col justify-between animate-pulse">
-                        <div className="aspect-[4/3] w-full bg-gray-150" />
-                        <div className="p-3.5 space-y-2">
-                          <div className="h-3.5 bg-gray-200 rounded w-3/4" />
-                          <div className="flex justify-between items-center pt-2">
-                            <div className="h-2.5 bg-gray-200 rounded w-1/4" />
-                            <div className="h-2.5 bg-gray-200 rounded w-1/4" />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : paginatedMedia.length > 0 ? (
-                  <>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4.5">
-                      {paginatedMedia.map((item) => {
-                        const formattedDate = (() => {
-                          if (item.createdAt.includes("/")) return item.createdAt;
-                          const parts = item.createdAt.split("-");
-                          if (parts.length === 3) {
-                            return `${parts[2]}/${parts[1]}/${parts[0]}`;
-                          }
-                          return item.createdAt;
-                        })();
-
-                        return (
-                          <div
-                            key={item.id}
-                            className="group relative border border-gray-250 rounded-xl overflow-hidden bg-white shadow-sm flex flex-col justify-between transition-all duration-300 hover:shadow-md hover:border-gray-350 animate-fade-in"
-                          >
-                            {/* Thumbnail */}
-                            <div className="relative aspect-[4/3] w-full bg-gray-100 overflow-hidden flex items-center justify-center border-b border-gray-150">
-                              {item.type === "video" ? (
-                                <div className="w-full h-full relative flex items-center justify-center bg-slate-950">
-                                  {item.url.startsWith("http") ? (
-                                    <div className="w-full h-full flex items-center justify-center text-white/50">
-                                      <Video className="w-8 h-8" />
-                                    </div>
-                                  ) : (
-                                    <img
-                                      src={item.url}
-                                      alt={item.title}
-                                      className="w-full h-full object-cover opacity-80"
-                                    />
-                                  )}
-                                  <div className="absolute inset-0 bg-black/25 flex items-center justify-center">
-                                    <div className="w-9 h-9 rounded-full bg-white/90 flex items-center justify-center text-gray-900 shadow-md group-hover:scale-110 transition-transform">
-                                      <svg className="w-4.5 h-4.5 fill-current ml-0.5" viewBox="0 0 24 24">
-                                        <path d="M8 5v14l11-7z" />
-                                      </svg>
-                                    </div>
-                                  </div>
-                                  <span className="absolute bottom-2 right-2 text-[9px] bg-black/60 px-1.5 py-0.5 rounded text-white font-mono font-bold">
-                                    {item.duration || "00:00"}
-                                  </span>
-                                </div>
-                              ) : (
-                                <img
-                                  src={item.url}
-                                  alt={item.title}
-                                  className="w-full h-full object-cover group-hover:scale-102 transition-all duration-500"
-                                />
-                              )}
-
-                              {/* Glassmorphic Hover Action Overlay */}
-                              <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-2 z-20">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const copyUrl = item.url.startsWith("blob:") || item.url.startsWith("data:") || item.url.startsWith("http") ? item.url : (window.location.origin + item.url);
-                                    navigator.clipboard.writeText(copyUrl);
-                                    toast.success("Đã sao chép link media vào bộ nhớ tạm!");
-                                  }}
-                                  className="w-8 h-8 rounded-full bg-white hover:bg-gray-100 text-gray-800 flex items-center justify-center shadow transition-all active:scale-95"
-                                  title="Sao chép đường dẫn"
-                                >
-                                  <Copy size={13} />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const previewUrl = item.url.startsWith("blob:") || item.url.startsWith("data:") || item.url.startsWith("http") ? item.url : (window.location.origin + item.url);
-                                    window.open(previewUrl, '_blank');
-                                  }}
-                                  className="w-8 h-8 rounded-full bg-white hover:bg-gray-100 text-gray-800 flex items-center justify-center shadow transition-all active:scale-95"
-                                  title="Xem trước"
-                                >
-                                  <Eye size={13} />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={async () => {
-                                    if (confirm("Bạn có chắc chắn muốn xóa file media này không?")) {
-                                      try {
-                                        setDeletingMediaKey(item.key);
-                                        toast.loading("Đang xóa...", { id: "media-delete" });
-                                        await deleteAdminMedia(item.key);
-                                        toast.success("Đã xóa file media thành công!", { id: "media-delete" });
-                                        loadMedia();
-                                      } catch (err) {
-                                        toast.error("Lỗi khi xóa file media!", { id: "media-delete" });
-                                      } finally {
-                                        setDeletingMediaKey(null);
-                                      }
-                                    }
-                                  }}
-                                  disabled={deletingMediaKey === item.key}
-                                  className="w-8 h-8 rounded-full bg-white hover:bg-red-50 text-red-650 flex items-center justify-center shadow transition-all active:scale-95 disabled:opacity-75 disabled:cursor-not-allowed"
-                                  title="Xóa media"
-                                >
-                                  {deletingMediaKey === item.key ? (
-                                    <Loader2 size={13} className="animate-spin" />
-                                  ) : (
-                                    <Trash2 size={13} />
-                                  )}
-                                </button>
-                              </div>
-                            </div>
-
-                            {/* Info Panel */}
-                            <div className="p-3 bg-gray-50 flex flex-col gap-1 border-t border-gray-150">
-                              <h5 className="text-[11px] font-bold text-gray-800 truncate leading-snug" title={item.title}>
-                                {item.title}
-                              </h5>
-                              <div className="flex items-center justify-between text-[9px] text-gray-400 font-bold">
-                                <span>{item.size}</span>
-                                <span>{formattedDate}</span>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    {/* Pagination footer */}
-                    <div className="flex justify-center mt-6">
-                      <div className="inline-flex items-center bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden divide-x divide-gray-200">
-
-                        {/* Prev Button */}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (mediaPage > 1) setMediaPage(mediaPage - 1);
-                          }}
-                          disabled={mediaPage === 1}
-                          className="px-3 py-2 hover:bg-gray-50 text-gray-500 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
-                        >
-                          <ChevronLeft size={16} />
-                        </button>
-
-                        {/* Page Numbers */}
-                        {Array.from({ length: mediaTotalPages }).map((_, idx) => {
-                          const pageNumber = idx + 1;
-                          const isCurrent = mediaPage === pageNumber;
-
-                          return (
-                            <button
-                              key={pageNumber}
-                              type="button"
-                              onClick={() => setMediaPage(pageNumber)}
-                              className={`px-4 py-2 text-xs font-bold transition-all ${isCurrent
-                                ? "bg-[#eb5757] text-white"
-                                : "text-gray-700 hover:bg-gray-50"
-                                }`}
-                            >
-                              {pageNumber}
-                            </button>
-                          );
-                        })}
-
-                        {/* Next Button */}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (mediaPage < mediaTotalPages) setMediaPage(mediaPage + 1);
-                          }}
-                          disabled={mediaPage === mediaTotalPages}
-                          className="px-3 py-2 hover:bg-gray-50 text-gray-500 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
-                        >
-                          <ChevronRight size={16} />
-                        </button>
-
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <div className="py-20 text-center text-gray-400 font-bold flex-1 flex items-center justify-center">
-                    Không tìm thấy file media nào tương ứng.
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+            <MediaTab
+              loading={mediaLoading}
+              isUploading={isMediaUploading}
+              mediaTypeFilter={mediaTypeFilter}
+              onMediaTypeFilterChange={setMediaTypeFilter as any}
+              mediaSearchQuery={mediaSearchQuery}
+              onMediaSearchQueryChange={setMediaSearchQuery}
+              folders={folders}
+              activeFolder={activeFolder}
+              onActiveFolderChange={setActiveFolder}
+              onFolderDelete={(folderName) => {
+                if (confirm(`Bạn có chắc chắn muốn xóa thư mục "${folderName}" khỏi danh sách hiển thị?`)) {
+                  setFolders(prev => prev.filter(f => f !== folderName));
+                  if (activeFolder === folderName) setActiveFolder("");
+                  toast.success(`Đã xóa thư mục: ${folderName}`);
+                }
+              }}
+              onOpenFolderDialog={() => {
+                setNewFolderName("");
+                setFolderDialogOpen(true);
+              }}
+              mediaSort={mediaSort}
+              onMediaSortChange={setMediaSort as any}
+              filteredMedia={filteredMedia}
+              paginatedMedia={paginatedMedia}
+              mediaPage={mediaPage}
+              mediaTotalPages={mediaTotalPages}
+              onMediaPageChange={setMediaPage}
+              deletingMediaKey={deletingMediaKey}
+              onMediaDelete={(key) => {
+                if (confirm("Bạn có chắc chắn muốn xóa file media này không?")) {
+                  (async () => {
+                    try {
+                      setDeletingMediaKey(key);
+                      toast.loading("Đang xóa...", { id: "media-delete" });
+                      await deleteAdminMedia(key);
+                      toast.success("Đã xóa file media thành công!", { id: "media-delete" });
+                      loadMedia();
+                    } catch (err) {
+                      toast.error("Lỗi khi xóa file media!", { id: "media-delete" });
+                    } finally {
+                      setDeletingMediaKey(null);
+                    }
+                  })();
+                }
+              }}
+              onMediaCopyUrl={(url) => {
+                const copyUrl = url.startsWith("blob:") || url.startsWith("data:") || url.startsWith("http") ? url : (window.location.origin + url);
+                navigator.clipboard.writeText(copyUrl);
+                toast.success("Đã sao chép link media vào bộ nhớ tạm!");
+              }}
+              onMediaPreview={(url) => {
+                const previewUrl = url.startsWith("blob:") || url.startsWith("data:") || url.startsWith("http") ? url : (window.location.origin + url);
+                window.open(previewUrl, '_blank');
+              }}
+              onUploadClick={() => {
+                document.getElementById("media-direct-upload")?.click();
+              }}
+            />
           ) : (
           <>
             {/* HEADER ACTION BANNER */}
@@ -3613,6 +3276,15 @@ export default function AdminDashboard() {
             toast.error("Lỗi khi tạo thư mục!", { id: "media-folder" });
           }
         }}
+      />
+
+      <input
+        type="file"
+        id="media-direct-upload"
+        className="hidden"
+        multiple
+        accept="image/*,video/*"
+        onChange={handleMediaDirectUpload}
       />
 
     </div>
