@@ -22,6 +22,7 @@ export async function listAdminAds(options: AdListOptions = {}) {
   let query = supabaseAdmin
     .from('ads')
     .select('*', { count: 'exact' })
+    .is('deleted_at', null)
     .range(from, to)
     .order(options.sortBy ?? 'created_at', { ascending: (options.sortOrder ?? 'desc') === 'asc' })
 

@@ -727,7 +727,7 @@ export default function PostsPage() {
         />
         <CropDialog
           open={cropDialogOpen} onOpenChange={setCropDialogOpen}
-          imageUrl={cropImageUrl} imageElementId={cropImageElementId}
+          cropImageUrl={cropImageUrl} cropImageElementId={cropImageElementId}
           cropArea={cropArea} onCropAreaChange={setCropArea}
         />
       </div>

@@ -1,5 +1,7 @@
 import { NextRequest } from 'next/server'
 import { ZodError, z } from 'zod'
+import { formatZodIssue } from '@/server/validations/i18n'
+
 
 export type ApiErrorCode =
   | 'BAD_REQUEST'
@@ -66,12 +68,7 @@ export function actionResponse<T>(result: ActionResult<T>, successInit?: Respons
 
 export function fail(error: unknown) {
   if (error instanceof ZodError) {
-    const issues = error.errors.map(
-      (e) => {
-        const field = e.path.length > 0 ? e.path.join('.') : '';
-        return field ? `${field}: ${e.message}` : e.message;
-      }
-    );
+    const issues = error.issues.map((e) => formatZodIssue(e));
     return Response.json(
       {
         success: false,
