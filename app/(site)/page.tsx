@@ -9,8 +9,6 @@ import { getPublicAds } from "@/lib/api/news";
 import AdBanner from "@/components/AdBanner";
 import MobileAdsStack from "@/components/MobileAdsStack";
 
-export const revalidate = 60;
-
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://example.com";
 
 export const metadata: Metadata = {

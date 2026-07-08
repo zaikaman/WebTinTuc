@@ -13,8 +13,6 @@ import AdBanner from "@/components/AdBanner";
 import MobileAdsStack from "@/components/MobileAdsStack";
 import ViewTracker from "@/components/ViewTracker";
 
-export const revalidate = 60;
-
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://example.com";
 
 interface PageProps {

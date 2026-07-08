@@ -50,7 +50,7 @@ export type ActionResult<T> =
 
 export function actionResponse<T>(result: ActionResult<T>, successInit?: ResponseInit) {
   if (result.success) {
-    return Response.json(result, successInit)
+    return Response.json(result, withCacheControl(successInit))
   }
 
   const statusByCode: Record<ApiErrorCode, number> = {

@@ -4,8 +4,6 @@ import { getCategoryFeed, getPublicAds } from "@/lib/api/news";
 import { CategoryContent } from "@/components/CategoryContent";
 import type { CategoryFeed } from "@/lib/types/news";
 
-export const revalidate = 60;
-
 export const dynamicParams = true;
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://example.com";

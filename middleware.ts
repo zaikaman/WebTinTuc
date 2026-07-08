@@ -7,6 +7,39 @@ interface RedirectEntry {
 
 const redirectCache = new Map<string, { data: RedirectEntry | null; cachedAt: number }>();
 const CACHE_TTL_MS = 300_000; // 5 minutes cache
+const CACHE_MAX_SIZE = 1000; // Maximum entries to prevent unbounded growth
+
+/**
+ * Evict the oldest expired entries when cache exceeds the max size.
+ * Removes at least 20% of entries to avoid frequent evictions.
+ */
+function evictStaleCacheEntries(): void {
+  if (redirectCache.size < CACHE_MAX_SIZE) return;
+
+  const now = Date.now();
+  const entries = [...redirectCache.entries()];
+  
+  // Sort by cachedAt (oldest first)
+  entries.sort(([, a], [, b]) => a.cachedAt - b.cachedAt);
+
+  const targetSize = Math.max(Math.floor(CACHE_MAX_SIZE * 0.8), 1);
+  const toDelete = entries.slice(0, entries.length - targetSize);
+
+  for (const [key] of toDelete) {
+    // Also remove truly expired entries while we're at it
+    if (now - redirectCache.get(key)!.cachedAt >= CACHE_TTL_MS) {
+      redirectCache.delete(key);
+    }
+  }
+
+  // If still over the limit after removing expired, remove oldest entries
+  if (redirectCache.size >= CACHE_MAX_SIZE) {
+    for (const [key] of toDelete) {
+      redirectCache.delete(key);
+      if (redirectCache.size < targetSize) break;
+    }
+  }
+}
 
 async function lookupRedirect(path: string): Promise<RedirectEntry | null> {
   const now = Date.now();
@@ -14,6 +47,11 @@ async function lookupRedirect(path: string): Promise<RedirectEntry | null> {
 
   if (cached && now - cached.cachedAt < CACHE_TTL_MS) {
     return cached.data;
+  }
+
+  // Expired entry — delete it now
+  if (cached) {
+    redirectCache.delete(path);
   }
 
   try {
@@ -39,6 +77,9 @@ async function lookupRedirect(path: string): Promise<RedirectEntry | null> {
 
     // Cache the result (including null for valid pages without redirect)
     redirectCache.set(path, { data: entry, cachedAt: now });
+
+    // Prevent unbounded growth
+    evictStaleCacheEntries();
 
     return entry;
   } catch {
