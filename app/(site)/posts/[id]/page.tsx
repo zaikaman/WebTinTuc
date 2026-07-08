@@ -426,7 +426,7 @@ export default async function PostDetailPage({ params }: PageProps) {
         </div>
 
         {/* Right Column: Sidebar - Hidden on Mobile */}
-        <aside className="hidden lg:block w-[300px] flex-shrink-0 lg:sticky lg:top-4 space-y-4">
+        <aside className="hidden lg:block w-[300px] flex-shrink-0 space-y-4">
           {/* Ad 1: QC 300x600 */}
           <AdBanner 
             position="sidebar_1" 
