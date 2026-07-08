@@ -249,13 +249,42 @@ export async function searchArticles(queryText: string, page = 1, limit = 10) {
 
 
 export async function listTrendingArticles(limit = 10, days = 7) {
-  const { data: topStats, error } = await supabaseAdmin
-    .rpc('get_trending_articles', {
-      p_limit: limit,
-      p_days: days
-    })
+  let topStats: { article_id: number; total_views: number }[] = []
 
-  if (error) throw error
+  try {
+    const { data, error } = await supabaseAdmin
+      .rpc('get_trending_articles', {
+        p_limit: limit,
+        p_days: days
+      })
+    if (error) throw error
+    topStats = data ?? []
+  } catch (rpcError) {
+    console.warn('get_trending_articles RPC failed, falling back to client-side aggregation:', rpcError)
+    
+    const startDate = new Date()
+    startDate.setDate(startDate.getDate() - days)
+    const startDateStr = startDate.toISOString().slice(0, 10)
+
+    const { data: stats, error: statsError } = await supabaseAdmin
+      .from('article_stats_daily')
+      .select('article_id, views')
+      .gte('date', startDateStr)
+
+    if (statsError) throw statsError
+
+    const viewsMap = new Map<number, number>()
+    for (const row of stats ?? []) {
+      const artId = Number(row.article_id)
+      const views = Number(row.views ?? 0)
+      viewsMap.set(artId, (viewsMap.get(artId) ?? 0) + views)
+    }
+
+    topStats = Array.from(viewsMap.entries())
+      .map(([article_id, total_views]) => ({ article_id, total_views }))
+      .sort((a, b) => b.total_views - a.total_views)
+      .slice(0, limit)
+  }
 
   if (!topStats || topStats.length === 0) return []
 

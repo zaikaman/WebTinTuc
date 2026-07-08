@@ -6,6 +6,7 @@ import Image from "next/image";
 import { Clock } from "lucide-react";
 import type { Article } from "@/lib/types/news";
 import { formatCategory, formatVietnameseDate } from "@/lib/utils";
+import { proxyImageUrl } from "@/lib/image-proxy";
 import { FeaturedCarousel } from "@/components/FeaturedCarousel";
 import AdBanner from "@/components/AdBanner";
 import MobileAdsStack from "@/components/MobileAdsStack";
@@ -82,7 +83,7 @@ export function CategoryContent({ featured, initialList, ads = [] }: CategoryCon
                 className="group flex gap-3.5 cursor-pointer pb-4 border-b border-gray-100 last:border-b-0 last:pb-0 transition-colors"
               >                <div className="relative w-[110px] h-[75px] sm:w-[130px] sm:h-[88px] flex-shrink-0 overflow-hidden border border-gray-200 bg-gray-50 rounded-md md:rounded-sm">
                   <Image
-                    src={item.image}
+                    src={proxyImageUrl(item.image) || "/placeholder.svg"}
                     alt={item.title}
                     fill
                     sizes="(max-width: 640px) 110px, 130px"
@@ -124,7 +125,7 @@ export function CategoryContent({ featured, initialList, ads = [] }: CategoryCon
                 className="group flex gap-3.5 cursor-pointer pb-4 border-b border-gray-100 last:border-b-0 last:pb-0 transition-colors"
               >                <div className="relative w-[110px] h-[75px] sm:w-[130px] sm:h-[88px] flex-shrink-0 overflow-hidden border border-gray-200 bg-gray-50 rounded-md md:rounded-sm">
                   <Image
-                    src={item.image}
+                    src={proxyImageUrl(item.image) || "/placeholder.svg"}
                     alt={item.title}
                     fill
                     sizes="(max-width: 640px) 110px, 130px"

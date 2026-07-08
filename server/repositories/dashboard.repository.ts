@@ -39,14 +39,43 @@ async function getTopCategories(limit = 5) {
 }
 
 async function getTopAds(limit = 5, days = 7) {
-  // Server-side aggregation via RPC
-  const { data: topStats, error } = await supabaseAdmin
-    .rpc('get_top_ads', {
-      p_limit: limit,
-      p_days: days
-    })
+  let topStats: { ad_id: number; total_impressions: number }[] = []
 
-  if (error) throw error
+  try {
+    const { data, error } = await supabaseAdmin
+      .rpc('get_top_ads', {
+        p_limit: limit,
+        p_days: days
+      })
+    if (error) throw error
+    topStats = data ?? []
+  } catch (rpcError) {
+    console.warn('get_top_ads RPC failed, falling back to client-side aggregation:', rpcError)
+    
+    const startDate = new Date()
+    startDate.setDate(startDate.getDate() - days)
+    const startDateStr = startDate.toISOString().slice(0, 10)
+
+    const { data: stats, error: statsError } = await supabaseAdmin
+      .from('ad_stats_daily')
+      .select('ad_id, impressions')
+      .gte('date', startDateStr)
+
+    if (statsError) throw statsError
+
+    const impressionsMap = new Map<number, number>()
+    for (const row of stats ?? []) {
+      const adId = Number(row.ad_id)
+      const impressions = Number(row.impressions ?? 0)
+      impressionsMap.set(adId, (impressionsMap.get(adId) ?? 0) + impressions)
+    }
+
+    topStats = Array.from(impressionsMap.entries())
+      .map(([ad_id, total_impressions]) => ({ ad_id, total_impressions }))
+      .sort((a, b) => b.total_impressions - a.total_impressions)
+      .slice(0, limit)
+  }
+
   if (!topStats || topStats.length === 0) return []
 
   const ids = topStats.map((row: { ad_id: number }) => row.ad_id)

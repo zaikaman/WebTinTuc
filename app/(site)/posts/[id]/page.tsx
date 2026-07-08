@@ -9,6 +9,7 @@ import {
 } from "@/lib/api/news";
 import { Clock, Link2, Star } from "lucide-react";
 import { formatCategory, formatVietnameseDate } from "@/lib/utils";
+import { proxyImageUrl } from "@/lib/image-proxy";
 import AdBanner from "@/components/AdBanner";
 import MobileAdsStack from "@/components/MobileAdsStack";
 import ViewTracker from "@/components/ViewTracker";
@@ -254,11 +255,10 @@ export default async function PostDetailPage({ params }: PageProps) {
                       <div key={index} className="my-4 space-y-1.5 mx-auto" style={{ maxWidth: width }}>
                         <div className="border border-gray-200 overflow-hidden bg-gray-50 rounded-md md:rounded-sm">
                           <Image
-                            src={block.src}
+                            src={proxyImageUrl(block.src)}
                             alt={block.caption || "Hình ảnh bài viết"}
                             width={650}
                             height={400}
-                            unoptimized
                             className="w-full h-auto object-cover max-h-[500px] mx-auto"
                             sizes="(max-width: 768px) 100vw, 650px"
                           />
@@ -336,7 +336,7 @@ export default async function PostDetailPage({ params }: PageProps) {
                         <Link href={`/posts/${item.id}`} prefetch={true} className="block">
                           <div className="relative aspect-video w-full overflow-hidden bg-gray-100 rounded-md md:rounded-sm border border-gray-200">
                             <Image
-                              src={item.image}
+                              src={proxyImageUrl(item.image)}
                               alt={item.title}
                               fill
                               sizes="(max-width: 768px) 100vw, 300px"
@@ -387,7 +387,7 @@ export default async function PostDetailPage({ params }: PageProps) {
                         <Link href={`/posts/${item.id}`} prefetch={true} className="block">
                           <div className="relative aspect-video w-full overflow-hidden bg-gray-100 rounded-md md:rounded-sm border border-gray-200">
                             <Image
-                              src={item.image}
+                              src={proxyImageUrl(item.image)}
                               alt={item.title}
                               fill
                               sizes="(max-width: 768px) 100vw, 300px"

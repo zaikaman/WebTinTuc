@@ -5,6 +5,7 @@ import { getHomeFeed } from "@/lib/api/news";
 import { Clock } from "lucide-react";
 import { formatCategory, formatVietnameseDate } from "@/lib/utils";
 import { FeaturedCarousel } from "@/components/FeaturedCarousel";
+import { proxyImageUrl } from "@/lib/image-proxy";
 import { getPublicAds } from "@/lib/api/news";
 import AdBanner from "@/components/AdBanner";
 import MobileAdsStack from "@/components/MobileAdsStack";
@@ -114,7 +115,7 @@ export default async function HomePage() {
                         className="relative w-[130px] h-[82px] sm:w-[220px] sm:h-[138px] flex-shrink-0 overflow-hidden border border-gray-200 bg-gray-50 rounded-md md:rounded-sm block"
                       >
                         <Image
-                          src={article.image || "/placeholder.svg"}
+                          src={proxyImageUrl(article.image) || "/placeholder.svg"}
                           alt={article.title}
                           fill
                           sizes="(max-width: 640px) 130px, 220px"

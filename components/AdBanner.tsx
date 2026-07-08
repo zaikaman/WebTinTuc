@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
 interface Ad {
@@ -116,21 +117,21 @@ export default function AdBanner({
           dangerouslySetInnerHTML={{ __html: selectedAd.html_code }}
           onClick={() => handleClick(selectedAd.id)}
         />
-      ) : (
-        <a 
+      ) : (          <a 
           href={finalLink} 
-          className="block w-full h-full" 
+          className="block w-full h-full relative" 
           target="_blank" 
           rel="noopener noreferrer"
           onClick={() => handleClick(selectedAd?.id)}
         >
           {finalImg && (
-            <img
+            <Image
               src={finalImg}
               alt={`Quảng cáo ${position}`}
-              className="w-full h-full object-cover"
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 970px"
               loading="lazy"
-              decoding="async"
             />
           )}
         </a>

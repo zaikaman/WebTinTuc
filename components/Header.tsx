@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -313,7 +314,7 @@ export function Header({ brand, categories }: HeaderProps) {
         {/* Center: Brand Logo */}
         <Link href="/" prefetch={true} className="flex items-center gap-2">
           {brand.logo_url ? (
-            <img src={brand.logo_url} alt={brand.name} className="h-8 w-auto object-contain" />
+            <Image src={brand.logo_url} alt={brand.name} width={0} height={0} sizes="50vw" className="h-8 w-auto object-contain" priority />
           ) : (
             <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center font-extrabold text-[#df3232] text-sm shadow-sm">
               {brand.name.slice(0, 1).toUpperCase()}
@@ -430,7 +431,7 @@ export function Header({ brand, categories }: HeaderProps) {
           className="bg-[#df3232] text-white flex items-center gap-2 md:gap-3 px-3 md:px-5 py-2 md:py-3.5 min-w-[115px] md:min-w-[220px] flex-shrink-0"
         >
           {brand.logo_url ? (
-            <img src={brand.logo_url} alt={brand.name} className="h-8 md:h-10 w-auto object-contain flex-shrink-0" />
+            <Image src={brand.logo_url} alt={brand.name} width={0} height={0} sizes="50vw" className="h-8 md:h-10 w-auto object-contain flex-shrink-0" priority />
           ) : (
             <div className="w-6 h-6 md:w-9 md:h-9 rounded-full bg-white flex-shrink-0 flex items-center justify-center font-extrabold text-[#df3232] text-xs md:text-base" >
               {brand.name.slice(0, 1).toUpperCase()}
@@ -501,7 +502,7 @@ export function Header({ brand, categories }: HeaderProps) {
                           >
                             {item.thumbnail_key ? (
                               <div className="relative w-10 h-7 flex-shrink-0 rounded border border-gray-100 overflow-hidden bg-gray-50">
-                                <img src={item.thumbnail_key} alt="" className="w-full h-full object-cover" />
+                                <Image src={item.thumbnail_key} alt="" width={0} height={0} sizes="40px" className="w-full h-full object-cover" />
                               </div>
                             ) : (
                               <div className="w-10 h-7 flex-shrink-0 rounded border border-gray-100 bg-gray-100 flex items-center justify-center">
@@ -682,7 +683,7 @@ export function Header({ brand, categories }: HeaderProps) {
             <div className="flex items-center justify-between pb-4 border-b border-white/10">
               <div className="flex items-center gap-2">
                 {brand.logo_url ? (
-                  <img src={brand.logo_url} alt={brand.name} className="h-8 w-auto object-contain" />
+                  <Image src={brand.logo_url} alt={brand.name} width={0} height={0} sizes="50vw" className="h-8 w-auto object-contain" priority />
                 ) : (
                   <div className="w-8 h-8 rounded-lg bg-[#df3232] flex items-center justify-center font-extrabold text-white text-base shadow-inner">
                     {brand.name.slice(0, 1).toUpperCase()}

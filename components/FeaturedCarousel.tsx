@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
 
+import { proxyImageUrl } from "@/lib/image-proxy";
 import { formatCategory, formatVietnameseDate } from "@/lib/utils";
 import type { Article } from "@/lib/types/news";
 
@@ -75,7 +76,7 @@ export function FeaturedCarousel({ articles }: FeaturedCarouselProps) {
               }`}
             >
               <Image
-                src={article.image || "/placeholder.svg"}
+                src={proxyImageUrl(article.image) || "/placeholder.svg"}
                 alt={article.title}
                 fill
                 sizes="(max-width: 768px) 100vw, 650px"

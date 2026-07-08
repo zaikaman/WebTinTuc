@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import type { Article } from "@/lib/types/news";
 import { formatCategory, formatVietnameseDate } from "@/lib/utils";
+import { proxyImageUrl } from "@/lib/image-proxy";
 import AdBanner from "@/components/AdBanner";
 
 interface SearchContentProps {
@@ -369,7 +370,7 @@ export function SearchContent({ query, initialArticles, ads = [], categories = [
                   >
                     <div className="relative w-[110px] h-[75px] sm:w-[130px] sm:h-[88px] flex-shrink-0 overflow-hidden border border-gray-200 bg-gray-50 rounded-md md:rounded-sm">
                       <Image
-                        src={item.image || "/placeholder.svg"}
+                        src={proxyImageUrl(item.image) || "/placeholder.svg"}
                         alt={item.title}
                         fill
                         sizes="(max-width: 640px) 110px, 130px"
@@ -427,7 +428,7 @@ export function SearchContent({ query, initialArticles, ads = [], categories = [
                     >
                       <div className="relative w-[110px] h-[75px] sm:w-[130px] sm:h-[88px] flex-shrink-0 overflow-hidden border border-gray-200 bg-gray-50 rounded-md md:rounded-sm">
                         <Image
-                          src={item.image || "/placeholder.svg"}
+                          src={proxyImageUrl(item.image) || "/placeholder.svg"}
                           alt={item.title}
                           fill
                           sizes="(max-width: 640px) 110px, 130px"
