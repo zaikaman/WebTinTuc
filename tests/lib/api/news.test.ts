@@ -1,9 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { clearMemoryCache } from '@/lib/api/news'
-
-beforeEach(() => {
-  clearMemoryCache()
-})
+import { describe, it, expect, vi } from 'vitest'
 
 // Mock all server services used by news.ts
 vi.mock('@/server/services/site-settings.service', () => ({
