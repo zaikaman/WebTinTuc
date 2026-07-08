@@ -278,27 +278,17 @@ export async function searchArticles(queryText: string, page = 1, limit = 10) {
 
 
 export async function listTrendingArticles(limit = 10, days = 7) {
-  const since = new Date()
-  since.setDate(since.getDate() - days)
-
-  const { data: stats, error } = await supabaseAdmin
-    .from('article_stats_daily')
-    .select('article_id, views')
-    .gte('date', since.toISOString().slice(0, 10))
+  const { data: topStats, error } = await supabaseAdmin
+    .rpc('get_trending_articles', {
+      p_limit: limit,
+      p_days: days
+    })
 
   if (error) throw error
 
-  const totals = new Map<number, number>()
-  for (const row of stats ?? []) {
-    totals.set(row.article_id, (totals.get(row.article_id) ?? 0) + Number(row.views ?? 0))
-  }
+  if (!topStats || topStats.length === 0) return []
 
-  const ids = [...totals.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, limit)
-    .map(([id]) => id)
-
-  if (ids.length === 0) return []
+  const ids = topStats.map((row: { article_id: number }) => row.article_id)
 
   const { data: articles, error: articleError } = await supabaseAdmin
     .from('articles')
@@ -309,10 +299,16 @@ export async function listTrendingArticles(limit = 10, days = 7) {
 
   if (articleError) throw articleError
 
-  return ids
-    .map((id) => {
-      const article = articles?.find((item) => item.id === id)
-      return article ? { ...article, trending_views: totals.get(id) ?? 0 } : null
+  // Build a map for O(1) lookups instead of Array.find()
+  const articleMap = new Map<number, typeof articles[0]>()
+  for (const article of articles ?? []) {
+    articleMap.set(article.id, article)
+  }
+
+  return topStats
+    .map((row: { article_id: number; total_views: number }) => {
+      const article = articleMap.get(row.article_id)
+      return article ? { ...article, trending_views: row.total_views } : null
     })
     .filter((a): a is Exclude<typeof a, null> => a !== null)
 }

@@ -67,42 +67,35 @@ async function getTopAds(limit = 5, days = 7) {
     }
   }
 
-  // Fallback: optimized in-JS aggregation (fetches only date-filtered rows)
-  const since = new Date()
-  since.setDate(since.getDate() - days)
-  const sinceStr = since.toISOString().slice(0, 10)
-
-  const { data: stats, error } = await supabaseAdmin
-    .from('ad_stats_daily')
-    .select('ad_id, impressions')
-    .gte('date', sinceStr)
+  // Fallback: server-side aggregation via RPC
+  const { data: topStats, error } = await supabaseAdmin
+    .rpc('get_top_ads', {
+      p_limit: limit,
+      p_days: days
+    })
 
   if (error) throw error
-  if (!stats || stats.length === 0) return []
+  if (!topStats || topStats.length === 0) return []
 
-  const totals = new Map<number, number>()
-  for (const row of stats) {
-    totals.set(row.ad_id, (totals.get(row.ad_id) ?? 0) + Number(row.impressions ?? 0))
-  }
-
-  const topIds = [...totals.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, limit)
-    .map(([id]) => id)
-
-  if (topIds.length === 0) return []
+  const ids = topStats.map((row: { ad_id: number }) => row.ad_id)
 
   const { data: ads, error: adsError } = await supabaseAdmin
     .from('ads')
     .select('*')
-    .in('id', topIds)
+    .in('id', ids)
 
   if (adsError) throw adsError
 
-  return topIds
-    .map((id) => {
-      const ad = ads?.find((a) => a.id === id)
-      return ad ? { ...ad, impressions_7d: totals.get(id) ?? 0 } : null
+  // Build a map for O(1) lookups instead of Array.find()
+  const adMap = new Map<number, NonNullable<typeof ads>[number]>()
+  for (const ad of ads ?? []) {
+    adMap.set(ad.id, ad)
+  }
+
+  return topStats
+    .map((row: { ad_id: number; total_impressions: number }) => {
+      const ad = adMap.get(row.ad_id)
+      return ad ? { ...ad, impressions_7d: row.total_impressions } : null
     })
     .filter(Boolean)
 }

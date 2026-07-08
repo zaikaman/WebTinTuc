@@ -21,6 +21,7 @@ describe('dashboardRepository', () => {
   beforeEach(() => {
     mockQuery = createMockQuery()
     vi.mocked(supabaseAdmin).from = vi.fn().mockReturnValue(mockQuery)
+    vi.mocked(supabaseAdmin).rpc = vi.fn().mockReturnValue(mockQuery)
   })
 
   it('getDashboardStats returns all expected keys', async () => {

@@ -125,30 +125,30 @@ describe('articleRepository', () => {
     expect(mockQuery.textSearch).toHaveBeenCalled()
   })
 
-  it('listTrendingArticles aggregates views and returns sorted', async () => {
-    const stats = [
-      { article_id: 1, views: 100 },
-      { article_id: 2, views: 50 },
+  it('listTrendingArticles uses RPC and returns sorted', async () => {
+    const topStats = [
+      { article_id: 1, total_views: 100 },
+      { article_id: 2, total_views: 50 },
     ]
     const articles = [
       { id: 1, title: 'Popular', categories: {}, profiles: {} },
       { id: 2, title: 'Less Popular', categories: {}, profiles: {} },
     ]
 
+    const mockQuery1 = createMockQuery()
+    mockQuery1.mockResolvedValue({ data: topStats, error: null })
     const mockQuery2 = createMockQuery()
-    mockQuery2.mockResolvedValue({ data: stats, error: null })
-    const mockQuery3 = createMockQuery()
-    mockQuery3.mockResolvedValue({ data: articles, error: null })
+    mockQuery2.mockResolvedValue({ data: articles, error: null })
 
-    vi.mocked(supabaseAdmin).from
-      .mockReturnValueOnce(mockQuery2)
-      .mockReturnValueOnce(mockQuery3)
+    vi.mocked(supabaseAdmin).rpc = vi.fn().mockReturnValue(mockQuery1)
+    vi.mocked(supabaseAdmin).from = vi.fn().mockReturnValue(mockQuery2)
 
     const { listTrendingArticles } = await import('@/server/repositories/article.repository')
     const result = await listTrendingArticles(5, 7)
 
     expect(result).toHaveLength(2)
     expect(result[0].trending_views).toBe(100)
+    expect(supabaseAdmin.rpc).toHaveBeenCalledWith('get_trending_articles', { p_limit: 5, p_days: 7 })
   })
 
   it('incrementArticleViews increments existing views', async () => {
