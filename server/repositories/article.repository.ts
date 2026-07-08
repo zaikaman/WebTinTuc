@@ -205,7 +205,7 @@ export async function listFeaturedArticles(limit = 6) {
 export async function searchArticles(queryText: string, page = 1, limit = 10) {
   const { from, to } = toRange(page, limit)
 
-  // Normalize helper function
+  // Normalize helper: strip accents and lowercase for accent-insensitive matching
   const normalize = (str: string) =>
     str
       .normalize("NFD")
@@ -217,37 +217,8 @@ export async function searchArticles(queryText: string, page = 1, limit = 10) {
 
   const normalizedQuery = normalize(queryText);
 
-  // Post-filtering function to only match on the article title
-  // and match exactly the characters in the query (accent-aware contiguous substring check)
-  const filterArticles = (items: any[]) => {
-    const query = queryText.trim();
-    if (!query) {
-      return items;
-    }
-
-    const hasAccents = (str: string) => normalize(str) !== str.toLowerCase();
-
-    return items.filter(item => {
-      // Strict matching on Title only (must contain the query as a contiguous substring)
-      const title = item.title || "";
-      const normTitle = normalize(title);
-      
-      // Basic normalized check first
-      if (!normTitle.includes(normalizedQuery)) {
-        return false;
-      }
-
-      // If query has accents, enforce accent-sensitive substring check
-      if (hasAccents(query)) {
-        return title.toLowerCase().includes(query.toLowerCase());
-      }
-
-      return true;
-    });
-  };
-
   // Use PostgreSQL Full-Text Search via search_vector GIN index for queries >= 2 chars
-  // Falls back to ilike for very short inputs where plainto_tsquery isn't effective
+  // The search_vector uses 'simple' config which is already accent-insensitive
   if (normalizedQuery.length >= 2) {
     const { data, error, count } = await supabaseAdmin
       .from('articles')
@@ -259,21 +230,21 @@ export async function searchArticles(queryText: string, page = 1, limit = 10) {
       .order('published_at', { ascending: false, nullsFirst: false });
 
     if (error) throw error
-    return { items: filterArticles(data ?? []), meta: pageMeta(count, page, limit) }
+    return { items: data ?? [], meta: pageMeta(count, page, limit) }
   }
 
-  // Fallback for single-char or empty queries
+  // Fallback for single-char or empty queries — use normalized query for accent-insensitive matching
   const { data, error, count } = await supabaseAdmin
     .from('articles')
     .select(ARTICLE_LIST_SELECT, { count: 'exact' })
-    .or(`title.ilike.%${queryText}%,summary.ilike.%${queryText}%`)
+    .or(`title.ilike.%${normalizedQuery}%,summary.ilike.%${normalizedQuery}%`)
     .eq('status', 'published')
     .is('deleted_at', null)
     .range(from, to)
     .order('published_at', { ascending: false, nullsFirst: false })
 
   if (error) throw error
-  return { items: filterArticles(data ?? []), meta: pageMeta(count, page, limit) }
+  return { items: data ?? [], meta: pageMeta(count, page, limit) }
 }
 
 
