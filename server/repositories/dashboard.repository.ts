@@ -15,20 +15,7 @@ async function countRows(table: 'articles' | 'categories' | 'ads', filters: (que
 }
 
 async function getTopCategories(limit = 5) {
-  // Check if view exists by trying to select from it
-  try {
-    const { data, error } = await supabaseAdmin
-      .from('view_top_categories')
-      .select('*')
-      .limit(limit)
-    if (!error && data && data.length > 0) {
-      return data
-    }
-  } catch (e) {
-    // view doesn't exist, fallback
-  }
-
-  // Fallback: single optimized query using PostgREST relation count (no N+1 queries!)
+  // Single optimized query using PostgREST relation count (no N+1 queries!)
   const { data, error } = await supabaseAdmin
     .from('categories')
     .select('id, name, slug, updated_at, articles(count)')
@@ -52,22 +39,7 @@ async function getTopCategories(limit = 5) {
 }
 
 async function getTopAds(limit = 5, days = 7) {
-  // Check if view exists (dashboard only queries 7 days)
-  if (days === 7) {
-    try {
-      const { data, error } = await supabaseAdmin
-        .from('view_top_ads_7d')
-        .select('*')
-        .limit(limit)
-      if (!error && data && data.length > 0) {
-        return data
-      }
-    } catch (e) {
-      // view doesn't exist, fallback
-    }
-  }
-
-  // Fallback: server-side aggregation via RPC
+  // Server-side aggregation via RPC
   const { data: topStats, error } = await supabaseAdmin
     .rpc('get_top_ads', {
       p_limit: limit,
@@ -124,21 +96,6 @@ export async function getDashboardStats() {
   prevMonthDate.setDate(now.getDate() - 60)
   const prevMonthStart = prevMonthDate.toISOString().slice(0, 10)
 
-  // Try to use the unified view_dashboard_metrics for extreme efficiency (1 query instead of 20+)
-  let metrics: any = null
-  try {
-    const { data, error } = await supabaseAdmin
-      .from('view_dashboard_metrics')
-      .select('*')
-      .maybeSingle()
-    
-    if (!error && data) {
-      metrics = data
-    }
-  } catch (e) {
-    // view doesn't exist, fallback
-  }
-
   // Define values to be populated
   let totalArticles = 0
   let totalCategories = 0
@@ -164,122 +121,76 @@ export async function getDashboardStats() {
   let topArticles: any[] = []
   let topCategories: any[] = []
   let topAds: any[] = []
+  // Fetch all dashboard stats in parallel (11 queries total)
+  const [
+    countArt,
+    countCat,
+    countAd,
+    topArt,
+    topCat,
+    topAd,
+    latArt,
+    latAd,
+    latCat,
+    // Fetch all article stats from last 60 days in exactly 1 query to avoid N queries
+    articleStatsData,
+    // Fetch all ad stats from last 60 days in exactly 1 query to avoid N queries
+    adStatsData,
+  ] = await Promise.all([
+    countRows('articles', (query) => query.is('deleted_at', null)),
+    countRows('categories', (query) => query.is('deleted_at', null)),
+    countRows('ads', (query) => query.is('deleted_at', null)),
+    listTrendingArticles(5, 7),
+    getTopCategories(5),
+    getTopAds(5, 7),
+    supabaseAdmin.from('articles').select('id, title, created_at, status').is('deleted_at', null).order('created_at', { ascending: false }).limit(5),
+    supabaseAdmin.from('ads').select('id, name, created_at, status').is('deleted_at', null).order('created_at', { ascending: false }).limit(5),
+    supabaseAdmin.from('categories').select('id, name, created_at').is('deleted_at', null).order('created_at', { ascending: false }).limit(5),
+    supabaseAdmin.from('article_stats_daily').select('date, views').gte('date', prevMonthStart),
+    supabaseAdmin.from('ad_stats_daily').select('date, clicks').gte('date', prevMonthStart)
+  ])
 
-  if (metrics) {
-    // Populate stats from view
-    totalArticles = metrics.total_articles
-    totalCategories = metrics.total_categories
-    totalAds = metrics.total_ads
-    totalViews = Number(metrics.total_views)
-    totalClicks = Number(metrics.total_clicks)
-    todayViews = Number(metrics.today_views)
-    yesterdayViews = Number(metrics.yesterday_views)
-    todayClicks = Number(metrics.today_clicks)
-    yesterdayClicks = Number(metrics.yesterday_clicks)
-    weekViews = Number(metrics.week_views)
-    prevWeekViews = Number(metrics.prev_week_views)
-    weekClicks = Number(metrics.week_clicks)
-    prevWeekClicks = Number(metrics.prev_week_clicks)
-    monthViews = Number(metrics.month_views)
-    prevMonthViews = Number(metrics.prev_month_views)
-    monthClicks = Number(metrics.month_clicks)
-    prevMonthClicks = Number(metrics.prev_month_clicks)
+  totalArticles = countArt
+  totalCategories = countCat
+  totalAds = countAd
+  topArticles = topArt
+  topCategories = topCat
+  topAds = topAd
+  latestArticles = latArt
+  latestAds = latAd
+  latestCategories = latCat
 
-    // Parallel fetch remaining lists/activities (6 queries total)
-    const [
-      topArt,
-      topCat,
-      topAd,
-      latArt,
-      latAd,
-      latCat
-    ] = await Promise.all([
-      listTrendingArticles(5, 7),
-      getTopCategories(5),
-      getTopAds(5, 7),
-      supabaseAdmin.from('articles').select('id, title, created_at, status').is('deleted_at', null).order('created_at', { ascending: false }).limit(5),
-      supabaseAdmin.from('ads').select('id, name, created_at, status').is('deleted_at', null).order('created_at', { ascending: false }).limit(5),
-      supabaseAdmin.from('categories').select('id, name, created_at').is('deleted_at', null).order('created_at', { ascending: false }).limit(5)
-    ])
-    topArticles = topArt
-    topCategories = topCat
-    topAds = topAd
-    latestArticles = latArt
-    latestAds = latAd
-    latestCategories = latCat
-  } else {
-    // FALLBACK IMPLEMENTATION (Optimized: 13 queries total instead of 20+ queries)
-    // 1. Fetch metadata counts in parallel with recent activities and lists
-    const [
-      countArt,
-      countCat,
-      countAd,
-      topArt,
-      topCat,
-      topAd,
-      latArt,
-      latAd,
-      latCat,
-      // Fetch all article stats from last 60 days in exactly 1 query to avoid N queries
-      articleStatsData,
-      // Fetch all ad stats from last 60 days in exactly 1 query to avoid N queries
-      adStatsData,
-    ] = await Promise.all([
-      countRows('articles', (query) => query.is('deleted_at', null)),
-      countRows('categories', (query) => query.is('deleted_at', null)),
-      countRows('ads', (query) => query.is('deleted_at', null)),
-      listTrendingArticles(5, 7),
-      getTopCategories(5),
-      getTopAds(5, 7),
-      supabaseAdmin.from('articles').select('id, title, created_at, status').is('deleted_at', null).order('created_at', { ascending: false }).limit(5),
-      supabaseAdmin.from('ads').select('id, name, created_at, status').is('deleted_at', null).order('created_at', { ascending: false }).limit(5),
-      supabaseAdmin.from('categories').select('id, name, created_at').is('deleted_at', null).order('created_at', { ascending: false }).limit(5),
-      supabaseAdmin.from('article_stats_daily').select('date, views').gte('date', prevMonthStart),
-      supabaseAdmin.from('ad_stats_daily').select('date, clicks').gte('date', prevMonthStart)
-    ])
+  // Compute daily stats ranges in JS from the 60-day query data (saves 12+ SQL queries!)
+  // totalViews and totalClicks are derived from the same 60-day window to avoid full table scans
+  const articleStats = articleStatsData.data ?? []
+  for (const row of articleStats) {
+    const date = row.date
+    const views = Number(row.views ?? 0)
 
-    totalArticles = countArt
-    totalCategories = countCat
-    totalAds = countAd
-    topArticles = topArt
-    topCategories = topCat
-    topAds = topAd
-    latestArticles = latArt
-    latestAds = latAd
-    latestCategories = latCat
+    if (date === today) todayViews += views
+    if (date >= yesterday && date < today) yesterdayViews += views
+    if (date >= weekStart) weekViews += views
+    if (date >= prevWeekStart && date < weekStart) prevWeekViews += views
+    if (date >= monthStart) monthViews += views
+    if (date >= prevMonthStart && date < monthStart) prevMonthViews += views
+  }
 
-    // Compute daily stats ranges in JS from the 60-day query data (saves 12+ SQL queries!)
-    // totalViews and totalClicks are derived from the same 60-day window to avoid full table scans
-    const articleStats = articleStatsData.data ?? []
-    for (const row of articleStats) {
-      const date = row.date
-      const views = Number(row.views ?? 0)
+  // Compute totals from the 60-day window (same data, no extra query)
+  totalViews = articleStats.reduce((sum, row) => sum + Number(row.views ?? 0), 0)
 
-      if (date === today) todayViews += views
-      if (date >= yesterday && date < today) yesterdayViews += views
-      if (date >= weekStart) weekViews += views
-      if (date >= prevWeekStart && date < weekStart) prevWeekViews += views
-      if (date >= monthStart) monthViews += views
-      if (date >= prevMonthStart && date < monthStart) prevMonthViews += views
-    }
+  const adStats = adStatsData.data ?? []
+  totalClicks = adStats.reduce((sum, row) => sum + Number(row.clicks ?? 0), 0)
 
-    // Compute totals from the 60-day window (same data, no extra query)
-    totalViews = articleStats.reduce((sum, row) => sum + Number(row.views ?? 0), 0)
+  for (const row of adStats) {
+    const date = row.date
+    const clicks = Number(row.clicks ?? 0)
 
-    const adStats = adStatsData.data ?? []
-    totalClicks = adStats.reduce((sum, row) => sum + Number(row.clicks ?? 0), 0)
-
-    for (const row of adStats) {
-      const date = row.date
-      const clicks = Number(row.clicks ?? 0)
-
-      if (date === today) todayClicks += clicks
-      if (date >= yesterday && date < today) yesterdayClicks += clicks
-      if (date >= weekStart) weekClicks += clicks
-      if (date >= prevWeekStart && date < weekStart) prevWeekClicks += clicks
-      if (date >= monthStart) monthClicks += clicks
-      if (date >= prevMonthStart && date < monthStart) prevMonthClicks += clicks
-    }
+    if (date === today) todayClicks += clicks
+    if (date >= yesterday && date < today) yesterdayClicks += clicks
+    if (date >= weekStart) weekClicks += clicks
+    if (date >= prevWeekStart && date < weekStart) prevWeekClicks += clicks
+    if (date >= monthStart) monthClicks += clicks
+    if (date >= prevMonthStart && date < monthStart) prevMonthClicks += clicks
   }
 
   const activities: ActivityRecord[] = []
