@@ -17,7 +17,7 @@ export interface Category {
   name: string;
   postCount: number;
   priority: number;
-  status: "Hoạt động" | "Ngừng hoạt động" | "Chờ chạy" | "Đã kết thúc";
+  status: "Hoạt động" | "Ngừng hoạt động";
 }
 
 export interface Ad {
