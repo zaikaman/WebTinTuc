@@ -9,7 +9,6 @@ import {
   Image as ImageIcon,
   Lock,
   X,
-  LogOut,
 } from "lucide-react";
 import type { TabType } from "./AdminTypes";
 
@@ -20,7 +19,6 @@ interface AdminSidebarProps {
   logoWebsiteName: string;
   onTabChange: (tab: TabType) => void;
   onCloseSidebar: () => void;
-  onLogoutClick: () => void;
 }
 
 const navItems: { tab: TabType; label: string; icon?: React.ComponentType<{ size?: number; className?: string }>; svg?: React.ReactNode }[] = [
@@ -59,7 +57,6 @@ export default function AdminSidebar({
   logoWebsiteName,
   onTabChange,
   onCloseSidebar,
-  onLogoutClick,
 }: AdminSidebarProps) {
   return (
     <>
@@ -127,21 +124,9 @@ export default function AdminSidebar({
           </nav>
         </div>
 
-        <div>
-          {/* Logout Button */}
-          <button
-            type="button"
-            onClick={onLogoutClick}
-            className="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 text-white/85 hover:text-white hover:bg-white/10 mb-4 active:scale-[0.98]"
-          >
-            <LogOut size={18} className="flex-shrink-0" />
-            <span>Đăng xuất</span>
-          </button>
-
-          {/* Sidebar Footer Link */}
-          <div className="pt-4 border-t border-white/20 text-xs text-white/60 text-center">
-            Admin Control Center &copy; 2026
-          </div>
+        {/* Sidebar Footer Link */}
+        <div className="pt-4 border-t border-white/20 text-xs text-white/60 text-center">
+          Admin Control Center &copy; 2026
         </div>
       </div>
     </>

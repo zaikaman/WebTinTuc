@@ -13,6 +13,7 @@ import {
   AccountsTableSkeleton,
 } from "@/components/admin/SkeletonLoaders";
 import AdminSidebar from "@/components/admin/AdminSidebar";
+import AdminLogin from "@/components/admin/AdminLogin";
 import {
   Loader2,
   FileText,
@@ -45,8 +46,6 @@ import {
   Download,
   Eye,
   MousePointerClick,
-  Lock,
-  EyeOff,
   LogOut,
   Copy,
   ExternalLink,
@@ -2085,85 +2084,16 @@ export default function AdminDashboard() {
   }
 
   if (!isLoggedIn) {
-    return (
-      <div className="min-h-screen bg-[#f4f6f8] flex items-center justify-center p-4 font-sans antialiased text-[#2c3e50] select-none">
-        <div className="max-w-[450px] w-full bg-white rounded-3xl p-8 border border-gray-100 shadow-2xl relative overflow-hidden flex flex-col gap-6">
-          {/* Top colored stripe */}
-          <div className="absolute top-0 left-0 right-0 h-2 bg-[#E55956]" />
-
-          {/* Header */}
-          <div className="text-center space-y-2 pt-2">
-            <div className="mx-auto w-16 h-16 rounded-2xl bg-[#E55956]/10 flex items-center justify-center text-[#E55956] mb-4">
-              <Lock size={32} />
-            </div>
-            <h1 className="text-2xl font-black text-gray-900 tracking-tight">Trang Quản Trị</h1>
-            <p className="text-sm text-gray-500 font-medium">Vui lòng đăng nhập để tiếp tục quản lý hệ thống</p>
-          </div>
-
-          {/* Form */}
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Email quản trị</label>
-              <input
-                type="email"
-                value={loginUsername}
-                onChange={(e) => setLoginUsername(e.target.value)}
-                placeholder="Nhập địa chỉ email..."
-                autoComplete="email"
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white shadow-sm font-medium"
-                required
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Mật khẩu</label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                  placeholder="Nhập mật khẩu..."
-                  autoComplete="current-password"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white shadow-sm font-medium pr-10"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-650 transition-colors"
-                >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-            </div>
-
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full py-3.5 bg-[#E55956] hover:bg-[#cb4643] disabled:opacity-75 text-white text-base font-bold rounded-xl transition-all shadow-md active:scale-[0.98] flex items-center justify-center gap-2 mt-2"
-            >
-              {isLoading ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  <span>Đang đăng nhập...</span>
-                </>
-              ) : (
-                <span>Đăng nhập</span>
-              )}
-            </button>
-          </form>
-
-          {/* Footer */}
-          <div className="text-center text-xs text-gray-400 font-medium">
-            Phát triển bởi Admin Control Center &copy; 2026
-          </div>
-        </div>
-      </div>
-    );
+    return <AdminLogin
+      loginUsername={loginUsername}
+      loginPassword={loginPassword}
+      showPassword={showPassword}
+      isLoading={isLoading}
+      onUsernameChange={setLoginUsername}
+      onPasswordChange={setLoginPassword}
+      onTogglePassword={() => setShowPassword(!showPassword)}
+      onSubmit={handleLogin}
+    />;
   }
 
   if (currentView === "editor") {
@@ -2514,8 +2444,8 @@ export default function AdminDashboard() {
                 type="button"
                 onClick={() => setImageTab("link")}
                 className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${imageTab === "link"
-                    ? "bg-[#E55956] text-white"
-                    : "text-gray-600 hover:bg-gray-50"
+                  ? "bg-[#E55956] text-white"
+                  : "text-gray-600 hover:bg-gray-50"
                   }`}
               >
                 Dán liên kết (URL)
@@ -2524,8 +2454,8 @@ export default function AdminDashboard() {
                 type="button"
                 onClick={() => setImageTab("upload")}
                 className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${imageTab === "upload"
-                    ? "bg-[#E55956] text-white"
-                    : "text-gray-600 hover:bg-gray-50"
+                  ? "bg-[#E55956] text-white"
+                  : "text-gray-600 hover:bg-gray-50"
                   }`}
               >
                 Tải lên từ máy tính
@@ -2537,8 +2467,8 @@ export default function AdminDashboard() {
                   loadMedia();
                 }}
                 className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${imageTab === "library"
-                    ? "bg-[#E55956] text-white"
-                    : "text-gray-600 hover:bg-gray-50"
+                  ? "bg-[#E55956] text-white"
+                  : "text-gray-600 hover:bg-gray-50"
                   }`}
               >
                 Thư viện Media (R2)
@@ -2721,8 +2651,8 @@ export default function AdminDashboard() {
                 type="button"
                 onClick={() => setVideoTab("link")}
                 className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${videoTab === "link"
-                    ? "bg-[#E55956] text-white"
-                    : "text-gray-600 hover:bg-gray-50"
+                  ? "bg-[#E55956] text-white"
+                  : "text-gray-600 hover:bg-gray-50"
                   }`}
               >
                 Dán liên kết (YouTube / URL)
@@ -2731,8 +2661,8 @@ export default function AdminDashboard() {
                 type="button"
                 onClick={() => setVideoTab("upload")}
                 className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${videoTab === "upload"
-                    ? "bg-[#E55956] text-white"
-                    : "text-gray-600 hover:bg-gray-50"
+                  ? "bg-[#E55956] text-white"
+                  : "text-gray-600 hover:bg-gray-50"
                   }`}
               >
                 Tải lên từ máy tính
@@ -2744,8 +2674,8 @@ export default function AdminDashboard() {
                   loadMedia();
                 }}
                 className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${videoTab === "library"
-                    ? "bg-[#E55956] text-white"
-                    : "text-gray-600 hover:bg-gray-50"
+                  ? "bg-[#E55956] text-white"
+                  : "text-gray-600 hover:bg-gray-50"
                   }`}
               >
                 Thư viện Media (R2)
@@ -3195,7 +3125,6 @@ export default function AdminDashboard() {
         logoWebsiteName={logoWebsiteName}
         onTabChange={handleTabChange}
         onCloseSidebar={() => setSidebarOpen(false)}
-        onLogoutClick={() => setLogoutDialogOpen(true)}
       />
 
       {/* ==========================================
@@ -3286,8 +3215,8 @@ export default function AdminDashboard() {
                         type="button"
                         onClick={() => setTimeFilter(item.id as any)}
                         className={`px-4 py-2 rounded-lg text-xs font-bold transition-all relative ${timeFilter === item.id
-                            ? "bg-[#E55956] text-white shadow-sm"
-                            : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                          ? "bg-[#E55956] text-white shadow-sm"
+                          : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                           }`}
                       >
                         {item.label}
@@ -3950,8 +3879,8 @@ export default function AdminDashboard() {
                         type="button"
                         onClick={() => setMediaTypeFilter(type.id as any)}
                         className={`px-5 py-2 rounded-xl text-xs font-bold transition-all ${mediaTypeFilter === type.id
-                            ? "bg-[#eb5757] text-white shadow-sm"
-                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                          ? "bg-[#eb5757] text-white shadow-sm"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                           }`}
                       >
                         {type.label}
@@ -4013,8 +3942,8 @@ export default function AdminDashboard() {
                           <div
                             key={folderName}
                             className={`group/folder flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all ${isActive
-                                ? "bg-[#ffe4e4] text-[#eb5757]"
-                                : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                              ? "bg-[#ffe4e4] text-[#eb5757]"
+                              : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
                               }`}
                           >
                             <div
@@ -4248,8 +4177,8 @@ export default function AdminDashboard() {
                                 type="button"
                                 onClick={() => setMediaPage(pageNumber)}
                                 className={`px-4 py-2 text-xs font-bold transition-all ${isCurrent
-                                    ? "bg-[#eb5757] text-white"
-                                    : "text-gray-700 hover:bg-gray-50"
+                                  ? "bg-[#eb5757] text-white"
+                                  : "text-gray-700 hover:bg-gray-50"
                                   }`}
                               >
                                 {pageNumber}
@@ -4456,8 +4385,8 @@ export default function AdminDashboard() {
                               <td className="py-4 px-4 text-center">
                                 <span
                                   className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-bold ${post.status === "Đã đăng"
-                                      ? "bg-emerald-100 text-emerald-800"
-                                      : "bg-amber-100 text-amber-800"
+                                    ? "bg-emerald-100 text-emerald-800"
+                                    : "bg-amber-100 text-amber-800"
                                     }`}
                                 >
                                   {post.status}
@@ -4560,8 +4489,8 @@ export default function AdminDashboard() {
                                   onClick={() => handleCategoryStatusToggle(cat)}
                                   title="Click để đổi trạng thái"
                                   className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-bold transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer shadow-sm ${cat.status === "Hoạt động"
-                                      ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
-                                      : "bg-red-100 text-red-800 hover:bg-red-200"
+                                    ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
+                                    : "bg-red-100 text-red-800 hover:bg-red-200"
                                     }`}
                                 >
                                   {cat.status}
@@ -4677,12 +4606,12 @@ export default function AdminDashboard() {
                                   onClick={() => handleAdStatusToggle(ad)}
                                   title="Click để đổi trạng thái"
                                   className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-bold transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer shadow-sm ${ad.status === "Hoạt động"
-                                      ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
-                                      : ad.status === "Chờ chạy"
-                                        ? "bg-blue-100 text-blue-800 hover:bg-blue-200"
-                                        : ad.status === "Đã kết thúc"
-                                          ? "bg-gray-100 text-gray-800 hover:bg-gray-200"
-                                          : "bg-red-100 text-red-800 hover:bg-red-200"
+                                    ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
+                                    : ad.status === "Chờ chạy"
+                                      ? "bg-blue-100 text-blue-800 hover:bg-blue-200"
+                                      : ad.status === "Đã kết thúc"
+                                        ? "bg-gray-100 text-gray-800 hover:bg-gray-200"
+                                        : "bg-red-100 text-red-800 hover:bg-red-200"
                                     }`}
                                 >
                                   {ad.status}
@@ -4844,8 +4773,8 @@ export default function AdminDashboard() {
                             if (activeTab === "accounts") setAccountsPage(pageNumber);
                           }}
                           className={`px-4 py-2 text-xs font-bold transition-all ${isCurrent
-                              ? "bg-[#E55956] text-white"
-                              : "text-gray-700 hover:bg-gray-50"
+                            ? "bg-[#E55956] text-white"
+                            : "text-gray-700 hover:bg-gray-50"
                             }`}
                         >
                           {pageNumber}
@@ -5189,9 +5118,9 @@ export default function AdminDashboard() {
               <div className="p-3 bg-gray-50 rounded-xl border border-gray-150 flex items-center justify-between text-sm">
                 <span className="font-semibold text-gray-500">Trạng thái hiển thị thực tế:</span>
                 <span className={`font-bold px-3 py-1 rounded-full text-xs ${adForm.status === "Hoạt động" ? "bg-emerald-100 text-emerald-800" :
-                    adForm.status === "Chờ chạy" ? "bg-blue-100 text-blue-800" :
-                      adForm.status === "Đã kết thúc" ? "bg-gray-100 text-gray-800" :
-                        "bg-red-100 text-red-800"
+                  adForm.status === "Chờ chạy" ? "bg-blue-100 text-blue-800" :
+                    adForm.status === "Đã kết thúc" ? "bg-gray-100 text-gray-800" :
+                      "bg-red-100 text-red-800"
                   }`}>
                   {adForm.status}
                 </span>
