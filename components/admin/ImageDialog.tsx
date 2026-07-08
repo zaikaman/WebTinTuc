@@ -37,7 +37,7 @@ export default function ImageDialog({
   imageUrl,
   imageCaption,
   imageTab,
-  imageFile,
+  imageFile: _imageFile,
   imageFileName,
   mediaItems,
   mediaLoading,

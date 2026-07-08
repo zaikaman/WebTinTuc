@@ -20,6 +20,7 @@ import ImageDialog from "@/components/admin/ImageDialog";
 import VideoDialog from "@/components/admin/VideoDialog";
 import CropDialog from "@/components/admin/CropDialog";
 import FolderDialog from "@/components/admin/FolderDialog";
+import AccountDialog from "@/components/admin/AccountDialog";
 import {
   Loader2,
   FileText,
@@ -255,7 +256,6 @@ export default function AdminDashboard() {
 
   const [mediaSort, setMediaSort] = useState<"newest" | "oldest" | "az">("newest");
 
-  const [mediaPreviewItem, setMediaPreviewItem] = useState<MediaItem | null>(null);
   const [mediaSearchQuery, setMediaSearchQuery] = useState("");
   const [mediaTypeFilter, setMediaTypeFilter] = useState<"all" | "image" | "video">("all");
   const [activeFolder, setActiveFolder] = useState<string>("");
@@ -3366,7 +3366,10 @@ export default function AdminDashboard() {
                                   </button>
                                   <button
                                     type="button"
-                                    onClick={() => setMediaPreviewItem(item)}
+                                    onClick={() => {
+                                      const previewUrl = item.url.startsWith("blob:") || item.url.startsWith("data:") || item.url.startsWith("http") ? item.url : (window.location.origin + item.url);
+                                      window.open(previewUrl, '_blank');
+                                    }}
                                     className="w-8 h-8 rounded-full bg-white hover:bg-gray-100 text-gray-800 flex items-center justify-center shadow transition-all active:scale-95"
                                     title="Xem trước"
                                   >
@@ -4501,109 +4504,15 @@ export default function AdminDashboard() {
       {/* ==========================================
           MODAL: ADD / EDIT ACCOUNT DIALOG FORM
           ========================================== */}
-      <Dialog open={accountDialogOpen} onOpenChange={setAccountDialogOpen}>
-        <DialogContent className="max-w-[460px] w-[95%] max-h-[90vh] overflow-y-auto rounded-[24px] p-6 border border-gray-100 shadow-2xl bg-white text-[#2c3e50] outline-none [&>button]:hidden">
-          <DialogHeader className="border-b border-gray-150 pb-3 -mx-6 px-6">
-            <DialogTitle className="text-xl font-bold text-gray-900 text-left">
-              {dialogMode === "add" ? "Thêm tài khoản" : "Sửa tài khoản"}
-            </DialogTitle>
-          </DialogHeader>
-
-          <form onSubmit={handleFormSubmit} className="space-y-4 pt-4">
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-gray-900">
-                Tên đăng nhập
-              </label>
-              <input
-                type="text"
-                value={accountForm.username || ""}
-                onChange={(e) => setAccountForm({ ...accountForm, username: e.target.value })}
-                placeholder="Nhập tên đăng nhập (ví dụ: admin01)..."
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white shadow-sm font-medium"
-                required
-                disabled={dialogMode === "edit"}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-gray-900">
-                Tên hiển thị
-              </label>
-              <input
-                type="text"
-                value={accountForm.display_name || ""}
-                onChange={(e) => setAccountForm({ ...accountForm, display_name: e.target.value })}
-                placeholder="Nhập tên hiển thị..."
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white shadow-sm font-medium"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-gray-900">
-                Email
-              </label>
-              <input
-                type="email"
-                value={accountForm.email || ""}
-                onChange={(e) => setAccountForm({ ...accountForm, email: e.target.value })}
-                placeholder="Nhập địa chỉ email..."
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white shadow-sm font-medium"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-gray-900">
-                Mật khẩu {dialogMode === "edit" && "(Để trống nếu không muốn đổi)"}
-              </label>
-              <input
-                type="password"
-                value={accountForm.password || ""}
-                onChange={(e) => setAccountForm({ ...accountForm, password: e.target.value })}
-                placeholder={dialogMode === "add" ? "Nhập mật khẩu (tối thiểu 6 ký tự)..." : "Nhập mật khẩu mới..."}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white shadow-sm font-medium"
-                required={dialogMode === "add"}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-gray-900">
-                Vai trò
-              </label>
-              <div className="relative">
-                <select
-                  value={accountForm.role || "admin"}
-                  onChange={(e) => setAccountForm({ ...accountForm, role: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white shadow-sm font-semibold text-gray-800 appearance-none cursor-pointer"
-                >
-                  <option value="admin">Administrator</option>
-                </select>
-                <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-center gap-4 pt-6 pb-2">
-              <button
-                type="button"
-                onClick={() => setAccountDialogOpen(false)}
-                disabled={isAccountSaving}
-                className="flex-1 max-w-[144px] py-3 border border-gray-200 hover:bg-gray-50 text-gray-900 text-lg font-bold rounded-xl transition-all shadow-sm flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Hủy
-              </button>
-              <button
-                type="submit"
-                disabled={isAccountSaving}
-                className="flex-1 max-w-[144px] py-3 bg-[#e86b6b] hover:bg-[#e55956] text-white text-lg font-bold rounded-xl transition-all shadow-md flex items-center justify-center disabled:opacity-75 disabled:cursor-not-allowed gap-2"
-              >
-                {isAccountSaving && <Loader2 className="w-5 h-5 animate-spin" />}
-                <span>{dialogMode === "add" ? "Thêm" : "Sửa"}</span>
-              </button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <AccountDialog
+        open={accountDialogOpen}
+        onOpenChange={setAccountDialogOpen}
+        dialogMode={dialogMode}
+        accountForm={accountForm}
+        isSaving={isAccountSaving}
+        onFormChange={setAccountForm}
+        onSubmit={handleFormSubmit}
+      />
 
       {/* ==========================================
           CONFIRM DELETE DIALOG

@@ -34,7 +34,7 @@ export default function VideoDialog({
   onOpenChange,
   videoUrl,
   videoTab,
-  videoFile,
+  videoFile: _videoFile,
   videoFileName,
   mediaItems,
   mediaLoading,
