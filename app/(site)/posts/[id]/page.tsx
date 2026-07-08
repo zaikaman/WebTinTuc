@@ -260,6 +260,7 @@ export default async function PostDetailPage({ params }: PageProps) {
                             alt={block.caption || "Hình ảnh bài viết"}
                             width={650}
                             height={400}
+                            unoptimized
                             className="w-full h-auto object-cover max-h-[500px] mx-auto"
                             sizes="(max-width: 768px) 100vw, 650px"
                           />

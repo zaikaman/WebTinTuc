@@ -2414,14 +2414,14 @@ export default function AdminDashboard() {
   };
 
   const handleInsertImage = async () => {
-    if (!imageFile && !imageUrl.trim()) {
-      toast.error("Vui lòng chọn file ảnh hoặc nhập link ảnh!");
-      return;
-    }
+    console.log("handleInsertImage: Start", { imageTab, imageUrl, imageCaption, imageFile });
+    let finalImageUrl = "";
 
-    let finalImageUrl = imageUrl.trim();
-
-    if (imageFile) {
+    if (imageTab === "upload") {
+      if (!imageFile) {
+        toast.error("Vui lòng chọn file ảnh để tải lên!");
+        return;
+      }
       toast.loading("Đang tải hình ảnh lên Cloudflare R2...", { id: "upload-image" });
       try {
         const formData = new FormData();
@@ -2429,6 +2429,7 @@ export default function AdminDashboard() {
         formData.append("folder", "articles");
 
         const res = await uploadAdminMedia(formData);
+        console.log("handleInsertImage: Upload res", res);
         if (res && res.url) {
           finalImageUrl = res.url;
           toast.success("Đã tải lên hình ảnh thành công!", { id: "upload-image" });
@@ -2436,9 +2437,33 @@ export default function AdminDashboard() {
           throw new Error("Không nhận được URL từ server");
         }
       } catch (err: any) {
+        console.error("handleInsertImage: Upload error", err);
         toast.error("Tải lên hình ảnh thất bại: " + (err.message || err), { id: "upload-image" });
         return;
       }
+    } else if (imageTab === "link" || imageTab === "library") {
+      if (!imageUrl.trim()) {
+        toast.error(imageTab === "link" ? "Vui lòng nhập link ảnh!" : "Vui lòng chọn hình ảnh từ thư viện!");
+        return;
+      }
+      finalImageUrl = imageUrl.trim();
+
+      if (imageTab === "link") {
+        const isLikelyImage = /\.(jpeg|jpg|gif|png|webp|svg|bmp|tiff|jfif)(\?.*)?$/i.test(finalImageUrl) || 
+                              finalImageUrl.startsWith("data:image/") ||
+                              finalImageUrl.includes("images.unsplash.com") ||
+                              finalImageUrl.includes("r2.dev") ||
+                              finalImageUrl.includes("r2.cloudflarestorage.com") ||
+                              finalImageUrl.includes("lh3.googleusercontent.com");
+                              
+        if (!isLikelyImage) {
+          toast.warning("Đường dẫn này có thể không phải là liên kết ảnh trực tiếp. Hãy đảm bảo liên kết kết thúc bằng .jpg, .png, .webp...", { duration: 6000 });
+        }
+      }
+    } else {
+      console.error("handleInsertImage: Unsupported imageTab value", imageTab);
+      toast.error("Tính năng này chưa được hỗ trợ!");
+      return;
     }
 
     if (!finalImageUrl) {
@@ -2513,10 +2538,15 @@ export default function AdminDashboard() {
   };
 
   const insertHtmlToEditor = (html: string) => {
-    if (!editorRef.current) return;
+    console.log("insertHtmlToEditor: HTML to insert is", html);
+    if (!editorRef.current) {
+      console.warn("insertHtmlToEditor: editorRef.current is null!");
+      return;
+    }
     
     editorRef.current.focus();
     const selection = window.getSelection();
+    console.log("insertHtmlToEditor: selection is", selection ? { rangeCount: selection.rangeCount, anchorNode: selection.anchorNode?.nodeName } : "null");
     
     let isInsideEditor = false;
     if (selection && selection.rangeCount > 0) {
@@ -2531,27 +2561,33 @@ export default function AdminDashboard() {
       }
     }
     
+    console.log("insertHtmlToEditor: isInsideEditor is", isInsideEditor);
     if (isInsideEditor && selection) {
       try {
+        console.log("insertHtmlToEditor: Executing insertHTML command");
         document.execCommand("insertHTML", false, html);
       } catch (err) {
+        console.error("insertHtmlToEditor: execCommand insertHTML failed, appending to innerHTML", err);
         editorRef.current.innerHTML += html;
       }
     } else {
+      console.log("insertHtmlToEditor: Appending directly to innerHTML because selection is outside editor");
       editorRef.current.innerHTML += html;
     }
     
+    console.log("insertHtmlToEditor: New editor innerHTML", editorRef.current.innerHTML);
     setPostContent(editorRef.current.innerHTML);
   };
 
   const handleInsertVideo = async () => {
-    if (!videoFile && !videoUrl.trim()) {
-      toast.error("Vui lòng chọn file video hoặc nhập link video!");
-      return;
-    }
-
+    console.log("handleInsertVideo: Start", { videoTab, videoUrl, videoFile });
     let videoHtml = "";
-    if (videoFile) {
+
+    if (videoTab === "upload") {
+      if (!videoFile) {
+        toast.error("Vui lòng chọn file video để tải lên!");
+        return;
+      }
       toast.loading("Đang tải video lên Cloudflare R2...", { id: "upload-video" });
       try {
         const formData = new FormData();
@@ -2559,6 +2595,7 @@ export default function AdminDashboard() {
         formData.append("folder", "articles");
 
         const res = await uploadAdminMedia(formData);
+        console.log("handleInsertVideo: Upload res", res);
         if (res && res.url) {
           videoHtml = `<p><br></p><div class="my-4 relative group" contenteditable="false" style="max-width: 100%; margin: 0 auto;">
   <video controls src="${res.url}" class="w-full max-h-[400px] rounded-xl border border-gray-200 shadow-sm"></video>
@@ -2580,10 +2617,15 @@ export default function AdminDashboard() {
         }
       } catch (err) {
         const e = err instanceof Error ? err : new Error(String(err));
+        console.error("handleInsertVideo: Upload error", e);
         toast.error("Tải lên video thất bại: " + e.message, { id: "upload-video" });
         return;
       }
-    } else if (videoUrl.trim()) {
+    } else if (videoTab === "link" || videoTab === "library") {
+      if (!videoUrl.trim()) {
+        toast.error(videoTab === "link" ? "Vui lòng nhập link video!" : "Vui lòng chọn video từ thư viện!");
+        return;
+      }
       const url = videoUrl.trim();
       if (url.includes("youtube.com/watch") || url.includes("youtu.be")) {
         let videoId = "";
@@ -2649,6 +2691,9 @@ export default function AdminDashboard() {
 </div><p><br></p>`;
       }
       toast.success("Đã chèn video thành công!");
+    } else {
+      toast.error("Tính năng này chưa được hỗ trợ!");
+      return;
     }
 
     insertHtmlToEditor(videoHtml);
@@ -2657,6 +2702,8 @@ export default function AdminDashboard() {
     setVideoFileName("");
     setVideoUrl("");
   };
+
+
 
   // Đang xác thực session, hiển thị spinner để tránh flicker màn hình đăng nhập
   if (!isAuthVerified) {
