@@ -33,7 +33,6 @@ describe('adminClient', () => {
         expect.objectContaining({
           headers: expect.objectContaining({
             'Content-Type': 'application/json',
-            'x-admin-secret': 'admin-api-secret',
           }),
         })
       )

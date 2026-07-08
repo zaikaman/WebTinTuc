@@ -16,13 +16,11 @@ import type {
 } from "@/lib/types/admin";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
-const ADMIN_SECRET = "admin-api-secret";
 
 async function fetchAdmin<T>(path: string, options: RequestInit = {}): Promise<T> {
   const url = `${API_BASE_URL}/admin${path}`;
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    "x-admin-secret": ADMIN_SECRET,
     ...(options.headers as Record<string, string> || {}),
   };
 
@@ -76,13 +74,6 @@ export async function uploadAdminMedia(formData: FormData): Promise<AdminUploadR
     method: "POST",
     body: formData,
   };
-
-  if (process.env.NEXT_PUBLIC_ADMIN_SECRET) {
-    options.headers = {
-      ...options.headers,
-      "x-admin-secret": process.env.NEXT_PUBLIC_ADMIN_SECRET,
-    };
-  }
 
   const response = await fetch(url, options);
   if (!response.ok) {
