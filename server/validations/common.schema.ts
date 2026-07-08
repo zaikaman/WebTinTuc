@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import './i18n'
 
 export const idParamSchema = z.object({
   id: z.coerce.number().int().positive()

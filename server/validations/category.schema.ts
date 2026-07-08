@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { paginationSchema } from './common.schema'
+import './i18n'
 
 export const categoryListQuerySchema = paginationSchema.extend({
   sortBy: z.enum(['name', 'priority', 'created_at']).default('priority'),

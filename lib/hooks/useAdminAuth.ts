@@ -1,12 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import AdminLogin from "@/components/admin/AdminLogin";
+import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { toast } from "sonner";
 
-export default function AdminDashboard() {
+export function useAdminAuth() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return localStorage.getItem("admin_logged_in") === "true";
@@ -16,25 +14,9 @@ export default function AdminDashboard() {
   const [loginPassword, setLoginPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const isExplicitLogoutRef = useRef(false);
 
-  const pathname = usePathname();
-  const router = useRouter();
-
-  // Redirect logic
-  useEffect(() => {
-    if (!isAuthVerified) return;
-
-    if (!isLoggedIn && pathname && pathname !== "/admin" && pathname !== "/admin/") {
-      router.replace("/admin");
-      toast.warning("Vui lòng đăng nhập trước!");
-    }
-
-    if (isLoggedIn && (pathname === "/admin" || pathname === "/admin/")) {
-      router.replace("/admin/dashboard");
-    }
-  }, [isLoggedIn, isAuthVerified, pathname, router]);
-
-  // Session verification
+  // Session verification on mount
   useEffect(() => {
     const verifySession = async () => {
       const cached = localStorage.getItem("admin_logged_in");
@@ -43,13 +25,15 @@ export default function AdminDashboard() {
         return;
       }
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
         if (!session) {
           localStorage.removeItem("admin_logged_in");
           setIsLoggedIn(false);
         }
       } catch {
-        // Network error — trust localStorage
+        // Network error – trust localStorage for better UX
       } finally {
         setIsAuthVerified(true);
       }
@@ -76,7 +60,10 @@ export default function AdminDashboard() {
         return;
       }
 
-      const { data: profile, error: profileError } = await supabase
+      const {
+        data: profile,
+        error: profileError,
+      } = await supabase
         .from("profiles")
         .select("role")
         .eq("id", data.user.id)
@@ -92,43 +79,39 @@ export default function AdminDashboard() {
       setIsLoggedIn(true);
       setIsAuthVerified(true);
       toast.success("Đăng nhập quản trị thành công!");
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      toast.error(err?.message || "Lỗi kết nối, vui lòng thử lại!");
+      toast.error("Có lỗi xảy ra, vui lòng thử lại!");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Loading spinner while verifying
-  if (!isAuthVerified) {
-    return (
-      <div className="min-h-screen bg-[#f4f6f8] flex items-center justify-center">
-        <div className="animate-spin h-8 w-8 border-4 border-[#E55956] border-t-transparent rounded-full" />
-      </div>
-    );
-  }
+  const handleLogout = async () => {
+    try {
+      isExplicitLogoutRef.current = true;
+      await supabase.auth.signOut();
+    } catch {
+      // ignore
+    } finally {
+      localStorage.removeItem("admin_logged_in");
+      setIsLoggedIn(false);
+      setIsAuthVerified(true);
+      toast.success("Đã đăng xuất khỏi hệ thống!");
+    }
+  };
 
-  // Login screen
-  if (!isLoggedIn) {
-    return (
-      <AdminLogin
-        loginUsername={loginUsername}
-        loginPassword={loginPassword}
-        showPassword={showPassword}
-        isLoading={isLoading}
-        onUsernameChange={setLoginUsername}
-        onPasswordChange={setLoginPassword}
-        onTogglePassword={() => setShowPassword(!showPassword)}
-        onSubmit={handleLogin}
-      />
-    );
-  }
-
-  // Loading spinner while redirecting
-  return (
-    <div className="min-h-screen bg-[#f4f6f8] flex items-center justify-center">
-      <div className="animate-spin h-8 w-8 border-4 border-[#E55956] border-t-transparent rounded-full" />
-    </div>
-  );
+  return {
+    isLoggedIn,
+    isAuthVerified,
+    loginUsername,
+    loginPassword,
+    showPassword,
+    isLoading,
+    setLoginUsername,
+    setLoginPassword,
+    setShowPassword,
+    handleLogin,
+    handleLogout,
+  };
 }

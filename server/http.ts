@@ -1,5 +1,7 @@
 import { NextRequest } from 'next/server'
 import { ZodError, z } from 'zod'
+import { formatZodIssue } from '@/server/validations/i18n'
+
 
 export type ApiErrorCode =
   | 'BAD_REQUEST'
@@ -66,11 +68,12 @@ export function actionResponse<T>(result: ActionResult<T>, successInit?: Respons
 
 export function fail(error: unknown) {
   if (error instanceof ZodError) {
+    const issues = error.issues.map((e) => formatZodIssue(e));
     return Response.json(
       {
         success: false,
         code: 'BAD_REQUEST',
-        message: 'Dữ liệu không hợp lệ',
+        message: issues.length > 0 ? issues.join('; ') : 'Dữ liệu không hợp lệ',
         details: z.treeifyError(error)
       },
       { status: 400 }

@@ -34,6 +34,7 @@ describe('adRepository', () => {
 
     expect(result.items).toHaveLength(1)
     expect(result.meta.total).toBe(1)
+    expect(mockQuery.is).toHaveBeenCalledWith('deleted_at', null)
   })
 
   it('listAdminAds filters by position and status', async () => {

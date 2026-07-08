@@ -1,5 +1,6 @@
 import { ApiError, ActionResult } from '@/server/http'
 import { ZodError, z } from 'zod'
+import { formatZodIssue } from '@/server/validations/i18n'
 
 export async function runAction<T>(handler: () => Promise<T>): Promise<ActionResult<T>> {
   try {
@@ -15,10 +16,11 @@ export async function runAction<T>(handler: () => Promise<T>): Promise<ActionRes
     }
 
     if (error instanceof ZodError) {
+      const issues = error.issues.map((e) => formatZodIssue(e));
       return {
         success: false,
         code: 'BAD_REQUEST',
-        message: 'Dữ liệu không hợp lệ',
+        message: issues.length > 0 ? issues.join('; ') : 'Dữ liệu không hợp lệ',
         details: z.treeifyError(error)
       }
     }
@@ -30,3 +32,4 @@ export async function runAction<T>(handler: () => Promise<T>): Promise<ActionRes
     }
   }
 }
+
