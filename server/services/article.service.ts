@@ -1,3 +1,4 @@
+import { unstable_cache } from 'next/cache'
 import { generateSlug } from '@/lib/format/slug'
 import * as articleRepository from '@/server/repositories/article.repository'
 import * as categoryRepository from '@/server/repositories/category.repository'
@@ -35,9 +36,13 @@ function normalizeArticlePayload(data: ArticlePayload, isUpdate = false) {
   return payload
 }
 
-export async function listAdminArticles(options = {}) {
-  return articleRepository.listAdminArticles(options)
-}
+export const listAdminArticles = unstable_cache(
+  async (options = {}) => {
+    return articleRepository.listAdminArticles(options)
+  },
+  ['admin-articles-list'],
+  { revalidate: 300, tags: ['admin-articles'] }
+)
 
 export async function listPublicArticles(options = {}) {
   return articleRepository.listPublicArticles(options)

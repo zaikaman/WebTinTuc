@@ -1,15 +1,19 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
 import { requireAdminAccess } from '@/server/auth'
 import { createCategorySchema, updateCategorySchema } from '@/server/validations/category.schema'
 import * as categoryService from '@/server/services/category.service'
 import { runAction } from './action-result'
+
 export async function createCategoryAction(input: unknown, adminSecret?: string | null) {
   return runAction(async () => {
     await requireAdminAccess(adminSecret)
     const category = await categoryService.createCategory(createCategorySchema.parse(input))
     revalidatePath('/')
+    revalidateTag('admin-categories')
+    revalidateTag('dashboard')
+    revalidateTag('categories')
     return category
   })
 }
@@ -19,6 +23,9 @@ export async function updateCategoryAction(id: number, input: unknown, adminSecr
     await requireAdminAccess(adminSecret)
     const category = await categoryService.updateCategory(id, updateCategorySchema.parse(input))
     revalidatePath('/')
+    revalidateTag('admin-categories')
+    revalidateTag('dashboard')
+    revalidateTag('categories')
     return category
   })
 }
@@ -28,6 +35,9 @@ export async function deleteCategoryAction(id: number, adminSecret?: string | nu
     await requireAdminAccess(adminSecret)
     const result = await categoryService.deleteCategory(id)
     revalidatePath('/')
+    revalidateTag('admin-categories')
+    revalidateTag('dashboard')
+    revalidateTag('categories')
     return result
   })
 }
@@ -37,7 +47,9 @@ export async function restoreCategoryAction(id: number, adminSecret?: string | n
     await requireAdminAccess(adminSecret)
     const category = await categoryService.restoreCategory(id)
     revalidatePath('/')
+    revalidateTag('admin-categories')
+    revalidateTag('dashboard')
+    revalidateTag('categories')
     return category
   })
 }
-

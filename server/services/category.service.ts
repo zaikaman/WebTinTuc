@@ -1,3 +1,4 @@
+import { unstable_cache } from 'next/cache'
 import { generateSlug } from '@/lib/format/slug'
 import * as categoryRepository from '@/server/repositories/category.repository'
 
@@ -19,9 +20,13 @@ function normalizeCategoryPayload(data: CategoryPayload, isUpdate = false) {
   return payload
 }
 
-export async function listAdminCategories(options = {}) {
-  return categoryRepository.listAdminCategories(options)
-}
+export const listAdminCategories = unstable_cache(
+  async (options = {}) => {
+    return categoryRepository.listAdminCategories(options)
+  },
+  ['admin-categories-list'],
+  { revalidate: 300, tags: ['admin-categories'] }
+)
 
 export async function listPublicCategories(limit?: number) {
   return categoryRepository.listPublicCategories(limit)

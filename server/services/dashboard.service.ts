@@ -13,7 +13,7 @@ export async function getDashboardStats(filters?: {
       return dashboardRepository.getDashboardStats(filters)
     },
     ['dashboard-stats', filtersKey],
-    { revalidate: 1800, tags: ['dashboard'] }
+    { revalidate: 300, tags: ['dashboard'] }
   )()
 }
 

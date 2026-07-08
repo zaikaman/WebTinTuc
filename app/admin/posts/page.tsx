@@ -119,7 +119,7 @@ export default function PostsPage() {
   const loadPosts = useCallback(async () => {
     try {
       setPostsLoading(true);
-      const res = await getAdminArticles("?limit=1000&includeDeleted=true");
+      const res = await getAdminArticles("?limit=200&includeDeleted=true");
       if (res && res.items) {
         setPosts(
           res.items.map((a: any) => ({

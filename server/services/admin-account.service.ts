@@ -1,3 +1,4 @@
+import { unstable_cache } from 'next/cache'
 import * as adminAccountRepository from '@/server/repositories/admin-account.repository'
 
 type AccountPayload = {
@@ -8,9 +9,13 @@ type AccountPayload = {
   role?: string | undefined
 }
 
-export async function listAdminAccounts(options = {}) {
-  return adminAccountRepository.listAdminAccounts(options)
-}
+export const listAdminAccounts = unstable_cache(
+  async (options = {}) => {
+    return adminAccountRepository.listAdminAccounts(options)
+  },
+  ['admin-accounts-list'],
+  { revalidate: 300, tags: ['admin-accounts'] }
+)
 
 export async function getAdminAccountById(id: string) {
   return adminAccountRepository.getAdminAccountById(id)

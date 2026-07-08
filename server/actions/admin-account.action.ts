@@ -1,6 +1,6 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
 import { requireAdminAccess } from '@/server/auth'
 import { createAccountSchema, updateAccountSchema } from '@/server/validations/admin-account.schema'
 import * as adminAccountService from '@/server/services/admin-account.service'
@@ -11,6 +11,7 @@ export async function createAdminAccountAction(input: unknown, adminSecret?: str
     await requireAdminAccess(adminSecret)
     const account = await adminAccountService.createAdminAccount(createAccountSchema.parse(input))
     revalidatePath('/admin/accounts')
+    revalidateTag('admin-accounts')
     return account
   })
 }
@@ -20,6 +21,7 @@ export async function updateAdminAccountAction(id: string, input: unknown, admin
     await requireAdminAccess(adminSecret)
     const account = await adminAccountService.updateAdminAccount(id, updateAccountSchema.parse(input))
     revalidatePath('/admin/accounts')
+    revalidateTag('admin-accounts')
     return account
   })
 }
@@ -29,6 +31,7 @@ export async function deleteAdminAccountAction(id: string, adminSecret?: string 
     await requireAdminAccess(adminSecret)
     const result = await adminAccountService.deleteAdminAccount(id)
     revalidatePath('/admin/accounts')
+    revalidateTag('admin-accounts')
     return result
   })
 }
