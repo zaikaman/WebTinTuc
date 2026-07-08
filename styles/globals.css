@@ -86,3 +86,29 @@
     transform: translateY(0);
   }
 }
+
+/* Custom styling for list blocks and paragraph lists in articles */
+.article-content ul,
+.prose ul,
+.prose-editor ul {
+  list-style-type: disc !important;
+  padding-left: 1.5rem !important;
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.article-content ol,
+.prose ol,
+.prose-editor ol {
+  list-style-type: decimal !important;
+  padding-left: 1.5rem !important;
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.article-content li,
+.prose li,
+.prose-editor li {
+  margin-bottom: 0.25rem !important;
+  display: list-item !important;
+}

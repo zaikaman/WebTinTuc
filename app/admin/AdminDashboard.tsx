@@ -72,15 +72,34 @@ const htmlToBlocks = (html: string) => {
   const blocks: any[] = [];
   
   doc.body.childNodes.forEach((node) => {
-    if (node.nodeName === 'P') {
-      const el = node as HTMLElement;
-      if (el.querySelector('strong')) {
-        blocks.push({ type: 'bold-paragraph', text: el.textContent || '' });
-      } else {
-        blocks.push({ type: 'paragraph', text: el.textContent || '' });
+    if (node.nodeType === Node.TEXT_NODE) {
+      const text = node.textContent?.trim();
+      if (text) {
+        blocks.push({ type: 'paragraph', text });
       }
-    } else if (node.nodeName === 'DIV') {
-      const el = node as HTMLElement;
+      return;
+    }
+
+    if (node.nodeType !== Node.ELEMENT_NODE) return;
+    const el = node as HTMLElement;
+
+    if (el.nodeName === 'P') {
+      blocks.push({
+        type: 'paragraph',
+        text: el.innerHTML,
+        align: el.style.textAlign || undefined,
+        fontFamily: el.style.fontFamily || undefined,
+        fontSize: el.style.fontSize || undefined,
+        style: el.getAttribute('style') || undefined
+      });
+    } else if (el.nodeName === 'UL' || el.nodeName === 'OL') {
+      blocks.push({
+        type: 'list',
+        listType: el.nodeName.toLowerCase() as 'ul' | 'ol',
+        text: el.innerHTML,
+        align: el.style.textAlign || undefined
+      });
+    } else if (el.nodeName === 'DIV') {
       const img = el.querySelector('img');
       const video = el.querySelector('video');
       const iframe = el.querySelector('iframe');
@@ -93,7 +112,7 @@ const htmlToBlocks = (html: string) => {
         
         if (src) {
           const width = el.style.maxWidth || el.style.width || '';
-          blocks.push({ type: 'image', src, caption, width });
+          blocks.push({ type: 'image', src, caption, width, id: el.id });
         }
       } else if (video) {
         const src = video.getAttribute('src');
@@ -108,26 +127,32 @@ const htmlToBlocks = (html: string) => {
           blocks.push({ type: 'iframe', src, width });
         }
       } else {
-        if (el.getAttribute('contenteditable') !== 'false' && el.textContent?.trim()) {
-           blocks.push({ type: 'paragraph', text: el.textContent });
+        if (el.getAttribute('contenteditable') !== 'false' && el.innerHTML.trim()) {
+          blocks.push({
+            type: 'paragraph',
+            text: el.innerHTML,
+            align: el.style.textAlign || undefined,
+            fontFamily: el.style.fontFamily || undefined,
+            fontSize: el.style.fontSize || undefined,
+            style: el.getAttribute('style') || undefined
+          });
         }
       }
-    } else if (node.nodeName === 'VIDEO') {
-      const el = node as HTMLElement;
+    } else if (el.nodeName === 'VIDEO') {
       const src = el.getAttribute('src');
       if (src) {
         blocks.push({ type: 'video', src });
       }
-    } else if (node.nodeName === 'IFRAME') {
-      const el = node as HTMLElement;
+    } else if (el.nodeName === 'IFRAME') {
       const src = el.getAttribute('src');
       if (src) {
         blocks.push({ type: 'iframe', src });
       }
-    } else if (node.nodeName === 'UL' || node.nodeName === 'OL') {
-      const el = node as HTMLElement;
-      el.querySelectorAll('li').forEach(li => {
-        blocks.push({ type: 'paragraph', text: li.textContent || '' });
+    } else if (el.innerHTML.trim()) {
+      blocks.push({
+        type: 'paragraph',
+        text: el.outerHTML,
+        align: el.style.textAlign || undefined
       });
     }
   });
@@ -138,19 +163,39 @@ const blocksToHtml = (blocks: any[]) => {
   if (!Array.isArray(blocks)) return typeof blocks === 'string' ? blocks : '';
   const htmlList = blocks.map(block => {
     if (block.type === "paragraph") {
-      return `<p>${block.text || ''}</p>`;
+      let styleAttr = '';
+      const styles: string[] = [];
+      if (block.align) styles.push(`text-align: ${block.align};`);
+      if (block.fontFamily) styles.push(`font-family: ${block.fontFamily};`);
+      if (block.fontSize) styles.push(`font-size: ${block.fontSize};`);
+      if (block.style) {
+        const parsedStyle = block.style.trim();
+        if (parsedStyle) {
+          styles.push(parsedStyle.endsWith(';') ? parsedStyle : parsedStyle + ';');
+        }
+      }
+      if (styles.length > 0) {
+        const uniqueStyles = Array.from(new Set(styles));
+        styleAttr = ` style="${uniqueStyles.join(' ')}"`;
+      }
+      return `<p${styleAttr}>${block.text || ''}</p>`;
     } else if (block.type === "bold-paragraph") {
       return `<p><strong>${block.text || ''}</strong></p>`;
+    } else if (block.type === "list") {
+      const tag = block.listType || 'ul';
+      let styleAttr = '';
+      if (block.align) styleAttr = ` style="text-align: ${block.align};"`;
+      return `<${tag}${styleAttr}>${block.text || ''}</${tag}>`;
     } else if (block.type === "image") {
       const width = block.width || "100%";
-      const wrapperId = "img-" + Math.random().toString(36).substring(2, 9);
+      const wrapperId = block.id || "img-" + Math.random().toString(36).substring(2, 9);
       return `<div id="${wrapperId}" class="my-4 relative group" contenteditable="false" style="max-width: ${width}; margin: 0 auto;">
   <img src="${block.src || ''}" alt="${block.caption || ''}" class="w-full rounded-xl border border-gray-200 shadow-sm" />
   ${block.caption ? `<p class="text-center text-xs italic text-gray-500 mt-1.5">${block.caption}</p>` : ''}
   <button type="button" onclick="const p=this.parentElement; const ed=p.closest('[contenteditable]'); p.remove(); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="absolute top-2 right-2 hidden group-hover:flex items-center justify-center w-8 h-8 rounded-full bg-red-600 hover:bg-red-700 text-white shadow-md active:scale-95 transition-all z-30" title="Xóa hình ảnh">
     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
   </button>
-  <div class="absolute bottom-2 left-1/2 -translate-x-1/2 hidden group-hover:flex items-center gap-1.5 bg-black/85 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 shadow-lg text-[11px] text-white font-bold select-none z-30">
+  <div class="absolute bottom-2 left-1/2 -translate-x-1/2 hidden group-hover:flex items-center gap-1.5 bg-black/85 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 shadow-lg text-[11px] text-white font-bold select-none z-30 w-max min-w-max">
     <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='25%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">25%</button>
     <span class="w-[1px] h-3 bg-white/20"></span>
     <button type="button" onclick="const p=this.closest('[contenteditable=false]'); p.style.maxWidth='50%'; const ed=p.closest('[contenteditable]'); if(ed) ed.dispatchEvent(new Event('input',{bubbles:true}));" class="hover:text-[#E55956] transition-colors px-1.5 py-0.5">50%</button>
@@ -1109,6 +1154,98 @@ export default function AdminDashboard() {
   const [postContent, setPostContent] = useState<string>("");
 
   const editorRef = useRef<HTMLDivElement>(null);
+  const savedSelectionRef = useRef<Range | null>(null);
+
+  const saveSelection = () => {
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      let node: Node | null = range.commonAncestorContainer;
+      let isInside = false;
+      while (node) {
+        if (node === editorRef.current) {
+          isInside = true;
+          break;
+        }
+        node = node.parentNode;
+      }
+      if (isInside) {
+        savedSelectionRef.current = range.cloneRange();
+        console.log("saveSelection: Saved range in Dashboard", {
+          collapsed: range.collapsed,
+          startOffset: range.startOffset,
+          endOffset: range.endOffset,
+          commonAncestor: range.commonAncestorContainer.nodeName,
+          text: range.toString()
+        });
+      } else {
+        console.log("saveSelection: Range is outside editor container");
+      }
+    } else {
+      console.log("saveSelection: No selection range in window");
+    }
+  };
+
+  const restoreSelection = () => {
+    console.log("restoreSelection: Focusing editor ref");
+    if (editorRef.current) {
+      editorRef.current.focus();
+    }
+    if (savedSelectionRef.current && window.getSelection) {
+      console.log("restoreSelection: Restoring saved range selection", {
+        collapsed: savedSelectionRef.current.collapsed,
+        text: savedSelectionRef.current.toString()
+      });
+      const selection = window.getSelection();
+      if (selection) {
+        selection.removeAllRanges();
+        selection.addRange(savedSelectionRef.current);
+      }
+    } else {
+      console.log("restoreSelection: No saved range found in savedSelectionRef");
+    }
+  };
+
+  const executeEditorCommand = (command: string, value: string = "") => {
+    console.log("executeEditorCommand: Formatting command initiated", { command, value });
+    restoreSelection();
+    try {
+      console.log("executeEditorCommand: Setting styleWithCSS to true");
+      document.execCommand("styleWithCSS", false, "true");
+    } catch (e) {
+      console.warn("Failed to set styleWithCSS", e);
+    }
+    console.log("executeEditorCommand: Running document.execCommand", { command, value });
+    const success = document.execCommand(command, false, value);
+    console.log("executeEditorCommand: Native execCommand result", success);
+    if (editorRef.current) {
+      setPostContent(editorRef.current.innerHTML);
+    }
+    saveSelection();
+  };
+
+  const handleFontFamilyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const font = e.target.value;
+    if (!font) return;
+    setTimeout(() => {
+      executeEditorCommand("fontName", font);
+    }, 0);
+  };
+
+  const handleFontSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    if (!val) return;
+    let size = "3";
+    if (val === "12px") size = "1";
+    if (val === "14px") size = "2";
+    if (val === "16px") size = "3";
+    if (val === "18px") size = "4";
+    if (val === "20px") size = "5";
+    if (val === "24px") size = "6";
+    setTimeout(() => {
+      executeEditorCommand("fontSize", size);
+    }, 0);
+  };
 
   // Keep contentEditable div synchronized with postContent state
   useEffect(() => {
@@ -2445,7 +2582,12 @@ export default function AdminDashboard() {
               
               {/* Font Family Dropdown */}
               <div className="relative">
-                <select className="bg-transparent hover:bg-gray-100 px-2.5 py-1.5 rounded-lg text-xs font-semibold outline-none cursor-pointer appearance-none pr-6 border-none text-gray-700">
+                <select
+                  value=""
+                  onChange={handleFontFamilyChange}
+                  className="bg-transparent hover:bg-gray-100 px-2.5 py-1.5 rounded-lg text-xs font-semibold outline-none cursor-pointer appearance-none pr-6 border-none text-gray-700"
+                >
+                  <option value="" disabled hidden>Font chữ</option>
                   <option value="Arial">Arial</option>
                   <option value="Times New Roman">Times New Roman</option>
                   <option value="Helvetica">Helvetica</option>
@@ -2458,7 +2600,12 @@ export default function AdminDashboard() {
 
               {/* Font Size Dropdown */}
               <div className="relative">
-                <select className="bg-transparent hover:bg-gray-100 px-2.5 py-1.5 rounded-lg text-xs font-semibold outline-none cursor-pointer appearance-none pr-6 border-none text-gray-700">
+                <select
+                  value=""
+                  onChange={handleFontSizeChange}
+                  className="bg-transparent hover:bg-gray-100 px-2.5 py-1.5 rounded-lg text-xs font-semibold outline-none cursor-pointer appearance-none pr-6 border-none text-gray-700"
+                >
+                  <option value="" disabled hidden>Cỡ chữ</option>
                   <option value="12px">12px</option>
                   <option value="14px">14px</option>
                   <option value="16px">16px</option>
@@ -2474,7 +2621,8 @@ export default function AdminDashboard() {
               {/* Formatting buttons */}
               <button
                 type="button"
-                onClick={() => document.execCommand("bold")}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => executeEditorCommand("bold")}
                 className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900"
                 title="Bold"
               >
@@ -2482,7 +2630,8 @@ export default function AdminDashboard() {
               </button>
               <button
                 type="button"
-                onClick={() => document.execCommand("italic")}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => executeEditorCommand("italic")}
                 className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900"
                 title="Italic"
               >
@@ -2490,7 +2639,8 @@ export default function AdminDashboard() {
               </button>
               <button
                 type="button"
-                onClick={() => document.execCommand("underline")}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => executeEditorCommand("underline")}
                 className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900"
                 title="Underline"
               >
@@ -2502,7 +2652,8 @@ export default function AdminDashboard() {
               {/* Alignment */}
               <button
                 type="button"
-                onClick={() => document.execCommand("justifyLeft")}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => executeEditorCommand("justifyLeft")}
                 className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900"
                 title="Align Left"
               >
@@ -2510,7 +2661,8 @@ export default function AdminDashboard() {
               </button>
               <button
                 type="button"
-                onClick={() => document.execCommand("justifyCenter")}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => executeEditorCommand("justifyCenter")}
                 className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900"
                 title="Align Center"
               >
@@ -2518,7 +2670,8 @@ export default function AdminDashboard() {
               </button>
               <button
                 type="button"
-                onClick={() => document.execCommand("justifyRight")}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => executeEditorCommand("justifyRight")}
                 className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900"
                 title="Align Right"
               >
@@ -2526,7 +2679,8 @@ export default function AdminDashboard() {
               </button>
               <button
                 type="button"
-                onClick={() => document.execCommand("justifyFull")}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => executeEditorCommand("justifyFull")}
                 className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900"
                 title="Align Justify"
               >
@@ -2538,7 +2692,8 @@ export default function AdminDashboard() {
               {/* Lists */}
               <button
                 type="button"
-                onClick={() => document.execCommand("insertUnorderedList")}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => executeEditorCommand("insertUnorderedList")}
                 className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900"
                 title="Bullet List"
               >
@@ -2546,7 +2701,8 @@ export default function AdminDashboard() {
               </button>
               <button
                 type="button"
-                onClick={() => document.execCommand("insertOrderedList")}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => executeEditorCommand("insertOrderedList")}
                 className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900"
                 title="Numbered List"
               >
@@ -2558,6 +2714,7 @@ export default function AdminDashboard() {
               {/* Media */}
               <button
                 type="button"
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={() => {
                   setImageDialogOpen(true);
                   loadMedia();
@@ -2569,6 +2726,7 @@ export default function AdminDashboard() {
               </button>
               <button
                 type="button"
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={() => {
                   setVideoDialogOpen(true);
                   loadMedia();
@@ -2588,7 +2746,10 @@ export default function AdminDashboard() {
                 contentEditable
                 suppressContentEditableWarning
                 onInput={(e) => setPostContent(e.currentTarget.innerHTML)}
-                className="w-full flex-1 outline-none text-sm leading-relaxed text-gray-800 bg-transparent border-none min-h-[400px]"
+                onMouseUp={saveSelection}
+                onKeyUp={saveSelection}
+                onFocus={saveSelection}
+                className="w-full flex-1 outline-none text-sm leading-relaxed text-gray-800 bg-transparent border-none min-h-[400px] prose prose-sm max-w-none article-content"
               />
             </div>
 
@@ -4705,7 +4866,7 @@ export default function AdminDashboard() {
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder={
                           activeTab === "posts"
-                            ? "Tìm kiếm tiêu đề, ID bài viết..."
+                            ? "Tìm kiếm tiêu đề bài viết..."
                             : activeTab === "categories"
                             ? "Tìm tên danh mục, ID..."
                             : activeTab === "ads"

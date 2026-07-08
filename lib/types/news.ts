@@ -1,10 +1,16 @@
-export type ContentBlockType = "paragraph" | "bold-paragraph" | "image" | "ad";
+export type ContentBlockType = "paragraph" | "bold-paragraph" | "image" | "ad" | "video" | "iframe" | "list";
 
 export interface ContentBlock {
   type: ContentBlockType;
-  text?: string;
-  src?: string;
-  caption?: string;
+  text?: string | undefined;
+  src?: string | undefined;
+  caption?: string | undefined;
+  align?: string | undefined;
+  listType?: "ul" | "ol" | undefined;
+  width?: string | undefined;
+  fontFamily?: string | undefined;
+  fontSize?: string | undefined;
+  style?: string | undefined;
 }
 
 export interface Article {

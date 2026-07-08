@@ -209,25 +209,46 @@ export default async function PostDetailPage({ params }: PageProps) {
             )}
 
             {/* Content */}
-            <div className="space-y-4 text-xs sm:text-[13px] text-gray-800 leading-relaxed">
+            <div className="space-y-4 text-xs sm:text-[13px] text-gray-800 leading-relaxed article-content">
               {!isBlocksArray && typeof article.content === 'string' ? (
                 <div 
-                  className="prose prose-sm max-w-none"
+                  className="prose prose-sm max-w-none article-content"
                   dangerouslySetInnerHTML={{ __html: article.content }} 
                 />
               ) : (
                 contentBlocks.map((block, index) => {
                   if (block.type === "paragraph") {
+                    const styles: React.CSSProperties = {};
+                    if (block.align) styles.textAlign = block.align as any;
+                    if (block.fontFamily) styles.fontFamily = block.fontFamily;
+                    if (block.fontSize) styles.fontSize = block.fontSize;
                     return (
-                      <p key={index} className="text-gray-700 font-sans">
-                        {block.text || block.content}
-                      </p>
+                      <p 
+                        key={index} 
+                        className="text-gray-700 font-sans"
+                        style={styles}
+                        dangerouslySetInnerHTML={{ __html: block.text || block.content || "" }}
+                      />
                     );
                   } else if (block.type === "bold-paragraph") {
                     return (
-                      <p key={index} className="font-bold text-gray-900 font-sans">
-                        {block.text || block.content}
-                      </p>
+                      <p 
+                        key={index} 
+                        className="font-bold text-gray-900 font-sans"
+                        dangerouslySetInnerHTML={{ __html: block.text || block.content || "" }}
+                      />
+                    );
+                  } else if (block.type === "list") {
+                    const Tag = block.listType === "ol" ? "ol" : "ul";
+                    const styles: React.CSSProperties = {};
+                    if (block.align) styles.textAlign = block.align as any;
+                    return (
+                      <Tag 
+                        key={index} 
+                        className={`text-gray-700 font-sans ${block.listType === "ol" ? "list-decimal pl-5" : "list-disc pl-5"}`}
+                        style={styles}
+                        dangerouslySetInnerHTML={{ __html: block.text || "" }}
+                      />
                     );
                   } else if (block.type === "image") {
                     const width = block.width || "100%";

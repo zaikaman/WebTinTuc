@@ -7,7 +7,11 @@ import { paginationSchema } from './common.schema'
 
 const ParagraphBlockSchema = z.object({
   type: z.literal('paragraph'),
-  text: z.string().optional()
+  text: z.string().optional(),
+  align: z.string().optional(),
+  fontFamily: z.string().optional(),
+  fontSize: z.string().optional(),
+  style: z.string().optional()
 })
 
 const BoldParagraphBlockSchema = z.object({
@@ -50,6 +54,13 @@ const StorageMediaBlockSchema = z.object({
   caption: z.string().optional()
 })
 
+const ListBlockSchema = z.object({
+  type: z.literal('list'),
+  listType: z.enum(['ul', 'ol']),
+  text: z.string().optional(),
+  align: z.string().optional()
+})
+
 /** Discriminated union of all known content block types (flat format) */
 const ArticleContentBlockSchema = z.discriminatedUnion('type', [
   ParagraphBlockSchema,
@@ -58,7 +69,8 @@ const ArticleContentBlockSchema = z.discriminatedUnion('type', [
   VideoBlockSchema,
   IFrameBlockSchema,
   YoutubeEmbedBlockSchema,
-  StorageMediaBlockSchema
+  StorageMediaBlockSchema,
+  ListBlockSchema
 ])
 
 /** Schema for content stored as a blocks array (the format used by the app) */

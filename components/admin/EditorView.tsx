@@ -63,6 +63,108 @@ export default function EditorView({
   const [videoUrl, setVideoUrl] = React.useState<string>("");
   const [videoTab, setVideoTab] = React.useState<"link" | "upload" | "library">("link");
 
+  const savedSelectionRef = useRef<Range | null>(null);
+
+  useEffect(() => {
+    // Enable styleWithCSS to generate inline CSS styling (like span with font-size) instead of legacy HTML tags
+    try {
+      document.execCommand("styleWithCSS", false, "true");
+    } catch (e) {
+      console.warn("Failed to set styleWithCSS", e);
+    }
+  }, []);
+
+  const saveSelection = () => {
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      let node: Node | null = range.commonAncestorContainer;
+      let isInside = false;
+      while (node) {
+        if (node === editorRef.current) {
+          isInside = true;
+          break;
+        }
+        node = node.parentNode;
+      }
+      if (isInside) {
+        savedSelectionRef.current = range.cloneRange();
+        console.log("saveSelection: Saved range", {
+          collapsed: range.collapsed,
+          startOffset: range.startOffset,
+          endOffset: range.endOffset,
+          commonAncestor: range.commonAncestorContainer.nodeName,
+          text: range.toString()
+        });
+      } else {
+        console.log("saveSelection: Range is outside editor", range.commonAncestorContainer);
+      }
+    } else {
+      console.log("saveSelection: No selection ranges found");
+    }
+  };
+
+  const restoreSelection = () => {
+    console.log("restoreSelection: Focusing editor container");
+    if (editorRef.current) {
+      editorRef.current.focus();
+    }
+    if (savedSelectionRef.current && window.getSelection) {
+      console.log("restoreSelection: Restoring range selection", {
+        collapsed: savedSelectionRef.current.collapsed,
+        text: savedSelectionRef.current.toString()
+      });
+      const selection = window.getSelection();
+      if (selection) {
+        selection.removeAllRanges();
+        selection.addRange(savedSelectionRef.current);
+      }
+    } else {
+      console.log("restoreSelection: No saved range to restore!");
+    }
+  };
+
+  const executeCommand = (command: string, value: string = "") => {
+    console.log("executeCommand: Starting formatting", { command, value });
+    restoreSelection();
+    try {
+      console.log("executeCommand: Setting styleWithCSS true");
+      document.execCommand("styleWithCSS", false, "true");
+    } catch (e) {
+      console.error("executeCommand: failed to set styleWithCSS", e);
+    }
+    console.log("executeCommand: Executing native command", { command, value });
+    const result = document.execCommand(command, false, value);
+    console.log("executeCommand: Native command result", result);
+    handleEditorInput();
+    saveSelection();
+  };
+
+  const handleFontFamilyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const font = e.target.value;
+    console.log("handleFontFamilyChange: Chosen font", font);
+    if (!font) return;
+    setTimeout(() => {
+      executeCommand("fontName", font);
+    }, 0);
+  };
+
+  const handleFontSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    console.log("handleFontSizeChange: Chosen size", val);
+    if (!val) return;
+    let size = "3";
+    if (val === "12px") size = "1";
+    if (val === "14px") size = "2";
+    if (val === "16px") size = "3";
+    if (val === "18px") size = "4";
+    if (val === "20px") size = "5";
+    if (val === "24px") size = "6";
+    setTimeout(() => {
+      executeCommand("fontSize", size);
+    }, 0);
+  };
+
   // Keep contentEditable div synchronized with postContent state
   useEffect(() => {
     if (editorRef.current) {
@@ -382,7 +484,12 @@ export default function EditorView({
             
             {/* Font Family Dropdown */}
             <div className="relative">
-              <select className="bg-transparent hover:bg-gray-100 px-2.5 py-1.5 rounded-lg text-xs font-semibold outline-none cursor-pointer appearance-none pr-6 border-none text-gray-700">
+              <select
+                value=""
+                onChange={handleFontFamilyChange}
+                className="bg-transparent hover:bg-gray-100 px-2.5 py-1.5 rounded-lg text-xs font-semibold outline-none cursor-pointer appearance-none pr-6 border-none text-gray-700"
+              >
+                <option value="" disabled hidden>Font chữ</option>
                 <option value="Arial">Arial</option>
                 <option value="Times New Roman">Times New Roman</option>
                 <option value="Helvetica">Helvetica</option>
@@ -395,7 +502,12 @@ export default function EditorView({
 
             {/* Font Size Dropdown */}
             <div className="relative">
-              <select className="bg-transparent hover:bg-gray-100 px-2.5 py-1.5 rounded-lg text-xs font-semibold outline-none cursor-pointer appearance-none pr-6 border-none text-gray-700">
+              <select
+                value=""
+                onChange={handleFontSizeChange}
+                className="bg-transparent hover:bg-gray-100 px-2.5 py-1.5 rounded-lg text-xs font-semibold outline-none cursor-pointer appearance-none pr-6 border-none text-gray-700"
+              >
+                <option value="" disabled hidden>Cỡ chữ</option>
                 <option value="12px">12px</option>
                 <option value="14px">14px</option>
                 <option value="16px">16px</option>
@@ -409,29 +521,30 @@ export default function EditorView({
             <div className="h-4 w-px bg-gray-200 mx-1" />
 
             {/* Formatting buttons */}
-            <button type="button" onClick={() => document.execCommand("bold")} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900" title="Bold"><Bold size={15} /></button>
-            <button type="button" onClick={() => document.execCommand("italic")} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900" title="Italic"><Italic size={15} /></button>
-            <button type="button" onClick={() => document.execCommand("underline")} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900" title="Underline"><Underline size={15} /></button>
+            <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => { document.execCommand("bold"); handleEditorInput(); }} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900" title="Bold"><Bold size={15} /></button>
+            <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => { document.execCommand("italic"); handleEditorInput(); }} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900" title="Italic"><Italic size={15} /></button>
+            <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => { document.execCommand("underline"); handleEditorInput(); }} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900" title="Underline"><Underline size={15} /></button>
 
             <div className="h-4 w-px bg-gray-200 mx-1" />
 
             {/* Alignment */}
-            <button type="button" onClick={() => document.execCommand("justifyLeft")} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900" title="Align Left"><AlignLeft size={15} /></button>
-            <button type="button" onClick={() => document.execCommand("justifyCenter")} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900" title="Align Center"><AlignCenter size={15} /></button>
-            <button type="button" onClick={() => document.execCommand("justifyRight")} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900" title="Align Right"><AlignRight size={15} /></button>
-            <button type="button" onClick={() => document.execCommand("justifyFull")} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900" title="Align Justify"><AlignJustify size={15} /></button>
+            <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => { document.execCommand("justifyLeft"); handleEditorInput(); }} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900" title="Align Left"><AlignLeft size={15} /></button>
+            <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => { document.execCommand("justifyCenter"); handleEditorInput(); }} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900" title="Align Center"><AlignCenter size={15} /></button>
+            <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => { document.execCommand("justifyRight"); handleEditorInput(); }} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900" title="Align Right"><AlignRight size={15} /></button>
+            <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => { document.execCommand("justifyFull"); handleEditorInput(); }} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900" title="Align Justify"><AlignJustify size={15} /></button>
 
             <div className="h-4 w-px bg-gray-200 mx-1" />
 
             {/* Lists */}
-            <button type="button" onClick={() => document.execCommand("insertUnorderedList")} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900" title="Bullet List"><List size={15} /></button>
-            <button type="button" onClick={() => document.execCommand("insertOrderedList")} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900" title="Numbered List"><ListOrdered size={15} /></button>
+            <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => { document.execCommand("insertUnorderedList"); handleEditorInput(); }} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900" title="Bullet List"><List size={15} /></button>
+            <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => { document.execCommand("insertOrderedList"); handleEditorInput(); }} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900" title="Numbered List"><ListOrdered size={15} /></button>
 
             <div className="h-4 w-px bg-gray-200 mx-1" />
 
             {/* Media buttons */}
             <button
               type="button"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => setImageDialogOpen(true)}
               className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900"
               title="Insert Image"
@@ -440,6 +553,7 @@ export default function EditorView({
             </button>
             <button
               type="button"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => setVideoDialogOpen(true)}
               className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900"
               title="Insert Video"
@@ -454,7 +568,10 @@ export default function EditorView({
             contentEditable
             suppressContentEditableWarning
             onInput={handleEditorInput}
-            className="min-h-[400px] bg-white border border-gray-200 rounded-xl p-5 shadow-sm text-base leading-relaxed focus:outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all prose prose-sm max-w-none"
+            onMouseUp={saveSelection}
+            onKeyUp={saveSelection}
+            onFocus={saveSelection}
+            className="min-h-[400px] bg-white border border-gray-200 rounded-xl p-5 shadow-sm text-base leading-relaxed focus:outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all prose prose-sm max-w-none article-content"
             style={{ wordWrap: "break-word" }}
           />
         </div>
