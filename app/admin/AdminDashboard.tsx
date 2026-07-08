@@ -5,7 +5,6 @@ import { usePathname, useRouter } from "next/navigation";
 import type { Post, Category, Ad, AdminAccount, TabType } from "@/components/admin/AdminTypes";
 import { htmlToBlocks, blocksToHtml, formatDateForDisplay, getCategoryStyles } from "@/components/admin/AdminUtils";
 import {
-  DashboardSkeleton,
   LogoFooterSkeleton,
   PostsTableSkeleton,
   CategoriesTableSkeleton,
@@ -24,9 +23,9 @@ import AccountDialog from "@/components/admin/AccountDialog";
 import CategoryDialog from "@/components/admin/CategoryDialog";
 import AdDialog from "@/components/admin/AdDialog";
 import FormDialog from "@/components/admin/FormDialog";
+import DashboardTab from "@/components/admin/DashboardTab";
 import {
   Loader2,
-  FileText,
   Image as ImageIcon,
   Search,
   SquarePen,
@@ -36,7 +35,6 @@ import {
   ChevronRight,
   Menu,
   X,
-  TrendingUp,
   LayoutDashboard,
   ArrowLeft,
   Save,
@@ -54,12 +52,10 @@ import {
   ChevronDown,
   Download,
   Eye,
-  MousePointerClick,
   LogOut,
   Copy,
   ExternalLink,
-  RotateCcw,
-  BarChart3
+  RotateCcw
 } from "lucide-react";
 import { getAdminSettings, updateAdminSettings, getAdminMedia, uploadAdminMedia, deleteAdminMedia, createAdminFolder, getAdminDashboardStats, getAdminCategories, createAdminCategory, updateAdminCategory, deleteAdminCategory, getAdminArticles, getAdminArticleById, createAdminArticle, updateAdminArticle, deleteAdminArticle, restoreAdminArticle, getAdminAds, createAdminAd, updateAdminAd, deleteAdminAd, getAdminAccounts, createAdminAccount, updateAdminAccount, deleteAdminAccount } from "@/lib/api/adminClient";
 import { toast } from "sonner";
@@ -2442,1636 +2438,1291 @@ export default function AdminDashboard() {
         {/* CONTAINER CONTENT */}
         <main className="flex-1 p-6 md:p-8 max-w-7xl w-full mx-auto space-y-6">
           {activeTab === "dashboard" ? (
-            dashboardLoading ? (
-              <DashboardSkeleton />
-            ) : (
-              <>
-                {/* HEADER ACTION BANNER */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden group">
-                  <div className="absolute top-0 left-0 w-2.5 h-full bg-[#E55956]" />
-                  <div>
-                    <h2 className="text-xl font-black text-gray-900 tracking-tight">Dashboard</h2>
-                    <p className="text-xs text-gray-500 mt-1">Tổng quan hoạt động và hiệu suất toàn bộ hệ thống</p>
+            <DashboardTab
+            loading={dashboardLoading}
+            stats={dashboardStats}
+            dashboardData={dashboardData}
+            timeFilter={timeFilter}
+            onTimeFilterChange={(filter) => setTimeFilter(filter as any)}
+            dashboardDay={dashboardDay}
+            onDashboardDayChange={setDashboardDay}
+            dashboardMonth={dashboardMonth}
+            onDashboardMonthChange={setDashboardMonth}
+            dashboardYear={dashboardYear}
+            onDashboardYearChange={setDashboardYear}
+            categoryStats={categoryStats}
+            topPosts={topPosts}
+            onExportReport={handleExportReport}
+            getCategoryStyles={getCategoryStyles}
+          />
+          ) : activeTab === "logo-footer" ? (
+          settingsLoading ? (
+          <LogoFooterSkeleton />
+          ) : (
+          <div className="space-y-6">
+            {/* CARD 1: Header action */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-150 shadow-sm">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">
+                  Quản lý Footer & Nhận diện
+                </h2>
+                <p className="text-xs text-gray-500 mt-1 font-medium">
+                  Chỉnh sửa thông tin hiển thị cuối trang và logo website
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    setIsSettingsSaving(true);
+                    toast.loading("Đang lưu cấu hình...", { id: "save-logo-footer" });
+                    const updatedPayload = {
+                      brand: {
+                        name: logoWebsiteName,
+                        logo_url: logoUrl,
+                        copyright: footerOperator,
+                        utilityLinks: [],
+                        socialLinks: [
+                          {
+                            label: "Zalo",
+                            href: headerZaloUrl || "https://zalo.me",
+                            platform: "zalo"
+                          },
+                          {
+                            label: "Email",
+                            href: headerEmailUrl || "mailto:quangcao@linhka.vn",
+                            platform: "email"
+                          }
+                        ]
+                      },
+                      footer: {
+                        address: footerAddress,
+                        phone: footerPhone,
+                        email: footerEmail,
+                        license: footerLicense,
+                        responsible: footerResponsible
+                      }
+                    };
+                    await updateAdminSettings(updatedPayload);
+                    cachedSettings = updatedPayload; // Cập nhật cache tức thời
+                    toast.success("Lưu thay đổi thành công!", { id: "save-logo-footer" });
+                  } catch (err) {
+                    toast.error("Lỗi khi lưu cấu hình!", { id: "save-logo-footer" });
+                  } finally {
+                    setIsSettingsSaving(false);
+                  }
+                }}
+                disabled={isSettingsSaving}
+                className="flex items-center justify-center gap-2 px-5 py-2.5 bg-[#E55956] hover:bg-[#cb4643] active:scale-[0.98] text-white text-sm font-bold rounded-xl shadow-md transition-all self-start sm:self-center disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {isSettingsSaving ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Download size={16} />
+                )}
+                <span>Lưu thay đổi</span>
+              </button>
+            </div>
+
+            {/* CARD 2: Logo Website */}
+            <div className="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm space-y-4">
+              <h3 className="text-lg font-bold text-gray-900">
+                Logo website
+              </h3>
+
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+                {/* Dashed Upload Box */}
+                <div className="flex flex-col items-center flex-shrink-0">
+                  <label
+                    htmlFor="logo-upload-input"
+                    className="w-[90px] h-[90px] border-2 border-dashed border-gray-200 hover:border-[#E55956] rounded-xl flex items-center justify-center bg-gray-50/50 cursor-pointer overflow-hidden transition-all group relative"
+                  >
+                    {logoUrl ? (
+                      <img
+                        src={logoUrl}
+                        alt="Logo Preview"
+                        className="w-full h-full object-contain"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center text-gray-400 group-hover:text-[#E55956] transition-colors">
+                        <Upload size={20} />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px] font-bold">
+                      Đổi ảnh
+                    </div>
+                  </label>
+                  <input
+                    type="file"
+                    id="logo-upload-input"
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        toast.loading("Đang tải ảnh logo lên...", { id: "upload-logo" });
+                        try {
+                          const formData = new FormData();
+                          formData.append("file", file);
+                          formData.append("folder", "settings");
+                          const res = await uploadAdminMedia(formData);
+                          if (res && res.url) {
+                            setLogoUrl(res.url);
+                            toast.success("Đã tải logo lên thành công!", { id: "upload-logo" });
+                          } else {
+                            throw new Error("Không nhận được URL từ server");
+                          }
+                        } catch (err: any) {
+                          toast.error("Tải logo thất bại: " + (err.message || err), { id: "upload-logo" });
+                        }
+                      }
+                    }}
+                    className="hidden"
+                  />
+                  <div className="flex flex-col items-center gap-1 mt-2">
+                    <button
+                      type="button"
+                      onClick={() => document.getElementById("logo-upload-input")?.click()}
+                      className="text-[#E55956] hover:text-[#cb4643] text-xs font-bold transition-colors cursor-pointer"
+                    >
+                      Đổi logo
+                    </button>
+                    {logoUrl && (
+                      <button
+                        type="button"
+                        onClick={() => setLogoUrl(null)}
+                        className="text-red-500 hover:text-red-600 text-xs font-bold transition-colors cursor-pointer"
+                      >
+                        Xóa logo
+                      </button>
+                    )}
                   </div>
+                </div>
+
+                {/* Logo name input */}
+                <div className="w-full sm:flex-1 space-y-1.5">
+                  <label className="block text-sm font-bold text-gray-600">
+                    Tên website
+                  </label>
+                  <input
+                    type="text"
+                    value={logoWebsiteName}
+                    onChange={(e) => setLogoWebsiteName(e.target.value)}
+                    placeholder="Nhập tên website..."
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white font-medium text-gray-800"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* CARD 2.5: Cấu hình Mạng xã hội Header */}
+            <div className="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm space-y-5">
+              <h3 className="text-lg font-bold text-gray-900">
+                Cấu hình Mạng xã hội Header
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="space-y-1.5">
+                  <label className="block text-sm font-bold text-gray-600">
+                    Link Zalo (Header)
+                  </label>
+                  <input
+                    type="text"
+                    value={headerZaloUrl}
+                    onChange={(e) => setHeaderZaloUrl(e.target.value)}
+                    placeholder="VD: https://zalo.me/sdt"
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white font-medium text-gray-800"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="block text-sm font-bold text-gray-600">
+                    Link Email (Header)
+                  </label>
+                  <input
+                    type="text"
+                    value={headerEmailUrl}
+                    onChange={(e) => setHeaderEmailUrl(e.target.value)}
+                    placeholder="VD: mailto:quangcao@linhka.vn"
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white font-medium text-gray-800"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* CARD 3: Thông tin Footer */}
+            <div className="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm space-y-5">
+              <h3 className="text-lg font-bold text-gray-900">
+                Thông tin Footer
+              </h3>
+
+              <div className="space-y-4">
+                {/* Don vi van hanh */}
+                <div className="space-y-1.5">
+                  <label className="block text-sm font-bold text-gray-600">
+                    Đơn vị vận hành
+                  </label>
+                  <input
+                    type="text"
+                    value={footerOperator}
+                    onChange={(e) => setFooterOperator(e.target.value)}
+                    placeholder="Nhập đơn vị vận hành..."
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white font-medium text-gray-800"
+                  />
+                </div>
+
+                {/* Dia chi */}
+                <div className="space-y-1.5">
+                  <label className="block text-sm font-bold text-gray-600">
+                    Địa chỉ
+                  </label>
+                  <input
+                    type="text"
+                    value={footerAddress}
+                    onChange={(e) => setFooterAddress(e.target.value)}
+                    placeholder="Nhập địa chỉ..."
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white font-medium text-gray-800"
+                  />
+                </div>
+
+                {/* Nguoi chiu trach nhiem */}
+                <div className="space-y-1.5">
+                  <label className="block text-sm font-bold text-gray-600">
+                    Người chịu trách nhiệm nội dung
+                  </label>
+                  <input
+                    type="text"
+                    value={footerResponsible}
+                    onChange={(e) => setFooterResponsible(e.target.value)}
+                    placeholder="Nhập người chịu trách nhiệm..."
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white font-medium text-gray-800"
+                  />
+                </div>
+
+                {/* So dien thoai */}
+                <div className="space-y-1.5">
+                  <label className="block text-sm font-bold text-gray-600">
+                    Số điện thoại
+                  </label>
+                  <input
+                    type="text"
+                    value={footerPhone}
+                    onChange={(e) => setFooterPhone(e.target.value)}
+                    placeholder="Nhập số điện thoại..."
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white font-medium text-gray-800"
+                  />
+                </div>
+
+                {/* Email */}
+                <div className="space-y-1.5">
+                  <label className="block text-sm font-bold text-gray-600">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={footerEmail}
+                    onChange={(e) => setFooterEmail(e.target.value)}
+                    placeholder="Nhập địa chỉ email..."
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white font-medium text-gray-800"
+                  />
+                </div>
+
+                {/* Giay phep */}
+                <div className="space-y-1.5">
+                  <label className="block text-sm font-bold text-gray-600">
+                    Giấy phép thiết lập trang TTDT
+                  </label>
+                  <input
+                    type="text"
+                    value={footerLicense}
+                    onChange={(e) => setFooterLicense(e.target.value)}
+                    placeholder="Nhập số giấy phép..."
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white font-medium text-gray-800"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          )
+          ) : activeTab === "media" ? (
+          <div className="space-y-5 animate-fade-in">
+            {/* Header Panel */}
+            <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900 tracking-tight">Thư viện Media</h2>
+                <p className="text-xs text-gray-500 font-semibold mt-1">Ảnh & video lưu trữ trên Cloudflare R2</p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  document.getElementById("media-direct-upload")?.click();
+                }}
+                disabled={isMediaUploading}
+                className="flex items-center justify-center gap-2 px-5 py-2.5 bg-[#eb5757] hover:bg-[#d94848] text-white text-xs font-bold rounded-xl shadow-sm transition-all self-start sm:self-center disabled:opacity-75 disabled:cursor-not-allowed"
+              >
+                {isMediaUploading ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <Upload size={14} />
+                )}
+                <span>{isMediaUploading ? "Đang tải lên..." : "Thêm media"}</span>
+              </button>
+              <input
+                type="file"
+                id="media-direct-upload"
+                className="hidden"
+                multiple
+                accept="image/*,video/*"
+                onChange={handleMediaDirectUpload}
+              />
+            </div>
+
+            {/* Filter & Search Bar Panel */}
+            <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+              {/* Filter by Types */}
+              <div className="flex flex-col gap-1.5">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Lọc</span>
+                <div className="flex gap-2">
+                  {[
+                    { id: "all", label: "Tất cả" },
+                    { id: "image", label: "Ảnh" },
+                    { id: "video", label: "Video" }
+                  ].map((type) => (
+                    <button
+                      key={type.id}
+                      type="button"
+                      onClick={() => setMediaTypeFilter(type.id as any)}
+                      className={`px-5 py-2 rounded-xl text-xs font-bold transition-all ${mediaTypeFilter === type.id
+                        ? "bg-[#eb5757] text-white shadow-sm"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        }`}
+                    >
+                      {type.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Search */}
+              <div className="flex flex-col gap-1.5 w-full md:w-[350px]">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Tìm kiếm thông tin</span>
+                <div className="relative">
+                  <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 font-bold" />
+                  <input
+                    type="text"
+                    value={mediaSearchQuery}
+                    onChange={(e) => setMediaSearchQuery(e.target.value)}
+                    placeholder="Tìm kiếm"
+                    className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-full text-xs outline-none focus:border-[#eb5757] focus:ring-1 focus:ring-[#eb5757]/15 transition-all bg-white"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Split Content Area */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+              {/* Left Column: Cây thư mục */}
+              <div className="lg:col-span-3 bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="flex items-center justify-between p-4 border-b border-gray-150 bg-gray-50/50">
+                  <h3 className="text-sm font-bold text-gray-800">Cây thư mục</h3>
                   <button
                     type="button"
-                    onClick={handleExportReport}
-                    className="flex items-center justify-center gap-2 px-5 py-2.5 bg-[#E55956] hover:bg-[#cb4643] active:scale-[0.98] text-white text-sm font-bold rounded-xl shadow-md transition-all self-start sm:self-center"
+                    onClick={() => {
+                      setNewFolderName("");
+                      setFolderDialogOpen(true);
+                    }}
+                    className="p-1 border border-gray-300 hover:border-gray-400 rounded transition-colors hover:bg-gray-50 flex items-center justify-center"
                   >
-                    <Download size={16} />
-                    <span>Xuất thống kê</span>
+                    <Plus size={12} className="text-gray-700 font-bold" />
                   </button>
                 </div>
 
-                {/* FILTER BAR SECTION */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
-                  <div className="flex flex-wrap gap-2 p-1 bg-gray-50 rounded-xl border border-gray-100 w-fit">
-                    {[
-                      { id: "today", label: "Hôm nay" },
-                      { id: "week", label: "Tuần này" },
-                      { id: "month", label: "Tháng này" },
-                      { id: "year", label: "Năm nay" }
-                    ].map((item) => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => setTimeFilter(item.id as any)}
-                        className={`px-4 py-2 rounded-lg text-xs font-bold transition-all relative ${timeFilter === item.id
-                          ? "bg-[#E55956] text-white shadow-sm"
-                          : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-                          }`}
-                      >
-                        {item.label}
-                      </button>
-                    ))}
+                <div className="p-4 space-y-2">
+                  {/* Root Folder Item */}
+                  <div
+                    onClick={() => setActiveFolder("")}
+                    className={`flex items-center gap-1.5 cursor-pointer font-bold text-xs transition-all ${!activeFolder ? "text-[#eb5757]" : "text-gray-800 hover:text-gray-900"
+                      }`}
+                  >
+                    <ChevronDown size={14} className={!activeFolder ? "text-[#eb5757]" : "text-gray-500"} />
+                    <span>Root</span>
                   </div>
 
-                  <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-                    {/* Select Ngày */}
-                    <div className="relative">
-                      <select
-                        value={dashboardDay}
-                        onChange={(e) => setDashboardDay(e.target.value)}
-                        className="pl-3 pr-7 py-2.5 border border-gray-200 rounded-xl text-xs font-bold outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white text-gray-700 appearance-none cursor-pointer min-w-[75px]"
-                      >
-                        <option value="">Ngày</option>
-                        {Array.from({ length: 31 }, (_, i) => (
-                          <option key={i + 1} value={String(i + 1).padStart(2, "0")}>
-                            {i + 1}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                    </div>
-
-                    {/* Select Tháng */}
-                    <div className="relative">
-                      <select
-                        value={dashboardMonth}
-                        onChange={(e) => setDashboardMonth(e.target.value)}
-                        className="pl-3 pr-7 py-2.5 border border-gray-200 rounded-xl text-xs font-bold outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white text-gray-700 appearance-none cursor-pointer min-w-[90px]"
-                      >
-                        <option value="">Tháng</option>
-                        {Array.from({ length: 12 }, (_, i) => (
-                          <option key={i + 1} value={String(i + 1).padStart(2, "0")}>
-                            Tháng {i + 1}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                    </div>
-
-                    {/* Select Năm */}
-                    <div className="relative">
-                      <select
-                        value={dashboardYear}
-                        onChange={(e) => setDashboardYear(e.target.value)}
-                        className="pl-3 pr-7 py-2.5 border border-gray-200 rounded-xl text-xs font-bold outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white text-gray-700 appearance-none cursor-pointer min-w-[85px]"
-                      >
-                        <option value="">Năm</option>
-                        {Array.from({ length: 151 }, (_, i) => {
-                          const year = new Date().getFullYear() + 50 - i;
-                          return (
-                            <option key={year} value={String(year)}>
-                              {year}
-                            </option>
-                          );
-                        })}
-                      </select>
-                      <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (dashboardDay || dashboardMonth || dashboardYear) {
-                          const parts = [];
-                          if (dashboardDay) parts.push(dashboardDay);
-                          if (dashboardMonth) parts.push(dashboardMonth);
-                          if (dashboardYear) parts.push(dashboardYear);
-                          toast.success(`Đã áp dụng bộ lọc ngày: ${parts.join("/")}`);
-                        } else {
-                          toast.info("Vui lòng chọn ngày, tháng hoặc năm để lọc!");
-                        }
-                      }}
-                      className="px-5 py-2.5 bg-gray-900 hover:bg-black active:scale-[0.98] text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center justify-center h-[38px]"
-                    >
-                      Lọc
-                    </button>
-                  </div>
-                </div>
-
-                {/* METRICS CARDS SECTION */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full translate-x-12 -translate-y-12 transition-transform duration-500 group-hover:scale-125" />
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Tổng lượt xem</span>
-                      <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center transition-colors group-hover:bg-blue-500 group-hover:text-white">
-                        <Eye size={18} />
-                      </div>
-                    </div>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-3xl font-extrabold text-gray-900 tracking-tight">
-                        {dashboardStats.viewsVal}
-                      </span>
-                      <span className="text-xs font-bold text-emerald-500 flex items-center gap-0.5">
-                        <TrendingUp size={12} />
-                        {dashboardStats.viewsChange}
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-gray-400 mt-2 font-medium">Lượt xem trang thực tế trong chu kỳ</p>
-                  </div>
-
-                  <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full translate-x-12 -translate-y-12 transition-transform duration-500 group-hover:scale-125" />
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Bài viết</span>
-                      <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-500 flex items-center justify-center transition-colors group-hover:bg-purple-500 group-hover:text-white">
-                        <FileText size={18} />
-                      </div>
-                    </div>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-3xl font-extrabold text-gray-900 tracking-tight">
-                        {dashboardStats.posts}
-                      </span>
-                      <span className="text-xs font-bold text-emerald-500 flex items-center gap-0.5">
-                        <TrendingUp size={12} />
-                        {dashboardStats.postsChange}
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-gray-400 mt-2 font-medium">Bài đăng và bản nháp hoạt động</p>
-                  </div>
-
-                  <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full translate-x-12 -translate-y-12 transition-transform duration-500 group-hover:scale-125" />
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Clicks QC</span>
-                      <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center transition-colors group-hover:bg-orange-500 group-hover:text-white">
-                        <MousePointerClick size={18} />
-                      </div>
-                    </div>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-3xl font-extrabold text-gray-900 tracking-tight">
-                        {dashboardStats.clicks}
-                      </span>
-                      <span className="text-xs font-bold text-emerald-500 flex items-center gap-0.5">
-                        <TrendingUp size={12} />
-                        {dashboardStats.clicksChange}
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-gray-400 mt-2 font-medium">Lượt click vào banner QC hiển thị</p>
-                  </div>
-                </div>
-
-                {/* CATEGORIES PROGRESS SECTION */}
-                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden">
-                  {/* Header */}
-                  <div className="border-b border-gray-100 pb-4 mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                    <div>
-                      <h3 className="text-base font-black text-gray-900 flex items-center gap-2">
-                        <BarChart3 className="w-5 h-5 text-[#E55956]" /> Phân bố danh mục hệ thống
-                      </h3>
-                      <p className="text-xs text-gray-400 mt-0.5">Thống kê mật độ & số lượng bài viết phân bổ theo danh mục</p>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-[10px] font-extrabold text-[#E55956] bg-red-50 px-2.5 py-1 rounded-lg border border-red-100/50">
-                        Tổng số: {categoryStats.reduce((acc: number, cur: any) => acc + cur.count, 0)} bài viết
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* DETAIL CARDS */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                    {categoryStats.map((item: { name: string; count: number; percentage: number }) => {
-                      const style = getCategoryStyles(item.name);
-                      const IconComponent = style.icon;
+                  {/* Subdirectories */}
+                  <div className="pl-4 mt-1.5 space-y-1 border-l border-gray-100 ml-1.5">
+                    {folders.map((folderName) => {
+                      const isActive = activeFolder === folderName;
                       return (
                         <div
-                          key={item.name}
-                          className="relative overflow-hidden p-5 rounded-2xl border border-gray-150/70 bg-gradient-to-b from-white to-slate-50/40 hover:from-white hover:to-slate-50/90 transition-all duration-300 hover:-translate-y-1 hover:shadow-md group flex flex-col justify-between"
+                          key={folderName}
+                          className={`group/folder flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all ${isActive
+                            ? "bg-[#ffe4e4] text-[#eb5757]"
+                            : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                            }`}
                         >
-                          <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-gradient-to-br from-gray-100/10 to-gray-200/5 rounded-full group-hover:scale-150 transition-transform duration-700 pointer-events-none" />
-                          <div className={`absolute top-0 left-0 w-[4px] h-full bg-gradient-to-b ${style.color} rounded-r-md opacity-80`} />
-
-                          <div className="flex items-center justify-between mb-4 pl-1">
-                            <div className="flex items-center gap-3">
-                              <div className={`relative w-10 h-10 rounded-xl ${style.bg} flex items-center justify-center font-semibold group-hover:scale-110 transition-transform duration-300 shadow-sm`}>
-                                <div className={`absolute inset-0 rounded-xl opacity-0 group-hover:opacity-20 blur-md bg-gradient-to-br ${style.color} transition-opacity duration-300`} />
-                                <IconComponent className="w-5 h-5 relative z-10 transition-transform group-hover:rotate-[15deg] duration-300" />
-                              </div>
-
-                              <div>
-                                <h4 className="text-xs font-black text-gray-800 tracking-tight uppercase group-hover:text-black transition-colors">{item.name}</h4>
-                                <span className="text-[10px] text-gray-400 font-bold tracking-wide">Mục chuyên mục</span>
-                              </div>
-                            </div>
-
-                            <div className="flex flex-col items-end">
-                              <span className="text-base font-black text-gray-900 tracking-tight">{item.percentage}%</span>
-                              <span className="text-[10px] text-gray-400 font-bold mt-[-2px]">{item.count} bài viết</span>
-                            </div>
+                          <div
+                            onClick={() => setActiveFolder(folderName)}
+                            className="flex items-center gap-1.5 flex-1"
+                          >
+                            <ChevronRight size={12} className={isActive ? "text-[#eb5757]" : "text-gray-400"} />
+                            <span>{folderName}</span>
                           </div>
 
-                          <div className="space-y-2 pl-1">
-                            <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden relative">
-                              <div className="absolute inset-0 bg-gray-200/40 rounded-full" />
-                              <div
-                                className={`h-full rounded-full bg-gradient-to-r ${style.color} relative transition-all duration-1000 ease-out`}
-                                style={{ width: `${item.percentage}%` }}
-                              />
-                            </div>
-
-                            <div className="flex justify-between items-center text-[10px] text-gray-400 font-bold pt-1">
-                              <span className="group-hover:text-gray-500 transition-colors">Tỉ lệ phủ sóng</span>
-                              <span className="text-gray-500 font-extrabold">{item.percentage}% hệ thống</span>
-                            </div>
-                          </div>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (confirm(`Bạn có chắc chắn muốn xóa thư mục "${folderName}" khỏi danh sách hiển thị?`)) {
+                                setFolders(prev => prev.filter(f => f !== folderName));
+                                if (activeFolder === folderName) setActiveFolder("");
+                                toast.success(`Đã xóa thư mục: ${folderName}`);
+                              }
+                            }}
+                            className="opacity-0 group-hover/folder:opacity-100 p-0.5 hover:text-red-650 transition-opacity flex items-center justify-center"
+                            title="Ẩn thư mục"
+                          >
+                            <X size={10} className="font-bold text-gray-500 hover:text-red-650" />
+                          </button>
                         </div>
                       );
                     })}
                   </div>
                 </div>
+              </div>
 
-                {/* BOTTOM COLUMNS */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-
-                  {/* Left Column: Bài viết nổi bật */}
-                  <div className="lg:col-span-7 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between">
-                    <div>
-                      <div className="border-b border-gray-100 pb-4 mb-4 flex items-center justify-between">
-                        <div>
-                          <h3 className="text-base font-extrabold text-gray-900">Bài viết nổi bật</h3>
-                          <p className="text-xs text-gray-400 mt-0.5">Top 5 bài viết được xem nhiều nhất trong 7 ngày qua</p>
-                        </div>
-                        <span className="text-xs font-bold text-[#E55956] bg-red-50 px-2.5 py-1 rounded-lg">Xu hướng</span>
-                      </div>
-
-                      <div className="space-y-3">
-                        {topPosts.map((post: { title: string; views: number; category: string; id?: number }, index: number) => {
-                          const badgeColors = [
-                            "bg-gradient-to-br from-red-500 to-[#E55956] text-white shadow-sm",
-                            "bg-gradient-to-br from-orange-400 to-orange-500 text-white shadow-sm",
-                            "bg-gradient-to-br from-amber-400 to-amber-500 text-white shadow-sm",
-                            "bg-slate-100 text-slate-600",
-                            "bg-slate-100 text-slate-600"
-                          ];
-
-                          return (
-                            <div
-                              key={post.id}
-                              className="flex items-center justify-between p-3.5 rounded-xl border border-transparent group"
-                            >
-                              <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                                <span className={`w-6.5 h-6.5 rounded-full flex items-center justify-center text-xs font-black flex-shrink-0 ${badgeColors[index] || "bg-gray-100 text-gray-600"}`}>
-                                  {index + 1}
-                                </span>
-                                <div className="min-w-0 flex-1">
-                                  <h4 className="text-xs font-bold text-gray-800 truncate group-hover:text-[#E55956] transition-colors leading-snug">
-                                    {post.title}
-                                  </h4>
-                                  <span className="inline-block text-[10px] text-gray-400 font-semibold mt-1 bg-gray-50 border border-gray-100 px-1.5 py-0.5 rounded">
-                                    {post.category}
-                                  </span>
-                                </div>
-                              </div>
-
-                              <div className="text-right ml-4 flex-shrink-0 flex items-center gap-1.5">
-                                <span className="text-xs font-mono font-bold text-gray-900">
-                                  {post.views.toLocaleString("vi-VN")}
-                                </span>
-                                <span className="text-[10px] text-gray-400 font-bold">views</span>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Right Column: Hoạt động gần đây */}
-                  <div className="lg:col-span-5 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between">
-                    <div>
-                      <div className="border-b border-gray-100 pb-4 mb-4 flex items-center justify-between">
-                        <div>
-                          <h3 className="text-base font-extrabold text-gray-900">Hoạt động gần đây</h3>
-                          <p className="text-xs text-gray-400 mt-0.5">Cập nhật hoạt động mới nhất từ hệ thống</p>
-                        </div>
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                      </div>
-
-                      <div className="relative pl-6 border-l-2 border-dashed border-gray-100 space-y-5.5 py-2">
-                        {dashboardData?.recentActivities && dashboardData.recentActivities.length > 0 ? (
-                          dashboardData.recentActivities.map((act: any, idx: number) => {
-                            const timeStr = (() => {
-                              const diffMs = new Date().getTime() - new Date(act.createdAt).getTime();
-                              const diffMins = Math.floor(diffMs / 60000);
-                              const diffHours = Math.floor(diffMins / 60);
-                              if (diffMins < 1) return "Vừa xong";
-                              if (diffMins < 60) return `${diffMins} phút trước`;
-                              if (diffHours < 24) return `${diffHours} giờ trước`;
-                              return new Date(act.createdAt).toLocaleDateString("vi-VN");
-                            })();
-
-                            const typeLabel = act.type === 'article' ? 'Bài viết mới' : act.type === 'ad' ? 'Quảng cáo mới' : 'Danh mục mới';
-                            const typeColor = act.type === 'article' ? '#E55956' : act.type === 'ad' ? 'orange' : 'purple';
-                            const typeBg = act.type === 'article' ? 'bg-[#E55956]' : act.type === 'ad' ? 'bg-orange-500' : 'bg-purple-500';
-
-                            return (
-                              <div key={idx} className="relative group">
-                                <div className={`absolute -left-[31px] top-0.5 w-[11px] h-[11px] rounded-full ${typeBg} border-2 border-white group-hover:scale-125 transition-transform`} />
-                                <div>
-                                  <span className="text-[10px] font-bold uppercase tracking-wider block" style={{ color: typeColor }}>
-                                    {typeLabel}
-                                  </span>
-                                  <h4 className="text-xs font-bold text-gray-800 mt-0.5 truncate max-w-[280px]" title={act.title}>
-                                    {act.title}
-                                  </h4>
-                                  <span className="text-[10px] text-gray-400 font-bold block mt-1">
-                                    {timeStr} {act.status ? `• Trạng thái: ${act.status}` : ''}
-                                  </span>
-                                </div>
-                              </div>
-                            );
-                          })
-                        ) : (
-                          <p className="text-xs text-gray-450 italic py-4">Chưa có hoạt động nào vừa diễn ra</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                </div>
-              </>
-            )
-          ) : activeTab === "logo-footer" ? (
-            settingsLoading ? (
-              <LogoFooterSkeleton />
-            ) : (
-              <div className="space-y-6">
-                {/* CARD 1: Header action */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-150 shadow-sm">
-                  <div>
-                    <h2 className="text-xl font-bold text-gray-900">
-                      Quản lý Footer & Nhận diện
-                    </h2>
-                    <p className="text-xs text-gray-500 mt-1 font-medium">
-                      Chỉnh sửa thông tin hiển thị cuối trang và logo website
-                    </p>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      try {
-                        setIsSettingsSaving(true);
-                        toast.loading("Đang lưu cấu hình...", { id: "save-logo-footer" });
-                        const updatedPayload = {
-                          brand: {
-                            name: logoWebsiteName,
-                            logo_url: logoUrl,
-                            copyright: footerOperator,
-                            utilityLinks: [],
-                            socialLinks: [
-                              {
-                                label: "Zalo",
-                                href: headerZaloUrl || "https://zalo.me",
-                                platform: "zalo"
-                              },
-                              {
-                                label: "Email",
-                                href: headerEmailUrl || "mailto:quangcao@linhka.vn",
-                                platform: "email"
-                              }
-                            ]
-                          },
-                          footer: {
-                            address: footerAddress,
-                            phone: footerPhone,
-                            email: footerEmail,
-                            license: footerLicense,
-                            responsible: footerResponsible
-                          }
-                        };
-                        await updateAdminSettings(updatedPayload);
-                        cachedSettings = updatedPayload; // Cập nhật cache tức thời
-                        toast.success("Lưu thay đổi thành công!", { id: "save-logo-footer" });
-                      } catch (err) {
-                        toast.error("Lỗi khi lưu cấu hình!", { id: "save-logo-footer" });
-                      } finally {
-                        setIsSettingsSaving(false);
-                      }
-                    }}
-                    disabled={isSettingsSaving}
-                    className="flex items-center justify-center gap-2 px-5 py-2.5 bg-[#E55956] hover:bg-[#cb4643] active:scale-[0.98] text-white text-sm font-bold rounded-xl shadow-md transition-all self-start sm:self-center disabled:opacity-70 disabled:cursor-not-allowed"
-                  >
-                    {isSettingsSaving ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Download size={16} />
+              {/* Right Column: Main Content */}
+              <div className="lg:col-span-9 bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-col gap-4 min-h-[500px]">
+                {/* Breadcrumb row */}
+                <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-gray-800">
+                    <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+                    </svg>
+                    <span className="cursor-pointer hover:text-gray-900" onClick={() => setActiveFolder("")}>Root</span>
+                    {activeFolder && (
+                      <>
+                        <ChevronRight size={12} className="text-gray-450" />
+                        <span className="text-gray-900">{activeFolder}</span>
+                      </>
                     )}
-                    <span>Lưu thay đổi</span>
-                  </button>
+                  </div>
+
+                  {/* Sorting select */}
+                  <div className="relative">
+                    <select
+                      value={mediaSort}
+                      onChange={(e) => setMediaSort(e.target.value as any)}
+                      className="pl-3 pr-7 py-1 border border-gray-300 rounded-lg text-xs font-bold text-gray-700 appearance-none bg-white focus:outline-none min-w-[90px] cursor-pointer"
+                    >
+                      <option value="newest">Mới nhất</option>
+                      <option value="oldest">Cũ nhất</option>
+                      <option value="az">Tên A-Z</option>
+                    </select>
+                    <ChevronDown size={11} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  </div>
                 </div>
 
-                {/* CARD 2: Logo Website */}
-                <div className="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm space-y-4">
-                  <h3 className="text-lg font-bold text-gray-900">
-                    Logo website
-                  </h3>
+                {/* Actions Row */}
+                <div className="flex items-center gap-2 text-xs font-bold text-gray-800 py-1">
+                  <input type="checkbox" className="w-4 h-4 rounded border-gray-300 text-[#eb5757] focus:ring-[#eb5757]/20 cursor-pointer" />
+                  <span>Chọn tất cả</span>
+                  <span className="text-gray-500 font-medium ml-1.5">{filteredMedia.length} file</span>
+                </div>
 
-                  <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
-                    {/* Dashed Upload Box */}
-                    <div className="flex flex-col items-center flex-shrink-0">
-                      <label
-                        htmlFor="logo-upload-input"
-                        className="w-[90px] h-[90px] border-2 border-dashed border-gray-200 hover:border-[#E55956] rounded-xl flex items-center justify-center bg-gray-50/50 cursor-pointer overflow-hidden transition-all group relative"
-                      >
-                        {logoUrl ? (
-                          <img
-                            src={logoUrl}
-                            alt="Logo Preview"
-                            className="w-full h-full object-contain"
-                          />
-                        ) : (
-                          <div className="flex flex-col items-center justify-center text-gray-400 group-hover:text-[#E55956] transition-colors">
-                            <Upload size={20} />
+                {/* Cards Grid */}
+                {mediaLoading ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4.5">
+                    {[...Array(6)].map((_, i) => (
+                      <div key={i} className="border border-gray-250 rounded-xl overflow-hidden bg-white shadow-sm flex flex-col justify-between animate-pulse">
+                        <div className="aspect-[4/3] w-full bg-gray-150" />
+                        <div className="p-3.5 space-y-2">
+                          <div className="h-3.5 bg-gray-200 rounded w-3/4" />
+                          <div className="flex justify-between items-center pt-2">
+                            <div className="h-2.5 bg-gray-200 rounded w-1/4" />
+                            <div className="h-2.5 bg-gray-200 rounded w-1/4" />
                           </div>
-                        )}
-                        <div className="absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px] font-bold">
-                          Đổi ảnh
                         </div>
-                      </label>
-                      <input
-                        type="file"
-                        id="logo-upload-input"
-                        accept="image/*"
-                        onChange={async (e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            toast.loading("Đang tải ảnh logo lên...", { id: "upload-logo" });
-                            try {
-                              const formData = new FormData();
-                              formData.append("file", file);
-                              formData.append("folder", "settings");
-                              const res = await uploadAdminMedia(formData);
-                              if (res && res.url) {
-                                setLogoUrl(res.url);
-                                toast.success("Đã tải logo lên thành công!", { id: "upload-logo" });
-                              } else {
-                                throw new Error("Không nhận được URL từ server");
-                              }
-                            } catch (err: any) {
-                              toast.error("Tải logo thất bại: " + (err.message || err), { id: "upload-logo" });
-                            }
-                          }
-                        }}
-                        className="hidden"
-                      />
-                      <div className="flex flex-col items-center gap-1 mt-2">
-                        <button
-                          type="button"
-                          onClick={() => document.getElementById("logo-upload-input")?.click()}
-                          className="text-[#E55956] hover:text-[#cb4643] text-xs font-bold transition-colors cursor-pointer"
-                        >
-                          Đổi logo
-                        </button>
-                        {logoUrl && (
-                          <button
-                            type="button"
-                            onClick={() => setLogoUrl(null)}
-                            className="text-red-500 hover:text-red-600 text-xs font-bold transition-colors cursor-pointer"
-                          >
-                            Xóa logo
-                          </button>
-                        )}
                       </div>
-                    </div>
-
-                    {/* Logo name input */}
-                    <div className="w-full sm:flex-1 space-y-1.5">
-                      <label className="block text-sm font-bold text-gray-600">
-                        Tên website
-                      </label>
-                      <input
-                        type="text"
-                        value={logoWebsiteName}
-                        onChange={(e) => setLogoWebsiteName(e.target.value)}
-                        placeholder="Nhập tên website..."
-                        className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white font-medium text-gray-800"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* CARD 2.5: Cấu hình Mạng xã hội Header */}
-                <div className="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm space-y-5">
-                  <h3 className="text-lg font-bold text-gray-900">
-                    Cấu hình Mạng xã hội Header
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div className="space-y-1.5">
-                      <label className="block text-sm font-bold text-gray-600">
-                        Link Zalo (Header)
-                      </label>
-                      <input
-                        type="text"
-                        value={headerZaloUrl}
-                        onChange={(e) => setHeaderZaloUrl(e.target.value)}
-                        placeholder="VD: https://zalo.me/sdt"
-                        className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white font-medium text-gray-800"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="block text-sm font-bold text-gray-600">
-                        Link Email (Header)
-                      </label>
-                      <input
-                        type="text"
-                        value={headerEmailUrl}
-                        onChange={(e) => setHeaderEmailUrl(e.target.value)}
-                        placeholder="VD: mailto:quangcao@linhka.vn"
-                        className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white font-medium text-gray-800"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* CARD 3: Thông tin Footer */}
-                <div className="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm space-y-5">
-                  <h3 className="text-lg font-bold text-gray-900">
-                    Thông tin Footer
-                  </h3>
-
-                  <div className="space-y-4">
-                    {/* Don vi van hanh */}
-                    <div className="space-y-1.5">
-                      <label className="block text-sm font-bold text-gray-600">
-                        Đơn vị vận hành
-                      </label>
-                      <input
-                        type="text"
-                        value={footerOperator}
-                        onChange={(e) => setFooterOperator(e.target.value)}
-                        placeholder="Nhập đơn vị vận hành..."
-                        className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white font-medium text-gray-800"
-                      />
-                    </div>
-
-                    {/* Dia chi */}
-                    <div className="space-y-1.5">
-                      <label className="block text-sm font-bold text-gray-600">
-                        Địa chỉ
-                      </label>
-                      <input
-                        type="text"
-                        value={footerAddress}
-                        onChange={(e) => setFooterAddress(e.target.value)}
-                        placeholder="Nhập địa chỉ..."
-                        className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white font-medium text-gray-800"
-                      />
-                    </div>
-
-                    {/* Nguoi chiu trach nhiem */}
-                    <div className="space-y-1.5">
-                      <label className="block text-sm font-bold text-gray-600">
-                        Người chịu trách nhiệm nội dung
-                      </label>
-                      <input
-                        type="text"
-                        value={footerResponsible}
-                        onChange={(e) => setFooterResponsible(e.target.value)}
-                        placeholder="Nhập người chịu trách nhiệm..."
-                        className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white font-medium text-gray-800"
-                      />
-                    </div>
-
-                    {/* So dien thoai */}
-                    <div className="space-y-1.5">
-                      <label className="block text-sm font-bold text-gray-600">
-                        Số điện thoại
-                      </label>
-                      <input
-                        type="text"
-                        value={footerPhone}
-                        onChange={(e) => setFooterPhone(e.target.value)}
-                        placeholder="Nhập số điện thoại..."
-                        className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white font-medium text-gray-800"
-                      />
-                    </div>
-
-                    {/* Email */}
-                    <div className="space-y-1.5">
-                      <label className="block text-sm font-bold text-gray-600">
-                        Email
-                      </label>
-                      <input
-                        type="email"
-                        value={footerEmail}
-                        onChange={(e) => setFooterEmail(e.target.value)}
-                        placeholder="Nhập địa chỉ email..."
-                        className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white font-medium text-gray-800"
-                      />
-                    </div>
-
-                    {/* Giay phep */}
-                    <div className="space-y-1.5">
-                      <label className="block text-sm font-bold text-gray-600">
-                        Giấy phép thiết lập trang TTDT
-                      </label>
-                      <input
-                        type="text"
-                        value={footerLicense}
-                        onChange={(e) => setFooterLicense(e.target.value)}
-                        placeholder="Nhập số giấy phép..."
-                        className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white font-medium text-gray-800"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )
-          ) : activeTab === "media" ? (
-            <div className="space-y-5 animate-fade-in">
-              {/* Header Panel */}
-              <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                  <h2 className="text-xl font-bold text-gray-900 tracking-tight">Thư viện Media</h2>
-                  <p className="text-xs text-gray-500 font-semibold mt-1">Ảnh & video lưu trữ trên Cloudflare R2</p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    document.getElementById("media-direct-upload")?.click();
-                  }}
-                  disabled={isMediaUploading}
-                  className="flex items-center justify-center gap-2 px-5 py-2.5 bg-[#eb5757] hover:bg-[#d94848] text-white text-xs font-bold rounded-xl shadow-sm transition-all self-start sm:self-center disabled:opacity-75 disabled:cursor-not-allowed"
-                >
-                  {isMediaUploading ? (
-                    <Loader2 size={14} className="animate-spin" />
-                  ) : (
-                    <Upload size={14} />
-                  )}
-                  <span>{isMediaUploading ? "Đang tải lên..." : "Thêm media"}</span>
-                </button>
-                <input
-                  type="file"
-                  id="media-direct-upload"
-                  className="hidden"
-                  multiple
-                  accept="image/*,video/*"
-                  onChange={handleMediaDirectUpload}
-                />
-              </div>
-
-              {/* Filter & Search Bar Panel */}
-              <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-                {/* Filter by Types */}
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Lọc</span>
-                  <div className="flex gap-2">
-                    {[
-                      { id: "all", label: "Tất cả" },
-                      { id: "image", label: "Ảnh" },
-                      { id: "video", label: "Video" }
-                    ].map((type) => (
-                      <button
-                        key={type.id}
-                        type="button"
-                        onClick={() => setMediaTypeFilter(type.id as any)}
-                        className={`px-5 py-2 rounded-xl text-xs font-bold transition-all ${mediaTypeFilter === type.id
-                          ? "bg-[#eb5757] text-white shadow-sm"
-                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                          }`}
-                      >
-                        {type.label}
-                      </button>
                     ))}
                   </div>
-                </div>
+                ) : paginatedMedia.length > 0 ? (
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4.5">
+                      {paginatedMedia.map((item) => {
+                        const formattedDate = (() => {
+                          if (item.createdAt.includes("/")) return item.createdAt;
+                          const parts = item.createdAt.split("-");
+                          if (parts.length === 3) {
+                            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+                          }
+                          return item.createdAt;
+                        })();
 
-                {/* Search */}
-                <div className="flex flex-col gap-1.5 w-full md:w-[350px]">
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Tìm kiếm thông tin</span>
-                  <div className="relative">
-                    <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 font-bold" />
-                    <input
-                      type="text"
-                      value={mediaSearchQuery}
-                      onChange={(e) => setMediaSearchQuery(e.target.value)}
-                      placeholder="Tìm kiếm"
-                      className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-full text-xs outline-none focus:border-[#eb5757] focus:ring-1 focus:ring-[#eb5757]/15 transition-all bg-white"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Split Content Area */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                {/* Left Column: Cây thư mục */}
-                <div className="lg:col-span-3 bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                  <div className="flex items-center justify-between p-4 border-b border-gray-150 bg-gray-50/50">
-                    <h3 className="text-sm font-bold text-gray-800">Cây thư mục</h3>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setNewFolderName("");
-                        setFolderDialogOpen(true);
-                      }}
-                      className="p-1 border border-gray-300 hover:border-gray-400 rounded transition-colors hover:bg-gray-50 flex items-center justify-center"
-                    >
-                      <Plus size={12} className="text-gray-700 font-bold" />
-                    </button>
-                  </div>
-
-                  <div className="p-4 space-y-2">
-                    {/* Root Folder Item */}
-                    <div
-                      onClick={() => setActiveFolder("")}
-                      className={`flex items-center gap-1.5 cursor-pointer font-bold text-xs transition-all ${!activeFolder ? "text-[#eb5757]" : "text-gray-800 hover:text-gray-900"
-                        }`}
-                    >
-                      <ChevronDown size={14} className={!activeFolder ? "text-[#eb5757]" : "text-gray-500"} />
-                      <span>Root</span>
-                    </div>
-
-                    {/* Subdirectories */}
-                    <div className="pl-4 mt-1.5 space-y-1 border-l border-gray-100 ml-1.5">
-                      {folders.map((folderName) => {
-                        const isActive = activeFolder === folderName;
                         return (
                           <div
-                            key={folderName}
-                            className={`group/folder flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all ${isActive
-                              ? "bg-[#ffe4e4] text-[#eb5757]"
-                              : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
-                              }`}
+                            key={item.id}
+                            className="group relative border border-gray-250 rounded-xl overflow-hidden bg-white shadow-sm flex flex-col justify-between transition-all duration-300 hover:shadow-md hover:border-gray-350 animate-fade-in"
                           >
-                            <div
-                              onClick={() => setActiveFolder(folderName)}
-                              className="flex items-center gap-1.5 flex-1"
-                            >
-                              <ChevronRight size={12} className={isActive ? "text-[#eb5757]" : "text-gray-400"} />
-                              <span>{folderName}</span>
+                            {/* Thumbnail */}
+                            <div className="relative aspect-[4/3] w-full bg-gray-100 overflow-hidden flex items-center justify-center border-b border-gray-150">
+                              {item.type === "video" ? (
+                                <div className="w-full h-full relative flex items-center justify-center bg-slate-950">
+                                  {item.url.startsWith("http") ? (
+                                    <div className="w-full h-full flex items-center justify-center text-white/50">
+                                      <Video className="w-8 h-8" />
+                                    </div>
+                                  ) : (
+                                    <img
+                                      src={item.url}
+                                      alt={item.title}
+                                      className="w-full h-full object-cover opacity-80"
+                                    />
+                                  )}
+                                  <div className="absolute inset-0 bg-black/25 flex items-center justify-center">
+                                    <div className="w-9 h-9 rounded-full bg-white/90 flex items-center justify-center text-gray-900 shadow-md group-hover:scale-110 transition-transform">
+                                      <svg className="w-4.5 h-4.5 fill-current ml-0.5" viewBox="0 0 24 24">
+                                        <path d="M8 5v14l11-7z" />
+                                      </svg>
+                                    </div>
+                                  </div>
+                                  <span className="absolute bottom-2 right-2 text-[9px] bg-black/60 px-1.5 py-0.5 rounded text-white font-mono font-bold">
+                                    {item.duration || "00:00"}
+                                  </span>
+                                </div>
+                              ) : (
+                                <img
+                                  src={item.url}
+                                  alt={item.title}
+                                  className="w-full h-full object-cover group-hover:scale-102 transition-all duration-500"
+                                />
+                              )}
+
+                              {/* Glassmorphic Hover Action Overlay */}
+                              <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-2 z-20">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const copyUrl = item.url.startsWith("blob:") || item.url.startsWith("data:") || item.url.startsWith("http") ? item.url : (window.location.origin + item.url);
+                                    navigator.clipboard.writeText(copyUrl);
+                                    toast.success("Đã sao chép link media vào bộ nhớ tạm!");
+                                  }}
+                                  className="w-8 h-8 rounded-full bg-white hover:bg-gray-100 text-gray-800 flex items-center justify-center shadow transition-all active:scale-95"
+                                  title="Sao chép đường dẫn"
+                                >
+                                  <Copy size={13} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const previewUrl = item.url.startsWith("blob:") || item.url.startsWith("data:") || item.url.startsWith("http") ? item.url : (window.location.origin + item.url);
+                                    window.open(previewUrl, '_blank');
+                                  }}
+                                  className="w-8 h-8 rounded-full bg-white hover:bg-gray-100 text-gray-800 flex items-center justify-center shadow transition-all active:scale-95"
+                                  title="Xem trước"
+                                >
+                                  <Eye size={13} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    if (confirm("Bạn có chắc chắn muốn xóa file media này không?")) {
+                                      try {
+                                        setDeletingMediaKey(item.key);
+                                        toast.loading("Đang xóa...", { id: "media-delete" });
+                                        await deleteAdminMedia(item.key);
+                                        toast.success("Đã xóa file media thành công!", { id: "media-delete" });
+                                        loadMedia();
+                                      } catch (err) {
+                                        toast.error("Lỗi khi xóa file media!", { id: "media-delete" });
+                                      } finally {
+                                        setDeletingMediaKey(null);
+                                      }
+                                    }
+                                  }}
+                                  disabled={deletingMediaKey === item.key}
+                                  className="w-8 h-8 rounded-full bg-white hover:bg-red-50 text-red-650 flex items-center justify-center shadow transition-all active:scale-95 disabled:opacity-75 disabled:cursor-not-allowed"
+                                  title="Xóa media"
+                                >
+                                  {deletingMediaKey === item.key ? (
+                                    <Loader2 size={13} className="animate-spin" />
+                                  ) : (
+                                    <Trash2 size={13} />
+                                  )}
+                                </button>
+                              </div>
                             </div>
 
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (confirm(`Bạn có chắc chắn muốn xóa thư mục "${folderName}" khỏi danh sách hiển thị?`)) {
-                                  setFolders(prev => prev.filter(f => f !== folderName));
-                                  if (activeFolder === folderName) setActiveFolder("");
-                                  toast.success(`Đã xóa thư mục: ${folderName}`);
-                                }
-                              }}
-                              className="opacity-0 group-hover/folder:opacity-100 p-0.5 hover:text-red-650 transition-opacity flex items-center justify-center"
-                              title="Ẩn thư mục"
-                            >
-                              <X size={10} className="font-bold text-gray-500 hover:text-red-650" />
-                            </button>
+                            {/* Info Panel */}
+                            <div className="p-3 bg-gray-50 flex flex-col gap-1 border-t border-gray-150">
+                              <h5 className="text-[11px] font-bold text-gray-800 truncate leading-snug" title={item.title}>
+                                {item.title}
+                              </h5>
+                              <div className="flex items-center justify-between text-[9px] text-gray-400 font-bold">
+                                <span>{item.size}</span>
+                                <span>{formattedDate}</span>
+                              </div>
+                            </div>
                           </div>
                         );
                       })}
                     </div>
-                  </div>
-                </div>
 
-                {/* Right Column: Main Content */}
-                <div className="lg:col-span-9 bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-col gap-4 min-h-[500px]">
-                  {/* Breadcrumb row */}
-                  <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-gray-800">
-                      <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
-                      </svg>
-                      <span className="cursor-pointer hover:text-gray-900" onClick={() => setActiveFolder("")}>Root</span>
-                      {activeFolder && (
-                        <>
-                          <ChevronRight size={12} className="text-gray-450" />
-                          <span className="text-gray-900">{activeFolder}</span>
-                        </>
-                      )}
-                    </div>
+                    {/* Pagination footer */}
+                    <div className="flex justify-center mt-6">
+                      <div className="inline-flex items-center bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden divide-x divide-gray-200">
 
-                    {/* Sorting select */}
-                    <div className="relative">
-                      <select
-                        value={mediaSort}
-                        onChange={(e) => setMediaSort(e.target.value as any)}
-                        className="pl-3 pr-7 py-1 border border-gray-300 rounded-lg text-xs font-bold text-gray-700 appearance-none bg-white focus:outline-none min-w-[90px] cursor-pointer"
-                      >
-                        <option value="newest">Mới nhất</option>
-                        <option value="oldest">Cũ nhất</option>
-                        <option value="az">Tên A-Z</option>
-                      </select>
-                      <ChevronDown size={11} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                    </div>
-                  </div>
-
-                  {/* Actions Row */}
-                  <div className="flex items-center gap-2 text-xs font-bold text-gray-800 py-1">
-                    <input type="checkbox" className="w-4 h-4 rounded border-gray-300 text-[#eb5757] focus:ring-[#eb5757]/20 cursor-pointer" />
-                    <span>Chọn tất cả</span>
-                    <span className="text-gray-500 font-medium ml-1.5">{filteredMedia.length} file</span>
-                  </div>
-
-                  {/* Cards Grid */}
-                  {mediaLoading ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4.5">
-                      {[...Array(6)].map((_, i) => (
-                        <div key={i} className="border border-gray-250 rounded-xl overflow-hidden bg-white shadow-sm flex flex-col justify-between animate-pulse">
-                          <div className="aspect-[4/3] w-full bg-gray-150" />
-                          <div className="p-3.5 space-y-2">
-                            <div className="h-3.5 bg-gray-200 rounded w-3/4" />
-                            <div className="flex justify-between items-center pt-2">
-                              <div className="h-2.5 bg-gray-200 rounded w-1/4" />
-                              <div className="h-2.5 bg-gray-200 rounded w-1/4" />
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : paginatedMedia.length > 0 ? (
-                    <>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4.5">
-                        {paginatedMedia.map((item) => {
-                          const formattedDate = (() => {
-                            if (item.createdAt.includes("/")) return item.createdAt;
-                            const parts = item.createdAt.split("-");
-                            if (parts.length === 3) {
-                              return `${parts[2]}/${parts[1]}/${parts[0]}`;
-                            }
-                            return item.createdAt;
-                          })();
-
-                          return (
-                            <div
-                              key={item.id}
-                              className="group relative border border-gray-250 rounded-xl overflow-hidden bg-white shadow-sm flex flex-col justify-between transition-all duration-300 hover:shadow-md hover:border-gray-350 animate-fade-in"
-                            >
-                              {/* Thumbnail */}
-                              <div className="relative aspect-[4/3] w-full bg-gray-100 overflow-hidden flex items-center justify-center border-b border-gray-150">
-                                {item.type === "video" ? (
-                                  <div className="w-full h-full relative flex items-center justify-center bg-slate-950">
-                                    {item.url.startsWith("http") ? (
-                                      <div className="w-full h-full flex items-center justify-center text-white/50">
-                                        <Video className="w-8 h-8" />
-                                      </div>
-                                    ) : (
-                                      <img
-                                        src={item.url}
-                                        alt={item.title}
-                                        className="w-full h-full object-cover opacity-80"
-                                      />
-                                    )}
-                                    <div className="absolute inset-0 bg-black/25 flex items-center justify-center">
-                                      <div className="w-9 h-9 rounded-full bg-white/90 flex items-center justify-center text-gray-900 shadow-md group-hover:scale-110 transition-transform">
-                                        <svg className="w-4.5 h-4.5 fill-current ml-0.5" viewBox="0 0 24 24">
-                                          <path d="M8 5v14l11-7z" />
-                                        </svg>
-                                      </div>
-                                    </div>
-                                    <span className="absolute bottom-2 right-2 text-[9px] bg-black/60 px-1.5 py-0.5 rounded text-white font-mono font-bold">
-                                      {item.duration || "00:00"}
-                                    </span>
-                                  </div>
-                                ) : (
-                                  <img
-                                    src={item.url}
-                                    alt={item.title}
-                                    className="w-full h-full object-cover group-hover:scale-102 transition-all duration-500"
-                                  />
-                                )}
-
-                                {/* Glassmorphic Hover Action Overlay */}
-                                <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-2 z-20">
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      const copyUrl = item.url.startsWith("blob:") || item.url.startsWith("data:") || item.url.startsWith("http") ? item.url : (window.location.origin + item.url);
-                                      navigator.clipboard.writeText(copyUrl);
-                                      toast.success("Đã sao chép link media vào bộ nhớ tạm!");
-                                    }}
-                                    className="w-8 h-8 rounded-full bg-white hover:bg-gray-100 text-gray-800 flex items-center justify-center shadow transition-all active:scale-95"
-                                    title="Sao chép đường dẫn"
-                                  >
-                                    <Copy size={13} />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      const previewUrl = item.url.startsWith("blob:") || item.url.startsWith("data:") || item.url.startsWith("http") ? item.url : (window.location.origin + item.url);
-                                      window.open(previewUrl, '_blank');
-                                    }}
-                                    className="w-8 h-8 rounded-full bg-white hover:bg-gray-100 text-gray-800 flex items-center justify-center shadow transition-all active:scale-95"
-                                    title="Xem trước"
-                                  >
-                                    <Eye size={13} />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={async () => {
-                                      if (confirm("Bạn có chắc chắn muốn xóa file media này không?")) {
-                                        try {
-                                          setDeletingMediaKey(item.key);
-                                          toast.loading("Đang xóa...", { id: "media-delete" });
-                                          await deleteAdminMedia(item.key);
-                                          toast.success("Đã xóa file media thành công!", { id: "media-delete" });
-                                          loadMedia();
-                                        } catch (err) {
-                                          toast.error("Lỗi khi xóa file media!", { id: "media-delete" });
-                                        } finally {
-                                          setDeletingMediaKey(null);
-                                        }
-                                      }
-                                    }}
-                                    disabled={deletingMediaKey === item.key}
-                                    className="w-8 h-8 rounded-full bg-white hover:bg-red-50 text-red-650 flex items-center justify-center shadow transition-all active:scale-95 disabled:opacity-75 disabled:cursor-not-allowed"
-                                    title="Xóa media"
-                                  >
-                                    {deletingMediaKey === item.key ? (
-                                      <Loader2 size={13} className="animate-spin" />
-                                    ) : (
-                                      <Trash2 size={13} />
-                                    )}
-                                  </button>
-                                </div>
-                              </div>
-
-                              {/* Info Panel */}
-                              <div className="p-3 bg-gray-50 flex flex-col gap-1 border-t border-gray-150">
-                                <h5 className="text-[11px] font-bold text-gray-800 truncate leading-snug" title={item.title}>
-                                  {item.title}
-                                </h5>
-                                <div className="flex items-center justify-between text-[9px] text-gray-400 font-bold">
-                                  <span>{item.size}</span>
-                                  <span>{formattedDate}</span>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      {/* Pagination footer */}
-                      <div className="flex justify-center mt-6">
-                        <div className="inline-flex items-center bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden divide-x divide-gray-200">
-
-                          {/* Prev Button */}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (mediaPage > 1) setMediaPage(mediaPage - 1);
-                            }}
-                            disabled={mediaPage === 1}
-                            className="px-3 py-2 hover:bg-gray-50 text-gray-500 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
-                          >
-                            <ChevronLeft size={16} />
-                          </button>
-
-                          {/* Page Numbers */}
-                          {Array.from({ length: mediaTotalPages }).map((_, idx) => {
-                            const pageNumber = idx + 1;
-                            const isCurrent = mediaPage === pageNumber;
-
-                            return (
-                              <button
-                                key={pageNumber}
-                                type="button"
-                                onClick={() => setMediaPage(pageNumber)}
-                                className={`px-4 py-2 text-xs font-bold transition-all ${isCurrent
-                                  ? "bg-[#eb5757] text-white"
-                                  : "text-gray-700 hover:bg-gray-50"
-                                  }`}
-                              >
-                                {pageNumber}
-                              </button>
-                            );
-                          })}
-
-                          {/* Next Button */}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (mediaPage < mediaTotalPages) setMediaPage(mediaPage + 1);
-                            }}
-                            disabled={mediaPage === mediaTotalPages}
-                            className="px-3 py-2 hover:bg-gray-50 text-gray-500 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
-                          >
-                            <ChevronRight size={16} />
-                          </button>
-
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="py-20 text-center text-gray-400 font-bold flex-1 flex items-center justify-center">
-                      Không tìm thấy file media nào tương ứng.
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          ) : (
-            <>
-              {/* HEADER ACTION BANNER */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-150 shadow-sm">
-                <div>
-                  <h2 className="text-lg font-bold text-gray-900">
-                    {activeTab === "posts" && "Danh sách tất cả bài viết trên hệ thống"}
-                    {activeTab === "categories" && "Quản lý luồng chủ đề danh mục tin tức"}
-                    {activeTab === "ads" && "Theo dõi hiệu suất và vị trí các banner quảng cáo"}
-                    {activeTab === "accounts" && "Danh sách tất cả tài khoản quản trị viên trên hệ thống"}
-                  </h2>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Dễ dàng tìm kiếm, lọc, thêm mới hoặc cập nhật các bản ghi theo thời gian thực.
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleOpenAddDialog}
-                  className="flex items-center justify-center gap-2 px-5 py-2.5 bg-[#E55956] hover:bg-[#cb4643] active:scale-[0.98] text-white text-sm font-bold rounded-xl shadow-md transition-all self-start sm:self-center"
-                >
-                  <Plus size={16} />
-                  <span>
-                    {activeTab === "posts" && "Thêm bài viết"}
-                    {activeTab === "categories" && "Thêm danh mục"}
-                    {activeTab === "ads" && "Thêm quảng cáo"}
-                    {activeTab === "accounts" && "Thêm tài khoản"}
-                  </span>
-                </button>
-              </div>
-
-              {/* FILTER BAR SECTION */}
-              <div className="bg-white p-5 rounded-2xl border border-gray-150 shadow-sm flex flex-col gap-4">
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 items-end">
-
-                  {/* Search Field (Always present) */}
-                  <div className={activeTab === "posts" ? "md:col-span-4" : "md:col-span-12"}>
-                    <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">
-                      Tìm kiếm thông tin
-                    </label>
-                    <div className="relative">
-                      <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-                      <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder={
-                          activeTab === "posts"
-                            ? "Tìm kiếm tiêu đề bài viết..."
-                            : activeTab === "categories"
-                              ? "Tìm tên danh mục, ID..."
-                              : activeTab === "ads"
-                                ? "Tìm kiếm tên AD, vị trí, ID..."
-                                : "Tìm kiếm username, tên hiển thị, email..."
-                        }
-                        className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-gray-50/50"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Date & Category filters only for POSTS */}
-                  {activeTab === "posts" && (
-                    <>
-                      <div className="md:col-span-2">
-                        <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">
-                          Ngày bắt đầu
-                        </label>
-                        <div className="relative">
-                          <input
-                            type="date"
-                            value={postStartDate}
-                            onChange={(e) => setPostStartDate(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-gray-50/50"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="md:col-span-2">
-                        <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">
-                          Ngày kết thúc
-                        </label>
-                        <div className="relative">
-                          <input
-                            type="date"
-                            value={postEndDate}
-                            onChange={(e) => setPostEndDate(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-gray-50/50"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="md:col-span-2">
-                        <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">
-                          Danh mục
-                        </label>
-                        <select
-                          value={postCategoryFilter}
-                          onChange={(e) => setPostCategoryFilter(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-gray-50/50"
-                        >
-                          <option value="all">Tất cả</option>
-                          {categoryOptions.map(cat => (
-                            <option key={cat} value={cat}>
-                              {cat}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div className="md:col-span-2 flex gap-2">
+                        {/* Prev Button */}
                         <button
-                          type="button"
-                          onClick={() => resetFilters()}
-                          className="flex-1 py-2 border border-gray-200 hover:bg-gray-50 text-gray-600 text-sm font-bold rounded-xl transition-all"
-                        >
-                          Xóa bộ lọc
-                        </button>
-                      </div>
-
-                      {activeTab === "posts" && (
-                        <div className="md:col-span-9 flex items-center mt-2">
-                          <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-600 font-medium select-none w-max">
-                            <input
-                              type="checkbox"
-                              checked={hideDeletedPosts}
-                              onChange={(e) => setHideDeletedPosts(e.target.checked)}
-                              className="w-4 h-4 rounded text-[#E55956] focus:ring-[#E55956] cursor-pointer"
-                            />
-                            Ẩn bài viết đã xóa
-                          </label>
-                        </div>
-                      )}
-                    </>
-                  )}
-
-                </div>
-              </div>
-
-              {/* DATA TABLE WRAPPER */}
-              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                <div className="overflow-x-auto">
-
-                  {/* VIEW: POSTS TABLE */}
-                  {activeTab === "posts" && (
-                    <table className="w-full min-w-[900px] text-left border-collapse">
-                      <thead>
-                        <tr className="border-b border-gray-200 bg-gray-50/75 text-gray-500 font-bold text-xs uppercase tracking-wider whitespace-nowrap">
-                          <th className="py-4 px-6 w-16 text-center">ID</th>
-                          <th className="py-4 px-4 min-w-[280px]">Tiêu đề bài viết</th>
-                          <th className="py-4 px-4 w-40">Danh mục</th>
-                          <th className="py-4 px-4 w-32 text-right">Lượt xem</th>
-                          <th className="py-4 px-4 w-36 text-center">Trạng thái</th>
-                          <th className="py-4 px-4 w-40 text-center">Ngày tạo</th>
-                          <th className="py-4 px-6 w-28 text-center">Thao tác</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-150">
-                        {postsLoading ? (
-                          <PostsTableSkeleton />
-                        ) : paginatedPosts.length > 0 ? (
-                          paginatedPosts.map((post) => (
-                            <tr key={post.id} className={`transition-colors text-sm font-medium whitespace-nowrap ${post.isDeleted ? 'opacity-50 bg-red-50/20' : 'hover:bg-gray-50/50'}`}>
-                              <td className="py-4 px-6 text-center text-gray-400 font-bold">{post.id}</td>
-                              <td className="py-4 px-4 whitespace-normal">
-                                <div className="text-gray-900 font-semibold line-clamp-2 max-w-[450px]">
-                                  {post.title}
-                                  {post.isDeleted && <span className="ml-2 px-2 py-0.5 text-[10px] bg-red-100 text-red-600 rounded whitespace-nowrap align-middle font-bold">Đã xóa</span>}
-                                </div>
-                              </td>
-                              <td className="py-4 px-4 text-gray-600">{post.category}</td>
-                              <td className="py-4 px-4 text-right text-gray-900 font-mono font-bold">
-                                {post.views.toLocaleString("en-US")}
-                              </td>
-                              <td className="py-4 px-4 text-center">
-                                <span
-                                  className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-bold ${post.status === "Đã đăng"
-                                    ? "bg-emerald-100 text-emerald-800"
-                                    : "bg-amber-100 text-amber-800"
-                                    }`}
-                                >
-                                  {post.status}
-                                </span>
-                              </td>
-                              <td className="py-4 px-4 text-center text-gray-500">
-                                {formatDateForDisplay(post.createdAt)}
-                              </td>
-                              <td className="py-4 px-6 text-center">
-                                <div className="flex items-center justify-center gap-2.5">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleOpenEditDialog(post)}
-                                    className="p-1.5 border border-amber-200 text-amber-600 rounded-lg hover:bg-amber-50 transition-colors"
-                                  >
-                                    <SquarePen size={15} />
-                                  </button>
-                                  {post.isDeleted ? (
-                                    <button
-                                      type="button"
-                                      onClick={() => executeRestore(post.id)}
-                                      disabled={restoringPostId === post.id}
-                                      className="p-1.5 border border-emerald-200 text-emerald-600 rounded-lg hover:bg-emerald-50 transition-colors disabled:opacity-75 disabled:cursor-not-allowed"
-                                      title="Khôi phục bài viết"
-                                    >
-                                      {restoringPostId === post.id ? (
-                                        <Loader2 size={15} className="animate-spin" />
-                                      ) : (
-                                        <RotateCcw size={15} />
-                                      )}
-                                    </button>
-                                  ) : (
-                                    <button
-                                      type="button"
-                                      onClick={() => handleConfirmDelete(post.id)}
-                                      className="p-1.5 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
-                                      title="Xóa bài viết"
-                                    >
-                                      <Trash2 size={15} />
-                                    </button>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          ))
-                        ) : (
-                          <tr>
-                            <td colSpan={7} className="py-12 text-center text-gray-400 font-bold">
-                              Không tìm thấy bài viết nào tương ứng.
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  )}
-
-                  {/* VIEW: CATEGORIES TABLE */}
-                  {activeTab === "categories" && (
-                    <table className="w-full min-w-[800px] text-left border-collapse">
-                      <thead>
-                        <tr className="border-b border-gray-200 bg-gray-50/75 text-gray-500 font-bold text-xs uppercase tracking-wider whitespace-nowrap">
-                          <th className="py-4 px-6 w-16 text-center">ID</th>
-                          <th className="py-4 px-4 min-w-[200px]">Tên danh mục</th>
-                          <th className="py-4 px-4 w-44 text-right">Số bài viết</th>
-                          <th className="py-4 px-4 w-40 text-center">Priority</th>
-                          <th className="py-4 px-4 w-40 text-center">Trạng thái</th>
-                          <th className="py-4 px-6 w-28 text-center">Thao tác</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-150">
-                        {categoriesLoading ? (
-                          <CategoriesTableSkeleton />
-                        ) : paginatedCategories.length > 0 ? (
-                          paginatedCategories.map((cat) => (
-                            <tr key={cat.id} className="hover:bg-gray-50/50 transition-colors text-sm font-medium whitespace-nowrap">
-                              <td className="py-4 px-6 text-center text-gray-400 font-bold">{cat.id}</td>
-                              <td className="py-4 px-4 text-gray-900 font-semibold whitespace-normal">{cat.name}</td>
-                              <td className="py-4 px-4 text-right text-gray-900 font-mono font-bold">
-                                {cat.postCount}
-                              </td>
-                              <td className="py-4 px-4 text-center">
-                                <div className="inline-block relative">
-                                  <select
-                                    value={cat.priority}
-                                    onChange={(e) => handleCategoryPriorityChange(cat.id, Number(e.target.value))}
-                                    className="px-2.5 py-1 text-xs font-bold text-gray-700 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-[#E55956] appearance-none pr-6 cursor-pointer hover:bg-gray-100 transition-colors"
-                                  >
-                                    {Array.from({ length: 11 }).map((_, i) => (
-                                      <option key={i} value={i}>
-                                        {i}
-                                      </option>
-                                    ))}
-                                  </select>
-                                  <ChevronDown size={10} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                                </div>
-                              </td>
-                              <td className="py-4 px-4 text-center">
-                                <button
-                                  type="button"
-                                  onClick={() => handleCategoryStatusToggle(cat)}
-                                  title="Click để đổi trạng thái"
-                                  className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-bold transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer shadow-sm ${cat.status === "Hoạt động"
-                                    ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
-                                    : "bg-red-100 text-red-800 hover:bg-red-200"
-                                    }`}
-                                >
-                                  {cat.status}
-                                </button>
-                              </td>
-                              <td className="py-4 px-6 text-center">
-                                <div className="flex items-center justify-center gap-2.5">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleOpenEditDialog(cat)}
-                                    className="p-1.5 border border-amber-200 text-amber-600 rounded-lg hover:bg-amber-50 transition-colors"
-                                  >
-                                    <SquarePen size={15} />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleConfirmDelete(cat.id)}
-                                    className="p-1.5 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
-                                  >
-                                    <Trash2 size={15} />
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))
-                        ) : (
-                          <tr>
-                            <td colSpan={6} className="py-12 text-center text-gray-400 font-bold">
-                              Không tìm thấy danh mục nào tương ứng.
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  )}
-
-                  {/* VIEW: ADS TABLE */}
-                  {activeTab === "ads" && (
-                    <table className="w-full min-w-[950px] text-left border-collapse">
-                      <thead>
-                        <tr className="border-b border-gray-200 bg-gray-50/75 text-gray-500 font-bold text-xs uppercase tracking-wider whitespace-nowrap">
-                          <th className="py-4 px-6 w-16 text-center">ID</th>
-                          <th className="py-4 px-4 min-w-[250px]">Tên AD</th>
-                          <th className="py-4 px-4 w-36">Vị trí</th>
-                          <th className="py-4 px-4 w-32 text-right">Clicks</th>
-                          <th className="py-4 px-4 w-36 text-center">Thời gian BĐ</th>
-                          <th className="py-4 px-4 w-36 text-center">Thời gian KT</th>
-                          <th className="py-4 px-4 w-36 text-center">Trạng thái</th>
-                          <th className="py-4 px-6 w-28 text-center">Thao tác</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-150">
-                        {adsLoading ? (
-                          <AdsTableSkeleton />
-                        ) : paginatedAds.length > 0 ? (
-                          paginatedAds.map((ad) => (
-                            <tr key={ad.id} className="hover:bg-gray-50/50 transition-colors text-sm font-medium whitespace-nowrap">
-                              <td className="py-4 px-6 text-center text-gray-400 font-bold">{ad.id}</td>
-                              <td className="py-4 px-4 whitespace-normal">
-                                <div className="flex items-center gap-3">
-                                  {ad.image ? (
-                                    ad.link ? (
-                                      <a
-                                        href={ad.link}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="relative w-12 h-7 rounded overflow-hidden border border-gray-200 flex-shrink-0 cursor-pointer hover:opacity-85 transition-opacity"
-                                        title="Click to visit link"
-                                      >
-                                        <img src={ad.image} alt={ad.name} className="w-full h-full object-cover" />
-                                      </a>
-                                    ) : (
-                                      <div className="relative w-12 h-7 rounded overflow-hidden border border-gray-200 flex-shrink-0">
-                                        <img src={ad.image} alt={ad.name} className="w-full h-full object-cover" />
-                                      </div>
-                                    )
-                                  ) : (
-                                    <div className="w-12 h-7 rounded bg-gray-100 border border-gray-200 flex-shrink-0 flex items-center justify-center text-[10px] text-gray-400 font-bold">
-                                      No Image
-                                    </div>
-                                  )}
-                                  <div className="flex flex-col min-w-0">
-                                    <span className="text-gray-900 font-semibold truncate max-w-[200px]" title={ad.name}>{ad.name}</span>
-                                    {ad.link ? (
-                                      <a
-                                        href={ad.link}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-[10px] text-[#E55956] hover:underline flex items-center gap-0.5 mt-0.5 font-bold"
-                                      >
-                                        <ExternalLink size={10} className="flex-shrink-0" />
-                                        <span className="truncate max-w-[150px]">{ad.link}</span>
-                                      </a>
-                                    ) : (
-                                      <span className="text-[10px] text-gray-400 font-medium mt-0.5">(Không có link)</span>
-                                    )}
-                                  </div>
-                                </div>
-                              </td>
-                              <td className="py-4 px-4 text-gray-600 font-bold">{ad.position}</td>
-                              <td className="py-4 px-4 text-right text-gray-900 font-mono font-bold">
-                                {ad.clicks.toLocaleString("en-US")}
-                              </td>
-                              <td className="py-4 px-4 text-center text-gray-500">
-                                {formatDateForDisplay(ad.startDate)}
-                              </td>
-                              <td className="py-4 px-4 text-center text-gray-500">
-                                {formatDateForDisplay(ad.endDate)}
-                              </td>
-                              <td className="py-4 px-4 text-center">
-                                <button
-                                  type="button"
-                                  onClick={() => handleAdStatusToggle(ad)}
-                                  title="Click để đổi trạng thái"
-                                  className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-bold transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer shadow-sm ${ad.status === "Hoạt động"
-                                    ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
-                                    : ad.status === "Chờ chạy"
-                                      ? "bg-blue-100 text-blue-800 hover:bg-blue-200"
-                                      : ad.status === "Đã kết thúc"
-                                        ? "bg-gray-100 text-gray-800 hover:bg-gray-200"
-                                        : "bg-red-100 text-red-800 hover:bg-red-200"
-                                    }`}
-                                >
-                                  {ad.status}
-                                </button>
-                              </td>
-                              <td className="py-4 px-6 text-center">
-                                <div className="flex items-center justify-center gap-2.5">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleOpenEditDialog(ad)}
-                                    className="p-1.5 border border-amber-200 text-amber-600 rounded-lg hover:bg-amber-50 transition-colors"
-                                  >
-                                    <SquarePen size={15} />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleConfirmDelete(ad.id)}
-                                    className="p-1.5 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
-                                  >
-                                    <Trash2 size={15} />
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))
-                        ) : (
-                          <tr>
-                            <td colSpan={8} className="py-12 text-center text-gray-400 font-bold">
-                              Không tìm thấy quảng cáo nào tương ứng.
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  )}
-
-                  {/* VIEW: ACCOUNTS TABLE */}
-                  {activeTab === "accounts" && (
-                    <table className="w-full min-w-[800px] text-left border-collapse">
-                      <thead>
-                        <tr className="border-b border-gray-200 bg-gray-50/75 text-gray-500 font-bold text-xs uppercase tracking-wider whitespace-nowrap">
-                          <th className="py-4 px-6 w-16 text-center">STT</th>
-                          <th className="py-4 px-4 min-w-[200px]">Tên đăng nhập</th>
-                          <th className="py-4 px-4 min-w-[200px]">Tên hiển thị</th>
-                          <th className="py-4 px-4 w-44">Email</th>
-                          <th className="py-4 px-4 w-32 text-center">Vai trò</th>
-                          <th className="py-4 px-4 w-40 text-center">Ngày tạo</th>
-                          <th className="py-4 px-6 w-28 text-center">Thao tác</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-150">
-                        {accountsLoading ? (
-                          <AccountsTableSkeleton />
-                        ) : paginatedAccounts.length > 0 ? (
-                          paginatedAccounts.map((acc, index) => (
-                            <tr key={acc.id} className="hover:bg-gray-50/50 transition-colors text-sm font-medium whitespace-nowrap">
-                              <td className="py-4 px-6 text-center text-gray-400 font-bold">
-                                {(accountsPage - 1) * itemsPerPage + index + 1}
-                              </td>
-                              <td className="py-4 px-4 text-gray-900 font-semibold">{acc.username}</td>
-                              <td className="py-4 px-4 text-gray-750">{acc.display_name}</td>
-                              <td className="py-4 px-4 text-gray-600">{acc.email || "(Chưa cấu hình)"}</td>
-                              <td className="py-4 px-4 text-center">
-                                <span className="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800 uppercase tracking-wide">
-                                  {acc.role}
-                                </span>
-                              </td>
-                              <td className="py-4 px-4 text-center text-gray-500">
-                                {formatDateForDisplay(acc.created_at ? acc.created_at.split("T")[0] : "")}
-                              </td>
-                              <td className="py-4 px-6 text-center">
-                                <div className="flex items-center justify-center gap-2.5">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleOpenEditDialog(acc)}
-                                    className="p-1.5 border border-amber-200 text-amber-600 rounded-lg hover:bg-amber-50 transition-colors"
-                                    title="Sửa tài khoản"
-                                  >
-                                    <SquarePen size={15} />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleConfirmDeleteAccount(acc.id)}
-                                    className="p-1.5 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
-                                    title="Xóa tài khoản"
-                                  >
-                                    <Trash2 size={15} />
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))
-                        ) : (
-                          <tr>
-                            <td colSpan={7} className="py-12 text-center text-gray-400 font-bold">
-                              Không tìm thấy tài khoản nào tương ứng.
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  )}
-
-                </div>
-
-                {/* PAGINATION CONTROLLER */}
-                <div className="py-4 px-6 border-t border-gray-150 flex items-center justify-center">
-                  <div className="inline-flex items-center bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden divide-x divide-gray-200">
-
-                    {/* Prev Button */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (activeTab === "posts" && postsPage > 1) setPostsPage(postsPage - 1);
-                        if (activeTab === "categories" && categoriesPage > 1) setCategoriesPage(categoriesPage - 1);
-                        if (activeTab === "ads" && adsPage > 1) setAdsPage(adsPage - 1);
-                        if (activeTab === "accounts" && accountsPage > 1) setAccountsPage(accountsPage - 1);
-                      }}
-                      disabled={
-                        (activeTab === "posts" && postsPage === 1) ||
-                        (activeTab === "categories" && categoriesPage === 1) ||
-                        (activeTab === "ads" && adsPage === 1) ||
-                        (activeTab === "accounts" && accountsPage === 1)
-                      }
-                      className="px-3 py-2 hover:bg-gray-50 text-gray-500 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
-                    >
-                      <ChevronLeft size={16} />
-                    </button>
-
-                    {/* Page Numbers */}
-                    {Array.from({
-                      length:
-                        activeTab === "posts"
-                          ? postsTotalPages
-                          : activeTab === "categories"
-                            ? categoriesTotalPages
-                            : activeTab === "ads"
-                              ? adsTotalPages
-                              : accountsTotalPages
-                    }).map((_, idx) => {
-                      const pageNumber = idx + 1;
-                      const isCurrent =
-                        activeTab === "posts"
-                          ? postsPage === pageNumber
-                          : activeTab === "categories"
-                            ? categoriesPage === pageNumber
-                            : activeTab === "ads"
-                              ? adsPage === pageNumber
-                              : accountsPage === pageNumber;
-
-                      return (
-                        <button
-                          key={pageNumber}
                           type="button"
                           onClick={() => {
-                            if (activeTab === "posts") setPostsPage(pageNumber);
-                            if (activeTab === "categories") setCategoriesPage(pageNumber);
-                            if (activeTab === "ads") setAdsPage(pageNumber);
-                            if (activeTab === "accounts") setAccountsPage(pageNumber);
+                            if (mediaPage > 1) setMediaPage(mediaPage - 1);
                           }}
-                          className={`px-4 py-2 text-xs font-bold transition-all ${isCurrent
-                            ? "bg-[#E55956] text-white"
-                            : "text-gray-700 hover:bg-gray-50"
-                            }`}
+                          disabled={mediaPage === 1}
+                          className="px-3 py-2 hover:bg-gray-50 text-gray-500 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
                         >
-                          {pageNumber}
+                          <ChevronLeft size={16} />
                         </button>
-                      );
-                    })}
 
-                    {/* Next Button */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (activeTab === "posts" && postsPage < postsTotalPages) setPostsPage(postsPage + 1);
-                        if (activeTab === "categories" && categoriesPage < categoriesTotalPages) setCategoriesPage(categoriesPage + 1);
-                        if (activeTab === "ads" && adsPage < adsTotalPages) setAdsPage(adsPage + 1);
-                        if (activeTab === "accounts" && accountsPage < accountsTotalPages) setAccountsPage(accountsPage + 1);
-                      }}
-                      disabled={
-                        (activeTab === "posts" && postsPage === postsTotalPages) ||
-                        (activeTab === "categories" && categoriesPage === categoriesTotalPages) ||
-                        (activeTab === "ads" && adsPage === adsTotalPages) ||
-                        (activeTab === "accounts" && accountsPage === accountsTotalPages)
+                        {/* Page Numbers */}
+                        {Array.from({ length: mediaTotalPages }).map((_, idx) => {
+                          const pageNumber = idx + 1;
+                          const isCurrent = mediaPage === pageNumber;
+
+                          return (
+                            <button
+                              key={pageNumber}
+                              type="button"
+                              onClick={() => setMediaPage(pageNumber)}
+                              className={`px-4 py-2 text-xs font-bold transition-all ${isCurrent
+                                ? "bg-[#eb5757] text-white"
+                                : "text-gray-700 hover:bg-gray-50"
+                                }`}
+                            >
+                              {pageNumber}
+                            </button>
+                          );
+                        })}
+
+                        {/* Next Button */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (mediaPage < mediaTotalPages) setMediaPage(mediaPage + 1);
+                          }}
+                          disabled={mediaPage === mediaTotalPages}
+                          className="px-3 py-2 hover:bg-gray-50 text-gray-500 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
+                        >
+                          <ChevronRight size={16} />
+                        </button>
+
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="py-20 text-center text-gray-400 font-bold flex-1 flex items-center justify-center">
+                    Không tìm thấy file media nào tương ứng.
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          ) : (
+          <>
+            {/* HEADER ACTION BANNER */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-150 shadow-sm">
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">
+                  {activeTab === "posts" && "Danh sách tất cả bài viết trên hệ thống"}
+                  {activeTab === "categories" && "Quản lý luồng chủ đề danh mục tin tức"}
+                  {activeTab === "ads" && "Theo dõi hiệu suất và vị trí các banner quảng cáo"}
+                  {activeTab === "accounts" && "Danh sách tất cả tài khoản quản trị viên trên hệ thống"}
+                </h2>
+                <p className="text-xs text-gray-500 mt-1">
+                  Dễ dàng tìm kiếm, lọc, thêm mới hoặc cập nhật các bản ghi theo thời gian thực.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleOpenAddDialog}
+                className="flex items-center justify-center gap-2 px-5 py-2.5 bg-[#E55956] hover:bg-[#cb4643] active:scale-[0.98] text-white text-sm font-bold rounded-xl shadow-md transition-all self-start sm:self-center"
+              >
+                <Plus size={16} />
+                <span>
+                  {activeTab === "posts" && "Thêm bài viết"}
+                  {activeTab === "categories" && "Thêm danh mục"}
+                  {activeTab === "ads" && "Thêm quảng cáo"}
+                  {activeTab === "accounts" && "Thêm tài khoản"}
+                </span>
+              </button>
+            </div>
+
+            {/* FILTER BAR SECTION */}
+            <div className="bg-white p-5 rounded-2xl border border-gray-150 shadow-sm flex flex-col gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 items-end">
+
+                {/* Search Field (Always present) */}
+                <div className={activeTab === "posts" ? "md:col-span-4" : "md:col-span-12"}>
+                  <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">
+                    Tìm kiếm thông tin
+                  </label>
+                  <div className="relative">
+                    <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder={
+                        activeTab === "posts"
+                          ? "Tìm kiếm tiêu đề bài viết..."
+                          : activeTab === "categories"
+                            ? "Tìm tên danh mục, ID..."
+                            : activeTab === "ads"
+                              ? "Tìm kiếm tên AD, vị trí, ID..."
+                              : "Tìm kiếm username, tên hiển thị, email..."
                       }
-                      className="px-3 py-2 hover:bg-gray-50 text-gray-500 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
-                    >
-                      <ChevronRight size={16} />
-                    </button>
-
+                      className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-gray-50/50"
+                    />
                   </div>
                 </div>
 
+                {/* Date & Category filters only for POSTS */}
+                {activeTab === "posts" && (
+                  <>
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">
+                        Ngày bắt đầu
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="date"
+                          value={postStartDate}
+                          onChange={(e) => setPostStartDate(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-gray-50/50"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">
+                        Ngày kết thúc
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="date"
+                          value={postEndDate}
+                          onChange={(e) => setPostEndDate(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-gray-50/50"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">
+                        Danh mục
+                      </label>
+                      <select
+                        value={postCategoryFilter}
+                        onChange={(e) => setPostCategoryFilter(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-gray-50/50"
+                      >
+                        <option value="all">Tất cả</option>
+                        {categoryOptions.map(cat => (
+                          <option key={cat} value={cat}>
+                            {cat}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="md:col-span-2 flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => resetFilters()}
+                        className="flex-1 py-2 border border-gray-200 hover:bg-gray-50 text-gray-600 text-sm font-bold rounded-xl transition-all"
+                      >
+                        Xóa bộ lọc
+                      </button>
+                    </div>
+
+                    {activeTab === "posts" && (
+                      <div className="md:col-span-9 flex items-center mt-2">
+                        <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-600 font-medium select-none w-max">
+                          <input
+                            type="checkbox"
+                            checked={hideDeletedPosts}
+                            onChange={(e) => setHideDeletedPosts(e.target.checked)}
+                            className="w-4 h-4 rounded text-[#E55956] focus:ring-[#E55956] cursor-pointer"
+                          />
+                          Ẩn bài viết đã xóa
+                        </label>
+                      </div>
+                    )}
+                  </>
+                )}
+
               </div>
-            </>
+            </div>
+
+            {/* DATA TABLE WRAPPER */}
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+
+                {/* VIEW: POSTS TABLE */}
+                {activeTab === "posts" && (
+                  <table className="w-full min-w-[900px] text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-gray-200 bg-gray-50/75 text-gray-500 font-bold text-xs uppercase tracking-wider whitespace-nowrap">
+                        <th className="py-4 px-6 w-16 text-center">ID</th>
+                        <th className="py-4 px-4 min-w-[280px]">Tiêu đề bài viết</th>
+                        <th className="py-4 px-4 w-40">Danh mục</th>
+                        <th className="py-4 px-4 w-32 text-right">Lượt xem</th>
+                        <th className="py-4 px-4 w-36 text-center">Trạng thái</th>
+                        <th className="py-4 px-4 w-40 text-center">Ngày tạo</th>
+                        <th className="py-4 px-6 w-28 text-center">Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-150">
+                      {postsLoading ? (
+                        <PostsTableSkeleton />
+                      ) : paginatedPosts.length > 0 ? (
+                        paginatedPosts.map((post) => (
+                          <tr key={post.id} className={`transition-colors text-sm font-medium whitespace-nowrap ${post.isDeleted ? 'opacity-50 bg-red-50/20' : 'hover:bg-gray-50/50'}`}>
+                            <td className="py-4 px-6 text-center text-gray-400 font-bold">{post.id}</td>
+                            <td className="py-4 px-4 whitespace-normal">
+                              <div className="text-gray-900 font-semibold line-clamp-2 max-w-[450px]">
+                                {post.title}
+                                {post.isDeleted && <span className="ml-2 px-2 py-0.5 text-[10px] bg-red-100 text-red-600 rounded whitespace-nowrap align-middle font-bold">Đã xóa</span>}
+                              </div>
+                            </td>
+                            <td className="py-4 px-4 text-gray-600">{post.category}</td>
+                            <td className="py-4 px-4 text-right text-gray-900 font-mono font-bold">
+                              {post.views.toLocaleString("en-US")}
+                            </td>
+                            <td className="py-4 px-4 text-center">
+                              <span
+                                className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-bold ${post.status === "Đã đăng"
+                                  ? "bg-emerald-100 text-emerald-800"
+                                  : "bg-amber-100 text-amber-800"
+                                  }`}
+                              >
+                                {post.status}
+                              </span>
+                            </td>
+                            <td className="py-4 px-4 text-center text-gray-500">
+                              {formatDateForDisplay(post.createdAt)}
+                            </td>
+                            <td className="py-4 px-6 text-center">
+                              <div className="flex items-center justify-center gap-2.5">
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenEditDialog(post)}
+                                  className="p-1.5 border border-amber-200 text-amber-600 rounded-lg hover:bg-amber-50 transition-colors"
+                                >
+                                  <SquarePen size={15} />
+                                </button>
+                                {post.isDeleted ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => executeRestore(post.id)}
+                                    disabled={restoringPostId === post.id}
+                                    className="p-1.5 border border-emerald-200 text-emerald-600 rounded-lg hover:bg-emerald-50 transition-colors disabled:opacity-75 disabled:cursor-not-allowed"
+                                    title="Khôi phục bài viết"
+                                  >
+                                    {restoringPostId === post.id ? (
+                                      <Loader2 size={15} className="animate-spin" />
+                                    ) : (
+                                      <RotateCcw size={15} />
+                                    )}
+                                  </button>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleConfirmDelete(post.id)}
+                                    className="p-1.5 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                                    title="Xóa bài viết"
+                                  >
+                                    <Trash2 size={15} />
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={7} className="py-12 text-center text-gray-400 font-bold">
+                            Không tìm thấy bài viết nào tương ứng.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                )}
+
+                {/* VIEW: CATEGORIES TABLE */}
+                {activeTab === "categories" && (
+                  <table className="w-full min-w-[800px] text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-gray-200 bg-gray-50/75 text-gray-500 font-bold text-xs uppercase tracking-wider whitespace-nowrap">
+                        <th className="py-4 px-6 w-16 text-center">ID</th>
+                        <th className="py-4 px-4 min-w-[200px]">Tên danh mục</th>
+                        <th className="py-4 px-4 w-44 text-right">Số bài viết</th>
+                        <th className="py-4 px-4 w-40 text-center">Priority</th>
+                        <th className="py-4 px-4 w-40 text-center">Trạng thái</th>
+                        <th className="py-4 px-6 w-28 text-center">Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-150">
+                      {categoriesLoading ? (
+                        <CategoriesTableSkeleton />
+                      ) : paginatedCategories.length > 0 ? (
+                        paginatedCategories.map((cat) => (
+                          <tr key={cat.id} className="hover:bg-gray-50/50 transition-colors text-sm font-medium whitespace-nowrap">
+                            <td className="py-4 px-6 text-center text-gray-400 font-bold">{cat.id}</td>
+                            <td className="py-4 px-4 text-gray-900 font-semibold whitespace-normal">{cat.name}</td>
+                            <td className="py-4 px-4 text-right text-gray-900 font-mono font-bold">
+                              {cat.postCount}
+                            </td>
+                            <td className="py-4 px-4 text-center">
+                              <div className="inline-block relative">
+                                <select
+                                  value={cat.priority}
+                                  onChange={(e) => handleCategoryPriorityChange(cat.id, Number(e.target.value))}
+                                  className="px-2.5 py-1 text-xs font-bold text-gray-700 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-[#E55956] appearance-none pr-6 cursor-pointer hover:bg-gray-100 transition-colors"
+                                >
+                                  {Array.from({ length: 11 }).map((_, i) => (
+                                    <option key={i} value={i}>
+                                      {i}
+                                    </option>
+                                  ))}
+                                </select>
+                                <ChevronDown size={10} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                              </div>
+                            </td>
+                            <td className="py-4 px-4 text-center">
+                              <button
+                                type="button"
+                                onClick={() => handleCategoryStatusToggle(cat)}
+                                title="Click để đổi trạng thái"
+                                className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-bold transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer shadow-sm ${cat.status === "Hoạt động"
+                                  ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
+                                  : "bg-red-100 text-red-800 hover:bg-red-200"
+                                  }`}
+                              >
+                                {cat.status}
+                              </button>
+                            </td>
+                            <td className="py-4 px-6 text-center">
+                              <div className="flex items-center justify-center gap-2.5">
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenEditDialog(cat)}
+                                  className="p-1.5 border border-amber-200 text-amber-600 rounded-lg hover:bg-amber-50 transition-colors"
+                                >
+                                  <SquarePen size={15} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleConfirmDelete(cat.id)}
+                                  className="p-1.5 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                                >
+                                  <Trash2 size={15} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={6} className="py-12 text-center text-gray-400 font-bold">
+                            Không tìm thấy danh mục nào tương ứng.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                )}
+
+                {/* VIEW: ADS TABLE */}
+                {activeTab === "ads" && (
+                  <table className="w-full min-w-[950px] text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-gray-200 bg-gray-50/75 text-gray-500 font-bold text-xs uppercase tracking-wider whitespace-nowrap">
+                        <th className="py-4 px-6 w-16 text-center">ID</th>
+                        <th className="py-4 px-4 min-w-[250px]">Tên AD</th>
+                        <th className="py-4 px-4 w-36">Vị trí</th>
+                        <th className="py-4 px-4 w-32 text-right">Clicks</th>
+                        <th className="py-4 px-4 w-36 text-center">Thời gian BĐ</th>
+                        <th className="py-4 px-4 w-36 text-center">Thời gian KT</th>
+                        <th className="py-4 px-4 w-36 text-center">Trạng thái</th>
+                        <th className="py-4 px-6 w-28 text-center">Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-150">
+                      {adsLoading ? (
+                        <AdsTableSkeleton />
+                      ) : paginatedAds.length > 0 ? (
+                        paginatedAds.map((ad) => (
+                          <tr key={ad.id} className="hover:bg-gray-50/50 transition-colors text-sm font-medium whitespace-nowrap">
+                            <td className="py-4 px-6 text-center text-gray-400 font-bold">{ad.id}</td>
+                            <td className="py-4 px-4 whitespace-normal">
+                              <div className="flex items-center gap-3">
+                                {ad.image ? (
+                                  ad.link ? (
+                                    <a
+                                      href={ad.link}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="relative w-12 h-7 rounded overflow-hidden border border-gray-200 flex-shrink-0 cursor-pointer hover:opacity-85 transition-opacity"
+                                      title="Click to visit link"
+                                    >
+                                      <img src={ad.image} alt={ad.name} className="w-full h-full object-cover" />
+                                    </a>
+                                  ) : (
+                                    <div className="relative w-12 h-7 rounded overflow-hidden border border-gray-200 flex-shrink-0">
+                                      <img src={ad.image} alt={ad.name} className="w-full h-full object-cover" />
+                                    </div>
+                                  )
+                                ) : (
+                                  <div className="w-12 h-7 rounded bg-gray-100 border border-gray-200 flex-shrink-0 flex items-center justify-center text-[10px] text-gray-400 font-bold">
+                                    No Image
+                                  </div>
+                                )}
+                                <div className="flex flex-col min-w-0">
+                                  <span className="text-gray-900 font-semibold truncate max-w-[200px]" title={ad.name}>{ad.name}</span>
+                                  {ad.link ? (
+                                    <a
+                                      href={ad.link}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-[10px] text-[#E55956] hover:underline flex items-center gap-0.5 mt-0.5 font-bold"
+                                    >
+                                      <ExternalLink size={10} className="flex-shrink-0" />
+                                      <span className="truncate max-w-[150px]">{ad.link}</span>
+                                    </a>
+                                  ) : (
+                                    <span className="text-[10px] text-gray-400 font-medium mt-0.5">(Không có link)</span>
+                                  )}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-4 px-4 text-gray-600 font-bold">{ad.position}</td>
+                            <td className="py-4 px-4 text-right text-gray-900 font-mono font-bold">
+                              {ad.clicks.toLocaleString("en-US")}
+                            </td>
+                            <td className="py-4 px-4 text-center text-gray-500">
+                              {formatDateForDisplay(ad.startDate)}
+                            </td>
+                            <td className="py-4 px-4 text-center text-gray-500">
+                              {formatDateForDisplay(ad.endDate)}
+                            </td>
+                            <td className="py-4 px-4 text-center">
+                              <button
+                                type="button"
+                                onClick={() => handleAdStatusToggle(ad)}
+                                title="Click để đổi trạng thái"
+                                className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-bold transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer shadow-sm ${ad.status === "Hoạt động"
+                                  ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
+                                  : ad.status === "Chờ chạy"
+                                    ? "bg-blue-100 text-blue-800 hover:bg-blue-200"
+                                    : ad.status === "Đã kết thúc"
+                                      ? "bg-gray-100 text-gray-800 hover:bg-gray-200"
+                                      : "bg-red-100 text-red-800 hover:bg-red-200"
+                                  }`}
+                              >
+                                {ad.status}
+                              </button>
+                            </td>
+                            <td className="py-4 px-6 text-center">
+                              <div className="flex items-center justify-center gap-2.5">
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenEditDialog(ad)}
+                                  className="p-1.5 border border-amber-200 text-amber-600 rounded-lg hover:bg-amber-50 transition-colors"
+                                >
+                                  <SquarePen size={15} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleConfirmDelete(ad.id)}
+                                  className="p-1.5 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                                >
+                                  <Trash2 size={15} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={8} className="py-12 text-center text-gray-400 font-bold">
+                            Không tìm thấy quảng cáo nào tương ứng.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                )}
+
+                {/* VIEW: ACCOUNTS TABLE */}
+                {activeTab === "accounts" && (
+                  <table className="w-full min-w-[800px] text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-gray-200 bg-gray-50/75 text-gray-500 font-bold text-xs uppercase tracking-wider whitespace-nowrap">
+                        <th className="py-4 px-6 w-16 text-center">STT</th>
+                        <th className="py-4 px-4 min-w-[200px]">Tên đăng nhập</th>
+                        <th className="py-4 px-4 min-w-[200px]">Tên hiển thị</th>
+                        <th className="py-4 px-4 w-44">Email</th>
+                        <th className="py-4 px-4 w-32 text-center">Vai trò</th>
+                        <th className="py-4 px-4 w-40 text-center">Ngày tạo</th>
+                        <th className="py-4 px-6 w-28 text-center">Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-150">
+                      {accountsLoading ? (
+                        <AccountsTableSkeleton />
+                      ) : paginatedAccounts.length > 0 ? (
+                        paginatedAccounts.map((acc, index) => (
+                          <tr key={acc.id} className="hover:bg-gray-50/50 transition-colors text-sm font-medium whitespace-nowrap">
+                            <td className="py-4 px-6 text-center text-gray-400 font-bold">
+                              {(accountsPage - 1) * itemsPerPage + index + 1}
+                            </td>
+                            <td className="py-4 px-4 text-gray-900 font-semibold">{acc.username}</td>
+                            <td className="py-4 px-4 text-gray-750">{acc.display_name}</td>
+                            <td className="py-4 px-4 text-gray-600">{acc.email || "(Chưa cấu hình)"}</td>
+                            <td className="py-4 px-4 text-center">
+                              <span className="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800 uppercase tracking-wide">
+                                {acc.role}
+                              </span>
+                            </td>
+                            <td className="py-4 px-4 text-center text-gray-500">
+                              {formatDateForDisplay(acc.created_at ? acc.created_at.split("T")[0] : "")}
+                            </td>
+                            <td className="py-4 px-6 text-center">
+                              <div className="flex items-center justify-center gap-2.5">
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenEditDialog(acc)}
+                                  className="p-1.5 border border-amber-200 text-amber-600 rounded-lg hover:bg-amber-50 transition-colors"
+                                  title="Sửa tài khoản"
+                                >
+                                  <SquarePen size={15} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleConfirmDeleteAccount(acc.id)}
+                                  className="p-1.5 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                                  title="Xóa tài khoản"
+                                >
+                                  <Trash2 size={15} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={7} className="py-12 text-center text-gray-400 font-bold">
+                            Không tìm thấy tài khoản nào tương ứng.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                )}
+
+              </div>
+
+              {/* PAGINATION CONTROLLER */}
+              <div className="py-4 px-6 border-t border-gray-150 flex items-center justify-center">
+                <div className="inline-flex items-center bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden divide-x divide-gray-200">
+
+                  {/* Prev Button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (activeTab === "posts" && postsPage > 1) setPostsPage(postsPage - 1);
+                      if (activeTab === "categories" && categoriesPage > 1) setCategoriesPage(categoriesPage - 1);
+                      if (activeTab === "ads" && adsPage > 1) setAdsPage(adsPage - 1);
+                      if (activeTab === "accounts" && accountsPage > 1) setAccountsPage(accountsPage - 1);
+                    }}
+                    disabled={
+                      (activeTab === "posts" && postsPage === 1) ||
+                      (activeTab === "categories" && categoriesPage === 1) ||
+                      (activeTab === "ads" && adsPage === 1) ||
+                      (activeTab === "accounts" && accountsPage === 1)
+                    }
+                    className="px-3 py-2 hover:bg-gray-50 text-gray-500 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+
+                  {/* Page Numbers */}
+                  {Array.from({
+                    length:
+                      activeTab === "posts"
+                        ? postsTotalPages
+                        : activeTab === "categories"
+                          ? categoriesTotalPages
+                          : activeTab === "ads"
+                            ? adsTotalPages
+                            : accountsTotalPages
+                  }).map((_, idx) => {
+                    const pageNumber = idx + 1;
+                    const isCurrent =
+                      activeTab === "posts"
+                        ? postsPage === pageNumber
+                        : activeTab === "categories"
+                          ? categoriesPage === pageNumber
+                          : activeTab === "ads"
+                            ? adsPage === pageNumber
+                            : accountsPage === pageNumber;
+
+                    return (
+                      <button
+                        key={pageNumber}
+                        type="button"
+                        onClick={() => {
+                          if (activeTab === "posts") setPostsPage(pageNumber);
+                          if (activeTab === "categories") setCategoriesPage(pageNumber);
+                          if (activeTab === "ads") setAdsPage(pageNumber);
+                          if (activeTab === "accounts") setAccountsPage(pageNumber);
+                        }}
+                        className={`px-4 py-2 text-xs font-bold transition-all ${isCurrent
+                          ? "bg-[#E55956] text-white"
+                          : "text-gray-700 hover:bg-gray-50"
+                          }`}
+                      >
+                        {pageNumber}
+                      </button>
+                    );
+                  })}
+
+                  {/* Next Button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (activeTab === "posts" && postsPage < postsTotalPages) setPostsPage(postsPage + 1);
+                      if (activeTab === "categories" && categoriesPage < categoriesTotalPages) setCategoriesPage(categoriesPage + 1);
+                      if (activeTab === "ads" && adsPage < adsTotalPages) setAdsPage(adsPage + 1);
+                      if (activeTab === "accounts" && accountsPage < accountsTotalPages) setAccountsPage(accountsPage + 1);
+                    }}
+                    disabled={
+                      (activeTab === "posts" && postsPage === postsTotalPages) ||
+                      (activeTab === "categories" && categoriesPage === categoriesTotalPages) ||
+                      (activeTab === "ads" && adsPage === adsTotalPages) ||
+                      (activeTab === "accounts" && accountsPage === accountsTotalPages)
+                    }
+                    className="px-3 py-2 hover:bg-gray-50 text-gray-500 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+
+                </div>
+              </div>
+
+            </div>
+          </>
           )}
         </main>
 
@@ -4080,7 +3731,7 @@ export default function AdminDashboard() {
       {/* ==========================================
           MODAL: ADD / EDIT DIALOG FORM
           ========================================== */}
-       <FormDialog
+      <FormDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         dialogMode={dialogMode}
