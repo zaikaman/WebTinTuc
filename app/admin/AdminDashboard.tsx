@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import type { Post, Category, Ad, AdminAccount, TabType, MediaItem } from "@/components/admin/AdminTypes";
-import { htmlToBlocks, blocksToHtml, formatDateForDisplay, getCategoryStyles } from "@/components/admin/AdminUtils";
+import { htmlToBlocks, blocksToHtml, formatDateForDisplay } from "@/components/admin/AdminUtils";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import AdminLogin from "@/components/admin/AdminLogin";
 import DeleteConfirmDialog from "@/components/admin/DeleteConfirmDialog";
@@ -16,7 +16,6 @@ import AccountDialog from "@/components/admin/AccountDialog";
 import CategoryDialog from "@/components/admin/CategoryDialog";
 import AdDialog from "@/components/admin/AdDialog";
 import FormDialog from "@/components/admin/FormDialog";
-import DashboardTab from "@/components/admin/DashboardTab";
 import LogoFooterTab from "@/components/admin/LogoFooterTab";
 import MediaTab from "@/components/admin/MediaTab";
 import DefaultTab from "@/components/admin/DefaultTab";
@@ -41,7 +40,7 @@ import {
   ChevronDown,
   LogOut
 } from "lucide-react";
-import { getAdminSettings, updateAdminSettings, getAdminMedia, uploadAdminMedia, deleteAdminMedia, createAdminFolder, getAdminDashboardStats, getAdminCategories, createAdminCategory, updateAdminCategory, deleteAdminCategory, getAdminArticles, getAdminArticleById, createAdminArticle, updateAdminArticle, deleteAdminArticle, getAdminAds, createAdminAd, updateAdminAd, deleteAdminAd, getAdminAccounts, createAdminAccount, updateAdminAccount, deleteAdminAccount } from "@/lib/api/adminClient";
+import { getAdminSettings, updateAdminSettings, getAdminMedia, uploadAdminMedia, deleteAdminMedia, createAdminFolder, getAdminCategories, createAdminCategory, updateAdminCategory, deleteAdminCategory, getAdminArticles, getAdminArticleById, createAdminArticle, updateAdminArticle, deleteAdminArticle, getAdminAds, createAdminAd, updateAdminAd, deleteAdminAd, getAdminAccounts, createAdminAccount, updateAdminAccount, deleteAdminAccount } from "@/lib/api/adminClient";
 import { toast } from "sonner";
 import { mockSiteSettings } from "@/lib/mockSiteSettings";
 import { supabase } from "@/lib/supabase/client";
@@ -225,8 +224,6 @@ export default function AdminDashboard() {
   const [folders, setFolders] = useState<string[]>([]);
   const [folderDialogOpen, setFolderDialogOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
-  const [dashboardData, setDashboardData] = useState<any>(null);
-  const [dashboardLoading, setDashboardLoading] = useState(true);
   const [imageDialogOpen, setImageDialogOpen] = useState(false);
   const [imageUrl, setImageUrl] = useState("");
   const [imageCaption, setImageCaption] = useState("");
@@ -238,25 +235,6 @@ export default function AdminDashboard() {
   const [cropImageUrl, setCropImageUrl] = useState("");
   const [cropImageElementId, setCropImageElementId] = useState("");
   const [cropArea, setCropArea] = useState({ x: 10, y: 10, width: 80, height: 80 });
-
-  const [timeFilter, setTimeFilter] = useState<"today" | "week" | "month" | "year">("month");
-  const [dashboardDay, setDashboardDay] = useState("");
-  const [dashboardMonth, setDashboardMonth] = useState("");
-  const [dashboardYear, setDashboardYear] = useState("");
-
-  const loadDashboardStats = async () => {
-    try {
-      setDashboardLoading(true);
-      const res = await getAdminDashboardStats();
-      if (res) {
-        setDashboardData(res);
-      }
-    } catch (err) {
-      toast.error("Không thể tải dữ liệu thống kê dashboard");
-    } finally {
-      setDashboardLoading(false);
-    }
-  };
 
   const loadFolders = async () => {
     try {
@@ -414,9 +392,7 @@ export default function AdminDashboard() {
     if (activeTab === "accounts") {
       loadAccounts();
     }
-    if (activeTab === "dashboard") {
-      loadDashboardStats();
-    }
+
     // Luôn tải Site Settings khi admin đăng nhập thành công để hiển thị đúng tên website/logo ở Sidebar
     if (activeTab === "logo-footer" || !cachedSettings) {
       if (activeTab === "logo-footer") {
@@ -829,191 +805,6 @@ export default function AdminDashboard() {
   const categoryOptions = useMemo(() => {
     return Array.from(new Set(categories.map(c => c.name)));
   }, [categories]);
-
-  // Dynamic Dashboard Statistics
-  const dashboardStats = useMemo(() => {
-    if (!dashboardData) {
-      return {
-        views: "0",
-        viewsVal: "0",
-        posts: 0,
-        clicks: "0",
-        viewsChange: "+0%",
-        postsChange: "+0",
-        clicksChange: "+0%",
-        isViewsUp: true,
-        isPostsUp: true,
-        isClicksUp: true,
-      };
-    }
-
-    const formatViews = (val: number) => {
-      if (val >= 1000000) return (val / 1000000).toFixed(1) + "M";
-      if (val >= 1000) return (val / 1000).toFixed(1) + "K";
-      return val.toString();
-    };
-
-    const getPercentageChange = (curr: number, prev: number) => {
-      if (prev === 0) return curr > 0 ? "+100%" : "+0%";
-      const diff = ((curr - prev) / prev) * 100;
-      const rounded = diff.toFixed(1);
-      return diff >= 0 ? `+${rounded}%` : `${rounded}%`;
-    };
-
-    const totalArticles = dashboardData.totalArticles || 0;
-
-    switch (timeFilter) {
-      case "today": {
-        const currViews = dashboardData.todayViews || 0;
-        const prevViews = dashboardData.yesterdayViews || 0;
-        const currClicks = dashboardData.todayClicks || 0;
-        const prevClicks = dashboardData.yesterdayClicks || 0;
-        return {
-          views: currViews.toLocaleString("vi-VN") + " lượt",
-          viewsVal: formatViews(currViews),
-          posts: totalArticles,
-          clicks: currClicks.toLocaleString("vi-VN"),
-          viewsChange: getPercentageChange(currViews, prevViews),
-          postsChange: `Tổng: ${totalArticles}`,
-          clicksChange: getPercentageChange(currClicks, prevClicks),
-          isViewsUp: currViews >= prevViews,
-          isPostsUp: true,
-          isClicksUp: currClicks >= prevClicks,
-        };
-      }
-      case "week": {
-        const currViews = dashboardData.weekViews || 0;
-        const prevViews = dashboardData.prevWeekViews || 0;
-        const currClicks = dashboardData.weekClicks || 0;
-        const prevClicks = dashboardData.prevWeekClicks || 0;
-        return {
-          views: currViews.toLocaleString("vi-VN") + " lượt",
-          viewsVal: formatViews(currViews),
-          posts: totalArticles,
-          clicks: currClicks.toLocaleString("vi-VN"),
-          viewsChange: getPercentageChange(currViews, prevViews),
-          postsChange: `Tổng: ${totalArticles}`,
-          clicksChange: getPercentageChange(currClicks, prevClicks),
-          isViewsUp: currViews >= prevViews,
-          isPostsUp: true,
-          isClicksUp: currClicks >= prevClicks,
-        };
-      }
-      case "month": {
-        const currViews = dashboardData.monthViews || 0;
-        const prevViews = dashboardData.prevMonthViews || 0;
-        const currClicks = dashboardData.monthClicks || 0;
-        const prevClicks = dashboardData.prevMonthClicks || 0;
-        return {
-          views: currViews.toLocaleString("vi-VN") + " lượt",
-          viewsVal: formatViews(currViews),
-          posts: totalArticles,
-          clicks: currClicks.toLocaleString("vi-VN"),
-          viewsChange: getPercentageChange(currViews, prevViews),
-          postsChange: `Tổng: ${totalArticles}`,
-          clicksChange: getPercentageChange(currClicks, prevClicks),
-          isViewsUp: currViews >= prevViews,
-          isPostsUp: true,
-          isClicksUp: currClicks >= prevClicks,
-        };
-      }
-      case "year":
-      default: {
-        const currViews = dashboardData.totalViews || 0;
-        const currClicks = dashboardData.totalClicks || 0;
-        return {
-          views: currViews.toLocaleString("vi-VN") + " lượt",
-          viewsVal: formatViews(currViews),
-          posts: totalArticles,
-          clicks: currClicks.toLocaleString("vi-VN"),
-          viewsChange: "+0%",
-          postsChange: `Tổng: ${totalArticles}`,
-          clicksChange: "+0%",
-          isViewsUp: true,
-          isPostsUp: true,
-          isClicksUp: true,
-        };
-      }
-    }
-  }, [timeFilter, dashboardData]);
-
-  // Dynamic Category Stats for Dashboard
-  const categoryStats = useMemo(() => {
-    if (!dashboardData || !dashboardData.topCategories) return [];
-    const total = dashboardData.topCategories.reduce((sum: number, c: any) => sum + (c.article_count || 0), 0) || 1;
-    return dashboardData.topCategories.map((cat: any) => {
-      const percentage = Math.round(((cat.article_count || 0) / total) * 100);
-      return {
-        name: cat.name,
-        count: cat.article_count || 0,
-        percentage,
-      };
-    });
-  }, [dashboardData]);
-
-  // Dynamic top articles
-  const topPosts = useMemo(() => {
-    if (!dashboardData || !dashboardData.topArticles) return [];
-    return dashboardData.topArticles.map((p: any) => ({
-      id: p.id,
-      title: p.title,
-      category: p.categories?.name || "Tin tức",
-      views: p.trending_views || p.views || 0,
-    }));
-  }, [dashboardData]);
-
-  // Export report handler
-  const handleExportReport = () => {
-    if (!dashboardData) {
-      toast.error("Không có dữ liệu thống kê để xuất!");
-      return;
-    }
-    toast.loading("Đang xuất báo cáo...", { id: "export-report" });
-    try {
-      const csvRows = [];
-      csvRows.push("Chỉ số,Hôm nay,Tuần này,Tháng này,Tổng cộng");
-
-      const viewsRow = `Lượt xem bài viết,${dashboardData.todayViews || 0},${dashboardData.weekViews || 0},${dashboardData.monthViews || 0},${dashboardData.totalViews || 0}`;
-      const clicksRow = `Lượt click quảng cáo,${dashboardData.todayClicks || 0},${dashboardData.weekClicks || 0},${dashboardData.monthClicks || 0},${dashboardData.totalClicks || 0}`;
-      const articlesRow = `Tổng số bài viết, , , ,${dashboardData.totalArticles || 0}`;
-      const adsRow = `Tổng số quảng cáo, , , ,${dashboardData.totalAds || 0}`;
-      const categoriesRow = `Tổng số danh mục, , , ,${dashboardData.totalCategories || 0}`;
-
-      csvRows.push(viewsRow);
-      csvRows.push(clicksRow);
-      csvRows.push(articlesRow);
-      csvRows.push(adsRow);
-      csvRows.push(categoriesRow);
-
-      csvRows.push("\nDanh mục,Số lượng bài đăng");
-      if (dashboardData.topCategories) {
-        dashboardData.topCategories.forEach((c: any) => {
-          csvRows.push(`"${c.name}",${c.article_count || 0}`);
-        });
-      }
-
-      csvRows.push("\nTop Bài viết,Lượt xem,Danh mục");
-      if (dashboardData.topArticles) {
-        dashboardData.topArticles.forEach((p: any) => {
-          csvRows.push(`"${p.title}",${p.views || 0},"${p.categories?.name || "Tin tức"}"`);
-        });
-      }
-
-      const csvContent = "\uFEFF" + csvRows.join("\n");
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.setAttribute("href", url);
-      link.setAttribute("download", `bao_cao_thong_ke_${new Date().toISOString().slice(0, 10)}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      toast.success("Tải xuống báo cáo CSV thành công!", { id: "export-report" });
-    } catch (err) {
-      toast.error("Có lỗi xảy ra khi xuất báo cáo!", { id: "export-report" });
-    }
-  };
 
   // ==========================================
   // ACTIONS / EVENT HANDLERS
@@ -2394,25 +2185,7 @@ export default function AdminDashboard() {
 
         {/* CONTAINER CONTENT */}
         <main className="flex-1 p-6 md:p-8 max-w-7xl w-full mx-auto space-y-6">
-          {activeTab === "dashboard" ? (
-            <DashboardTab
-            loading={dashboardLoading}
-            stats={dashboardStats}
-            dashboardData={dashboardData}
-            timeFilter={timeFilter}
-            onTimeFilterChange={(filter) => setTimeFilter(filter as any)}
-            dashboardDay={dashboardDay}
-            onDashboardDayChange={setDashboardDay}
-            dashboardMonth={dashboardMonth}
-            onDashboardMonthChange={setDashboardMonth}
-            dashboardYear={dashboardYear}
-            onDashboardYearChange={setDashboardYear}
-            categoryStats={categoryStats}
-            topPosts={topPosts}
-            onExportReport={handleExportReport}
-            getCategoryStyles={getCategoryStyles}
-          />
-          ) : activeTab === "logo-footer" ? (
+          {activeTab === "logo-footer" ? (
             <LogoFooterTab
             loading={settingsLoading}
             isSaving={isSettingsSaving}
