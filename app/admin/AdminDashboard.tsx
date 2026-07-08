@@ -19,6 +19,7 @@ import LogoutDialog from "@/components/admin/LogoutDialog";
 import ImageDialog from "@/components/admin/ImageDialog";
 import VideoDialog from "@/components/admin/VideoDialog";
 import CropDialog from "@/components/admin/CropDialog";
+import FolderDialog from "@/components/admin/FolderDialog";
 import {
   Loader2,
   FileText,
@@ -274,107 +275,6 @@ export default function AdminDashboard() {
   const [cropImageUrl, setCropImageUrl] = useState("");
   const [cropImageElementId, setCropImageElementId] = useState("");
   const [cropArea, setCropArea] = useState({ x: 10, y: 10, width: 80, height: 80 });
-  const cropContainerRef = useRef<HTMLDivElement>(null);
-  const [dragState, setDragState] = useState<{
-    type: 'drag' | 'resize';
-    handle?: string;
-    startX: number;
-    startY: number;
-    startArea: { x: number; y: number; width: number; height: number };
-  } | null>(null);
-
-  useEffect(() => {
-    if (!dragState || !cropContainerRef.current) return;
-
-    const handleMouseMove = (e: MouseEvent | TouchEvent) => {
-      const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-      const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-
-      const rect = cropContainerRef.current!.getBoundingClientRect();
-      if (rect.width === 0 || rect.height === 0) return;
-
-      const deltaXPercent = ((clientX - dragState.startX) / rect.width) * 100;
-      const deltaYPercent = ((clientY - dragState.startY) / rect.height) * 100;
-
-      if (dragState.type === 'drag') {
-        let newX = dragState.startArea.x + deltaXPercent;
-        let newY = dragState.startArea.y + deltaYPercent;
-
-        // Constraint check: stay within 0 - 100%
-        if (newX < 0) newX = 0;
-        if (newY < 0) newY = 0;
-        if (newX + dragState.startArea.width > 100) newX = 100 - dragState.startArea.width;
-        if (newY + dragState.startArea.height > 100) newY = 100 - dragState.startArea.height;
-
-        setCropArea(prev => ({
-          ...prev,
-          x: Math.round(newX),
-          y: Math.round(newY)
-        }));
-      } else if (dragState.type === 'resize' && dragState.handle) {
-        let newX = dragState.startArea.x;
-        let newY = dragState.startArea.y;
-        let newW = dragState.startArea.width;
-        let newH = dragState.startArea.height;
-
-        const handle = dragState.handle;
-
-        if (handle.includes('e')) {
-          newW = dragState.startArea.width + deltaXPercent;
-        }
-        if (handle.includes('w')) {
-          const possibleX = dragState.startArea.x + deltaXPercent;
-          if (possibleX >= 0) {
-            newX = possibleX;
-            newW = dragState.startArea.width - deltaXPercent;
-          }
-        }
-        if (handle.includes('s')) {
-          newH = dragState.startArea.height + deltaYPercent;
-        }
-        if (handle.includes('n')) {
-          const possibleY = dragState.startArea.y + deltaYPercent;
-          if (possibleY >= 0) {
-            newY = possibleY;
-            newH = dragState.startArea.height - deltaYPercent;
-          }
-        }
-
-        // Min size constraints (e.g. 10%)
-        if (newW < 10) newW = 10;
-        if (newH < 10) newH = 10;
-
-        // Boundary constraints
-        if (newX < 0) newX = 0;
-        if (newY < 0) newY = 0;
-        if (newX + newW > 100) newW = 100 - newX;
-        if (newY + newH > 100) newH = 100 - newY;
-
-        setCropArea({
-          x: Math.round(newX),
-          y: Math.round(newY),
-          width: Math.round(newW),
-          height: Math.round(newH)
-        });
-      }
-    };
-
-    const handleMouseUp = () => {
-      setDragState(null);
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
-    window.addEventListener('touchmove', handleMouseMove, { passive: false });
-    window.addEventListener('touchend', handleMouseUp);
-
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-      window.removeEventListener('touchmove', handleMouseMove);
-      window.removeEventListener('touchend', handleMouseUp);
-    };
-  }, [dragState]);
 
   const [timeFilter, setTimeFilter] = useState<"today" | "week" | "month" | "year">("month");
   const [dashboardDay, setDashboardDay] = useState("");
@@ -4732,137 +4632,25 @@ export default function AdminDashboard() {
       {/* ==========================================
         MODAL: CREATE FOLDER DIALOG
         ========================================== */}
-      <Dialog open={folderDialogOpen} onOpenChange={setFolderDialogOpen}>
-        <DialogContent className="max-w-[460px] w-[95%] max-h-[90vh] overflow-y-auto rounded-[24px] p-6 border border-gray-100 shadow-2xl bg-white text-[#2c3e50] outline-none [&>button]:hidden">
-          <DialogHeader className="border-b border-gray-150 pb-3 -mx-6 px-6">
-            <DialogTitle className="text-xl font-bold text-gray-900 text-left">
-              Tạo thư mục mới
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-5 pt-4">
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-gray-900">
-                Tên thư mục
-              </label>
-              <input
-                type="text"
-                value={newFolderName}
-                onChange={(e) => setNewFolderName(e.target.value)}
-                placeholder="Nhập tên thư mục..."
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white shadow-sm font-medium"
-              />
-            </div>
-
-            {activeFolder && (
-              <p className="text-xs font-semibold text-gray-400">
-                Thư mục mới sẽ được tạo bên trong: <strong className="text-gray-700">{activeFolder}</strong>
-              </p>
-            )}
-
-            <div className="flex gap-3 justify-end pt-3">
-              <button
-                type="button"
-                onClick={() => setFolderDialogOpen(false)}
-                className="px-5 py-2.5 border border-gray-200 hover:bg-gray-50 text-gray-700 text-xs font-bold rounded-xl transition-all"
-              >
-                Hủy
-              </button>
-              <button
-                type="button"
-                onClick={async () => {
-                  if (!newFolderName.trim()) {
-                    toast.error("Vui lòng nhập tên thư mục!");
-                    return;
-                  }
-                  try {
-                    toast.loading("Đang tạo thư mục...", { id: "media-folder" });
-                    await createAdminFolder(newFolderName.trim(), activeFolder);
-                    toast.success(`Đã thêm thư mục: ${newFolderName.trim()}`, { id: "media-folder" });
-                    setFolderDialogOpen(false);
-                    setNewFolderName("");
-
-                    // Reload folders list
-                    await loadFolders();
-                  } catch (err) {
-                    toast.error("Lỗi khi tạo thư mục!", { id: "media-folder" });
-                  }
-                }}
-                className="px-5 py-2.5 bg-[#E55956] hover:bg-[#d44e4b] text-white text-xs font-bold rounded-xl transition-all shadow-md"
-              >
-                Tạo
-              </button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* ==========================================
-          MODAL: MEDIA PREVIEW DIALOG
-          ========================================== */}
-      <Dialog open={mediaPreviewItem !== null} onOpenChange={(open) => {
-        if (!open) setMediaPreviewItem(null);
-      }}>
-        <DialogContent className="max-w-[800px] w-[95%] max-h-[90vh] overflow-y-auto rounded-[24px] p-5 border border-gray-100 shadow-2xl bg-slate-950 text-white outline-none flex flex-col gap-4 [&>button]:text-white">
-          <DialogHeader className="border-b border-white/10 pb-3">
-            <DialogTitle className="text-base font-bold text-white truncate text-left pr-8">
-              Preview: {mediaPreviewItem?.title}
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="w-full aspect-video rounded-xl overflow-hidden bg-black flex items-center justify-center border border-white/5 shadow-inner">
-            {mediaPreviewItem?.type === "video" ? (
-              <video
-                src={mediaPreviewItem.url}
-                controls
-                autoPlay
-                className="w-full max-h-[450px] object-contain"
-              />
-            ) : (
-              mediaPreviewItem && (
-                <img
-                  src={mediaPreviewItem.url}
-                  alt={mediaPreviewItem.title}
-                  className="w-full h-full object-contain"
-                />
-              )
-            )}
-          </div>
-
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs font-semibold text-gray-400 gap-3 border-t border-white/5 pt-3">
-            <div className="space-y-1">
-              <p>
-                Đường dẫn: <span className="font-mono text-white select-all">{mediaPreviewItem?.url}</span>
-              </p>
-              <div className="flex gap-4">
-                <span>Dung lượng: <strong className="text-white">{mediaPreviewItem?.size}</strong></span>
-                {mediaPreviewItem?.dimensions && (
-                  <span>Độ phân giải: <strong className="text-white font-mono">{mediaPreviewItem.dimensions}</strong></span>
-                )}
-                {mediaPreviewItem?.duration && (
-                  <span>Thời lượng: <strong className="text-white font-mono">{mediaPreviewItem.duration}</strong></span>
-                )}
-                <span>Ngày tạo: <strong className="text-white">{mediaPreviewItem?.createdAt}</strong></span>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => {
-                if (mediaPreviewItem) {
-                  const copyUrl = mediaPreviewItem.url.startsWith("blob:") || mediaPreviewItem.url.startsWith("data:") || mediaPreviewItem.url.startsWith("http") ? mediaPreviewItem.url : (window.location.origin + mediaPreviewItem.url);
-                  navigator.clipboard.writeText(copyUrl);
-                  toast.success("Đã sao chép link media vào bộ nhớ tạm!");
-                }
-              }}
-              className="px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/10 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 self-start sm:self-center"
-            >
-              <Copy size={13} />
-              <span>Copy Link</span>
-            </button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <FolderDialog
+        open={folderDialogOpen}
+        onOpenChange={setFolderDialogOpen}
+        newFolderName={newFolderName}
+        onFolderNameChange={setNewFolderName}
+        activeFolder={activeFolder}
+        onCreateFolder={async () => {
+          try {
+            toast.loading("Đang tạo thư mục...", { id: "media-folder" });
+            await createAdminFolder(newFolderName.trim(), activeFolder);
+            toast.success(`Đã thêm thư mục: ${newFolderName.trim()}`, { id: "media-folder" });
+            setFolderDialogOpen(false);
+            setNewFolderName("");
+            await loadFolders();
+          } catch (err) {
+            toast.error("Lỗi khi tạo thư mục!", { id: "media-folder" });
+          }
+        }}
+      />
 
     </div>
   );
