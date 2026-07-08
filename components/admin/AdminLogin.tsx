@@ -1,63 +1,29 @@
 "use client";
 
-import React, { useState } from "react";
-import { Lock, Eye, EyeOff } from "lucide-react";
-import { toast } from "sonner";
-import { supabase } from "@/lib/supabase/client";
+import React from "react";
+import { Lock, EyeOff, Eye } from "lucide-react";
 
-interface LoginScreenProps {
-  onLoginSuccess: () => void;
+interface AdminLoginProps {
+  loginUsername: string;
+  loginPassword: string;
+  showPassword: boolean;
+  isLoading: boolean;
+  onUsernameChange: (value: string) => void;
+  onPasswordChange: (value: string) => void;
+  onTogglePassword: () => void;
+  onSubmit: (e: React.FormEvent) => void;
 }
 
-export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
-  const [loginEmail, setLoginEmail] = useState("");
-  const [loginPassword, setLoginPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!loginEmail || !loginPassword) {
-      toast.error("Vui lòng điền đầy đủ thông tin đăng nhập!");
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: loginEmail.trim(),
-        password: loginPassword,
-      });
-
-      if (error || !data.user) {
-        toast.error("Email hoặc mật khẩu không chính xác!");
-        return;
-      }
-
-      // Kiểm tra role admin trong bảng profiles
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", data.user.id)
-        .single();
-
-      if (profileError || !profile || profile.role !== "admin") {
-        await supabase.auth.signOut();
-        toast.error("Tài khoản này không có quyền quản trị!");
-        return;
-      }
-
-      localStorage.setItem("admin_logged_in", "true");
-      onLoginSuccess();
-      toast.success("Đăng nhập quản trị thành công!");
-    } catch (err) {
-      console.error(err);
-      toast.error("Có lỗi xảy ra, vui lòng thử lại!");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+export default function AdminLogin({
+  loginUsername,
+  loginPassword,
+  showPassword,
+  isLoading,
+  onUsernameChange,
+  onPasswordChange,
+  onTogglePassword,
+  onSubmit,
+}: AdminLoginProps) {
   return (
     <div className="min-h-screen bg-[#f4f6f8] flex items-center justify-center p-4 font-sans antialiased text-[#2c3e50] select-none">
       <div className="max-w-[450px] w-full bg-white rounded-3xl p-8 border border-gray-100 shadow-2xl relative overflow-hidden flex flex-col gap-6">
@@ -74,13 +40,13 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form onSubmit={onSubmit} className="space-y-4">
           <div className="space-y-1">
             <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Email quản trị</label>
             <input
               type="email"
-              value={loginEmail}
-              onChange={(e) => setLoginEmail(e.target.value)}
+              value={loginUsername}
+              onChange={(e) => onUsernameChange(e.target.value)}
               placeholder="Nhập địa chỉ email..."
               autoComplete="email"
               className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white shadow-sm font-medium"
@@ -94,7 +60,7 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
               <input
                 type={showPassword ? "text" : "password"}
                 value={loginPassword}
-                onChange={(e) => setLoginPassword(e.target.value)}
+                onChange={(e) => onPasswordChange(e.target.value)}
                 placeholder="Nhập mật khẩu..."
                 autoComplete="current-password"
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white shadow-sm font-medium pr-10"
@@ -102,7 +68,7 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
               />
               <button
                 type="button"
-                onClick={() => setShowPassword(!showPassword)}
+                onClick={onTogglePassword}
                 className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-650 transition-colors"
               >
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}

@@ -1,3 +1,5 @@
+// Shared admin types extracted from AdminDashboard.tsx
+
 export interface Post {
   id: number;
   title: string;
@@ -15,7 +17,7 @@ export interface Category {
   name: string;
   postCount: number;
   priority: number;
-  status: "Hoạt động" | "Ngừng hoạt động" | "Chờ chạy" | "Đã kết thúc";
+  status: "Hoạt động" | "Ngừng hoạt động";
 }
 
 export interface Ad {
@@ -26,11 +28,20 @@ export interface Ad {
   startDate: string;
   endDate: string;
   status: "Hoạt động" | "Ngừng hoạt động" | "Chờ chạy" | "Đã kết thúc" | string;
-  image?: string;
-  link?: string;
+  image?: string | undefined;
+  link?: string | undefined;
 }
 
-export type TabType = "dashboard" | "posts" | "categories" | "ads" | "logo-footer" | "media";
+export interface AdminAccount {
+  id: string;
+  username: string;
+  display_name: string;
+  avatar_key?: string | null;
+  role: string;
+  email?: string | null;
+  created_at: string;
+  updated_at?: string;
+}
 
 export interface MediaItem {
   id: number;
@@ -43,6 +54,15 @@ export interface MediaItem {
   duration?: string;
   createdAt: string;
   folder?: string;
+}
+
+export type TabType = "dashboard" | "posts" | "categories" | "ads" | "logo-footer" | "media" | "accounts";
+
+export interface CropArea {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 export interface DashboardStats {

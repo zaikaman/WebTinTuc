@@ -17,7 +17,6 @@ const nextConfig: NextConfig = {
       static: 300,
     },
     optimizePackageImports: [
-      "framer-motion",
       "@radix-ui/react-accordion",
       "@radix-ui/react-alert-dialog",
       "@radix-ui/react-aspect-ratio",

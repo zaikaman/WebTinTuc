@@ -1,3 +1,5 @@
+"use client";
+
 export const DashboardSkeleton = () => (
   <div className="space-y-6 animate-pulse">
     {/* HEADER ACTION BANNER */}
@@ -50,8 +52,6 @@ export const DashboardSkeleton = () => (
         </div>
         <div className="h-6 bg-gray-150 rounded-lg w-20 animate-pulse"></div>
       </div>
-      
-      {/* Visual Bar skeleton */}
       <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100/85 space-y-3">
         <div className="flex justify-between">
           <div className="h-3 bg-gray-200 rounded w-28 animate-pulse"></div>
@@ -59,7 +59,6 @@ export const DashboardSkeleton = () => (
         </div>
         <div className="w-full h-4 bg-gray-200 rounded-full animate-pulse"></div>
       </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {[...Array(6)].map((_, i) => (
           <div key={i} className="p-5 rounded-2xl border border-gray-150/70 space-y-4 bg-slate-50/25 relative overflow-hidden">
@@ -138,7 +137,6 @@ export const DashboardSkeleton = () => (
 
 export const LogoFooterSkeleton = () => (
   <div className="space-y-6 animate-pulse">
-    {/* CARD 1: Header action */}
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-150 shadow-sm">
       <div className="space-y-2 w-full max-w-[300px]">
         <div className="h-6 bg-gray-200 rounded-lg w-3/4"></div>
@@ -146,8 +144,6 @@ export const LogoFooterSkeleton = () => (
       </div>
       <div className="h-10 bg-gray-200 rounded-xl w-32"></div>
     </div>
-
-    {/* CARD 2: Logo Website */}
     <div className="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm space-y-4">
       <div className="h-5 bg-gray-200 rounded-lg w-1/4"></div>
       <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
@@ -158,8 +154,6 @@ export const LogoFooterSkeleton = () => (
         </div>
       </div>
     </div>
-
-    {/* CARD 3: Footer settings tabs */}
     <div className="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm space-y-6">
       <div className="flex gap-2 overflow-x-auto pb-2 border-b border-gray-100">
         <div className="h-9 bg-gray-200 rounded-xl w-28 flex-shrink-0"></div>
@@ -182,27 +176,17 @@ export const PostsTableSkeleton = () => (
   <>
     {[...Array(6)].map((_, i) => (
       <tr key={i} className="animate-pulse">
-        <td className="py-4 px-6 text-center">
-          <div className="h-4 bg-gray-200 rounded w-6 mx-auto"></div>
-        </td>
+        <td className="py-4 px-6 text-center"><div className="h-4 bg-gray-200 rounded w-6 mx-auto"></div></td>
         <td className="py-4 px-4">
           <div className="space-y-2">
             <div className="h-4 bg-gray-200 rounded w-4/5"></div>
             <div className="h-3 bg-gray-100 rounded w-1/4"></div>
           </div>
         </td>
-        <td className="py-4 px-4">
-          <div className="h-4 bg-gray-200 rounded w-16"></div>
-        </td>
-        <td className="py-4 px-4 text-right">
-          <div className="h-4 bg-gray-200 rounded w-12 ml-auto"></div>
-        </td>
-        <td className="py-4 px-4 text-center">
-          <div className="h-6 bg-gray-150 rounded-full w-16 mx-auto"></div>
-        </td>
-        <td className="py-4 px-4 text-center">
-          <div className="h-4 bg-gray-100 rounded w-20 mx-auto"></div>
-        </td>
+        <td className="py-4 px-4"><div className="h-4 bg-gray-200 rounded w-16"></div></td>
+        <td className="py-4 px-4 text-right"><div className="h-4 bg-gray-200 rounded w-12 ml-auto"></div></td>
+        <td className="py-4 px-4 text-center"><div className="h-6 bg-gray-150 rounded-full w-16 mx-auto"></div></td>
+        <td className="py-4 px-4 text-center"><div className="h-4 bg-gray-100 rounded w-20 mx-auto"></div></td>
         <td className="py-4 px-6 text-center">
           <div className="flex items-center justify-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-gray-200"></div>
@@ -218,21 +202,11 @@ export const CategoriesTableSkeleton = () => (
   <>
     {[...Array(6)].map((_, i) => (
       <tr key={i} className="animate-pulse">
-        <td className="py-4 px-6 text-center">
-          <div className="h-4 bg-gray-200 rounded w-6 mx-auto"></div>
-        </td>
-        <td className="py-4 px-4">
-          <div className="h-4 bg-gray-200 rounded w-32"></div>
-        </td>
-        <td className="py-4 px-4 text-right">
-          <div className="h-4 bg-gray-200 rounded w-12 ml-auto"></div>
-        </td>
-        <td className="py-4 px-4 text-center">
-          <div className="h-4 bg-gray-200 rounded w-8 mx-auto"></div>
-        </td>
-        <td className="py-4 px-4 text-center">
-          <div className="h-6 bg-gray-150 rounded-full w-16 mx-auto"></div>
-        </td>
+        <td className="py-4 px-6 text-center"><div className="h-4 bg-gray-200 rounded w-6 mx-auto"></div></td>
+        <td className="py-4 px-4"><div className="h-4 bg-gray-200 rounded w-32"></div></td>
+        <td className="py-4 px-4 text-right"><div className="h-4 bg-gray-200 rounded w-12 ml-auto"></div></td>
+        <td className="py-4 px-4 text-center"><div className="h-4 bg-gray-200 rounded w-8 mx-auto"></div></td>
+        <td className="py-4 px-4 text-center"><div className="h-6 bg-gray-150 rounded-full w-16 mx-auto"></div></td>
         <td className="py-4 px-6 text-center">
           <div className="flex items-center justify-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-gray-200"></div>
@@ -248,9 +222,7 @@ export const AdsTableSkeleton = () => (
   <>
     {[...Array(6)].map((_, i) => (
       <tr key={i} className="animate-pulse">
-        <td className="py-4 px-6 text-center">
-          <div className="h-4 bg-gray-200 rounded w-6 mx-auto"></div>
-        </td>
+        <td className="py-4 px-6 text-center"><div className="h-4 bg-gray-200 rounded w-6 mx-auto"></div></td>
         <td className="py-4 px-4">
           <div className="flex items-center gap-3">
             <div className="w-12 h-7 rounded bg-gray-200 flex-shrink-0"></div>
@@ -260,21 +232,32 @@ export const AdsTableSkeleton = () => (
             </div>
           </div>
         </td>
-        <td className="py-4 px-4">
-          <div className="h-4 bg-gray-200 rounded w-16"></div>
+        <td className="py-4 px-4"><div className="h-4 bg-gray-200 rounded w-16"></div></td>
+        <td className="py-4 px-4 text-right"><div className="h-4 bg-gray-200 rounded w-12 ml-auto"></div></td>
+        <td className="py-4 px-4 text-center"><div className="h-4 bg-gray-100 rounded w-16 mx-auto"></div></td>
+        <td className="py-4 px-4 text-center"><div className="h-4 bg-gray-100 rounded w-16 mx-auto"></div></td>
+        <td className="py-4 px-4 text-center"><div className="h-6 bg-gray-150 rounded-full w-16 mx-auto"></div></td>
+        <td className="py-4 px-6 text-center">
+          <div className="flex items-center justify-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-gray-200"></div>
+            <div className="w-8 h-8 rounded-lg bg-gray-200"></div>
+          </div>
         </td>
-        <td className="py-4 px-4 text-right">
-          <div className="h-4 bg-gray-200 rounded w-12 ml-auto"></div>
-        </td>
-        <td className="py-4 px-4 text-center">
-          <div className="h-4 bg-gray-100 rounded w-16 mx-auto"></div>
-        </td>
-        <td className="py-4 px-4 text-center">
-          <div className="h-4 bg-gray-100 rounded w-16 mx-auto"></div>
-        </td>
-        <td className="py-4 px-4 text-center">
-          <div className="h-6 bg-gray-150 rounded-full w-16 mx-auto"></div>
-        </td>
+      </tr>
+    ))}
+  </>
+);
+
+export const AccountsTableSkeleton = () => (
+  <>
+    {[...Array(6)].map((_, i) => (
+      <tr key={i} className="animate-pulse">
+        <td className="py-4 px-6 text-center"><div className="h-4 bg-gray-200 rounded w-8 mx-auto"></div></td>
+        <td className="py-4 px-4"><div className="h-4 bg-gray-200 rounded w-32"></div></td>
+        <td className="py-4 px-4"><div className="h-4 bg-gray-200 rounded w-40"></div></td>
+        <td className="py-4 px-4"><div className="h-4 bg-gray-205 rounded w-44"></div></td>
+        <td className="py-4 px-4 text-center"><div className="h-6 bg-gray-150 rounded-full w-20 mx-auto"></div></td>
+        <td className="py-4 px-4 text-center"><div className="h-4 bg-gray-100 rounded w-24 mx-auto"></div></td>
         <td className="py-4 px-6 text-center">
           <div className="flex items-center justify-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-gray-200"></div>
