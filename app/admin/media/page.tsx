@@ -19,6 +19,7 @@ import MediaTab from "@/components/admin/MediaTab";
 import FolderDialog from "@/components/admin/FolderDialog";
 import LogoutDialog from "@/components/admin/LogoutDialog";
 import { useAdminAuth } from "@/lib/hooks/useAdminAuth";
+import { useSiteSettings } from "@/lib/hooks/useSiteSettings";
 import { toast } from "sonner";
 import type { TabType, MediaItem } from "@/components/admin/AdminTypes";
 
@@ -27,6 +28,7 @@ const mediaItemsPerPage = 6;
 export default function MediaPage() {
   const router = useRouter();
   const auth = useAdminAuth();
+  const siteSettings = useSiteSettings();
 
   // --- Auth redirect ---
   useEffect(() => {
@@ -228,8 +230,8 @@ export default function MediaPage() {
               id: "media-delete",
             });
             loadMedia();
-          } catch {
-            toast.error("Lỗi khi xóa file media!", { id: "media-delete" });
+    } catch (err: any) {
+      toast.error(err?.message || "Lỗi khi xóa file media!", { id: "media-delete" });
           } finally {
             setDeletingMediaKey(null);
           }
@@ -266,8 +268,8 @@ export default function MediaPage() {
       setFolderDialogOpen(false);
       setNewFolderName("");
       await loadFolders();
-    } catch {
-      toast.error("Lỗi khi tạo thư mục!", { id: "media-folder" });
+    } catch (err: any) {
+      toast.error(err?.message || "Lỗi khi tạo thư mục!", { id: "media-folder" });
     }
   }, [newFolderName, activeFolder, loadFolders]);
 
@@ -316,8 +318,8 @@ export default function MediaPage() {
       <AdminSidebar
         activeTab={"media" as TabType}
         sidebarOpen={sidebarOpen}
-        logoUrl={null}
-        logoWebsiteName="Admin"
+        logoUrl={siteSettings.logoUrl}
+        logoWebsiteName={siteSettings.logoWebsiteName}
         onTabChange={handleTabChange}
         onCloseSidebar={() => setSidebarOpen(false)}
       />

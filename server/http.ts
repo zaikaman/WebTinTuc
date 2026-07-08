@@ -66,11 +66,17 @@ export function actionResponse<T>(result: ActionResult<T>, successInit?: Respons
 
 export function fail(error: unknown) {
   if (error instanceof ZodError) {
+    const issues = error.errors.map(
+      (e) => {
+        const field = e.path.length > 0 ? e.path.join('.') : '';
+        return field ? `${field}: ${e.message}` : e.message;
+      }
+    );
     return Response.json(
       {
         success: false,
         code: 'BAD_REQUEST',
-        message: 'Dữ liệu không hợp lệ',
+        message: issues.length > 0 ? issues.join('; ') : 'Dữ liệu không hợp lệ',
         details: z.treeifyError(error)
       },
       { status: 400 }

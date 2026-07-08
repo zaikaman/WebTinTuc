@@ -14,12 +14,14 @@ import AdminLogin from "@/components/admin/AdminLogin";
 import DashboardTab from "@/components/admin/DashboardTab";
 import LogoutDialog from "@/components/admin/LogoutDialog";
 import { useAdminAuth } from "@/lib/hooks/useAdminAuth";
+import { useSiteSettings } from "@/lib/hooks/useSiteSettings";
 import { toast } from "sonner";
 import type { TabType } from "@/components/admin/AdminTypes";
 
 export default function DashboardPage() {
   const router = useRouter();
   const auth = useAdminAuth();
+  const siteSettings = useSiteSettings();
 
   // --- Auth redirect ---
   useEffect(() => {
@@ -49,8 +51,8 @@ export default function DashboardPage() {
       if (res) {
         setDashboardData(res);
       }
-    } catch {
-      toast.error("Không thể tải dữ liệu thống kê dashboard");
+    } catch (err: any) {
+      toast.error(err?.message || "Không thể tải dữ liệu thống kê dashboard");
     } finally {
       setDashboardLoading(false);
     }
@@ -247,8 +249,8 @@ export default function DashboardPage() {
       toast.success("Tải xuống báo cáo CSV thành công!", {
         id: "export-report",
       });
-    } catch {
-      toast.error("Có lỗi xảy ra khi xuất báo cáo!", { id: "export-report" });
+    } catch (err: any) {
+      toast.error(err?.message || "Có lỗi xảy ra khi xuất báo cáo!", { id: "export-report" });
     }
   }, [dashboardData]);
 
@@ -292,8 +294,8 @@ export default function DashboardPage() {
       <AdminSidebar
         activeTab={"dashboard" as TabType}
         sidebarOpen={sidebarOpen}
-        logoUrl={null}
-        logoWebsiteName="Admin"
+        logoUrl={siteSettings.logoUrl}
+        logoWebsiteName={siteSettings.logoWebsiteName}
         onTabChange={handleTabChange}
         onCloseSidebar={() => setSidebarOpen(false)}
       />

@@ -147,8 +147,8 @@ export default function LogoFooterPage() {
       await updateAdminSettings(updatedPayload);
       cachedSettingsRef.current = updatedPayload;
       toast.success("Lưu thay đổi thành công!", { id: "save-logo-footer" });
-    } catch {
-      toast.error("Lỗi khi lưu cấu hình!", { id: "save-logo-footer" });
+    } catch (err: any) {
+      toast.error(err?.message || "Lỗi khi lưu cấu hình!", { id: "save-logo-footer" });
     } finally {
       setIsSettingsSaving(false);
     }

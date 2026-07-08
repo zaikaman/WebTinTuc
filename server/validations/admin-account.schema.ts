@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { paginationSchema } from './common.schema'
+import './i18n'
 
 export const accountListQuerySchema = paginationSchema.extend({
   search: z.string().optional()

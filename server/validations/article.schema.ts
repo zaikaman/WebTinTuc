@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { paginationSchema } from './common.schema'
+import './i18n'
 
 // ==========================================
 // Content Block Schemas (flat format matching app usage)
