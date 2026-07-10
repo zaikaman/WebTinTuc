@@ -13,6 +13,7 @@ import AdminLogin from "@/components/admin/AdminLogin";
 import LogoFooterTab from "@/components/admin/LogoFooterTab";
 import LogoutDialog from "@/components/admin/LogoutDialog";
 import { useAdminAuth } from "@/lib/hooks/useAdminAuth";
+import { cachedSiteSettings, setCachedSiteSettings } from "@/lib/hooks/useSiteSettings";
 import { toast } from "sonner";
 import type { TabType } from "@/components/admin/AdminTypes";
 
@@ -33,7 +34,7 @@ export default function LogoFooterPage() {
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
 
   // --- Logo & Footer state ---
-  const cachedSettingsRef = useRef<any>(null);
+  const cachedSettingsRef = useRef<any>(cachedSiteSettings);
 
   const [logoWebsiteName, setLogoWebsiteName] = useState("Tên Web");
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
@@ -146,6 +147,7 @@ export default function LogoFooterPage() {
       };
       await updateAdminSettings(updatedPayload);
       cachedSettingsRef.current = updatedPayload;
+      setCachedSiteSettings(updatedPayload); // Cập nhật cache toàn cục
       toast.success("Lưu thay đổi thành công!", { id: "save-logo-footer" });
     } catch (err: any) {
       toast.error(err?.message || "Lỗi khi lưu cấu hình!", { id: "save-logo-footer" });

@@ -4,12 +4,16 @@ import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { toast } from "sonner";
 
+let cachedIsLoggedIn: boolean | null = null;
+let cachedIsAuthVerified = false;
+
 export function useAdminAuth() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
+    if (cachedIsLoggedIn !== null) return cachedIsLoggedIn;
     if (typeof window === "undefined") return false;
     return localStorage.getItem("admin_logged_in") === "true";
   });
-  const [isAuthVerified, setIsAuthVerified] = useState<boolean>(false);
+  const [isAuthVerified, setIsAuthVerified] = useState<boolean>(() => cachedIsAuthVerified);
   const [loginUsername, setLoginUsername] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -21,6 +25,7 @@ export function useAdminAuth() {
     const verifySession = async () => {
       const cached = localStorage.getItem("admin_logged_in");
       if (cached !== "true") {
+        cachedIsAuthVerified = true;
         setIsAuthVerified(true);
         return;
       }
@@ -30,11 +35,15 @@ export function useAdminAuth() {
         } = await supabase.auth.getSession();
         if (!session) {
           localStorage.removeItem("admin_logged_in");
+          cachedIsLoggedIn = false;
           setIsLoggedIn(false);
+        } else {
+          cachedIsLoggedIn = true;
         }
       } catch {
         // Network error – trust localStorage for better UX
       } finally {
+        cachedIsAuthVerified = true;
         setIsAuthVerified(true);
       }
     };
@@ -76,6 +85,8 @@ export function useAdminAuth() {
       }
 
       localStorage.setItem("admin_logged_in", "true");
+      cachedIsLoggedIn = true;
+      cachedIsAuthVerified = true;
       setIsLoggedIn(true);
       setIsAuthVerified(true);
       toast.success("Đăng nhập quản trị thành công!");
@@ -95,6 +106,8 @@ export function useAdminAuth() {
       // ignore
     } finally {
       localStorage.removeItem("admin_logged_in");
+      cachedIsLoggedIn = false;
+      cachedIsAuthVerified = true;
       setIsLoggedIn(false);
       setIsAuthVerified(true);
       toast.success("Đã đăng xuất khỏi hệ thống!");

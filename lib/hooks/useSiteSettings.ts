@@ -4,12 +4,16 @@ import { useState, useEffect } from "react";
 import { getAdminSettings } from "@/lib/api/adminClient";
 
 // Module-level cache so the API is called only once across all pages
-let cachedSiteSettings: any = null;
+export let cachedSiteSettings: any = null;
+
+export const setCachedSiteSettings = (settings: any) => {
+  cachedSiteSettings = settings;
+};
 
 export function useSiteSettings() {
-  const [logoUrl, setLogoUrl] = useState<string | null>(null);
-  const [logoWebsiteName, setLogoWebsiteName] = useState("Admin");
-  const [loading, setLoading] = useState(true);
+  const [logoUrl, setLogoUrl] = useState<string | null>(() => cachedSiteSettings?.brand?.logo_url || null);
+  const [logoWebsiteName, setLogoWebsiteName] = useState(() => cachedSiteSettings?.brand?.name || "Admin");
+  const [loading, setLoading] = useState(() => !cachedSiteSettings);
 
   useEffect(() => {
     if (cachedSiteSettings) {
