@@ -1,13 +1,8 @@
-import { unstable_cache } from 'next/cache'
 import * as adRepository from '@/server/repositories/ad.repository'
 
-export const listAdminAds = unstable_cache(
-  async (options = {}) => {
-    return adRepository.listAdminAds(options)
-  },
-  ['admin-ads-list'],
-  { revalidate: 300, tags: ['admin-ads'] }
-)
+export async function listAdminAds(options = {}) {
+  return adRepository.listAdminAds(options)
+}
 
 export async function listPublicAds(position?: string) {
   return adRepository.listPublicAds(position)

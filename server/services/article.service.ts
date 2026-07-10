@@ -1,4 +1,3 @@
-import { unstable_cache } from 'next/cache'
 import { generateSlug } from '@/lib/format/slug'
 import * as articleRepository from '@/server/repositories/article.repository'
 import * as categoryRepository from '@/server/repositories/category.repository'
@@ -8,14 +7,15 @@ type ArticlePayload = {
   title?: string | undefined
   slug?: string | undefined
   summary?: string | null | undefined
-  content?: unknown
+  intro?: string | null | undefined
+  content?: string | any[] | undefined
+  category_id?: number | undefined
   thumbnail_key?: string | null | undefined
-  category_id?: number | null | undefined
-  featured?: boolean | undefined
-  status?: 'draft' | 'published' | undefined
-  published?: boolean | undefined
+  status?: 'published' | 'draft' | undefined
   published_at?: string | null | undefined
-  author_id?: string | null | undefined
+  views?: number | undefined
+  is_featured?: boolean | undefined
+  featured_order?: number | null | undefined
   seo_title?: string | null | undefined
   seo_description?: string | null | undefined
 }
@@ -36,13 +36,9 @@ function normalizeArticlePayload(data: ArticlePayload, isUpdate = false) {
   return payload
 }
 
-export const listAdminArticles = unstable_cache(
-  async (options = {}) => {
-    return articleRepository.listAdminArticles(options)
-  },
-  ['admin-articles-list'],
-  { revalidate: 300, tags: ['admin-articles'] }
-)
+export async function listAdminArticles(options = {}) {
+  return articleRepository.listAdminArticles(options)
+}
 
 export async function listPublicArticles(options = {}) {
   return articleRepository.listPublicArticles(options)
