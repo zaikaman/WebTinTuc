@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { actionResponse, fail, ok, parseQuery } from '@/server/http'
+import { actionResponse, fail, okCached, parseQuery } from '@/server/http'
 import { publicArticleListQuerySchema } from '@/server/validations/article.schema'
 import * as articleService from '@/server/services/article.service'
 import { requireAdmin } from '@/server/auth'
@@ -8,7 +8,7 @@ import { createArticleAction } from '@/server/actions/article.action'
 export async function GET(request: NextRequest) {
   try {
     const query = parseQuery(request, publicArticleListQuerySchema)
-    return ok(await articleService.listPublicArticles(query))
+    return okCached(await articleService.listPublicArticles(query))
   } catch (error) {
     return fail(error)
   }
