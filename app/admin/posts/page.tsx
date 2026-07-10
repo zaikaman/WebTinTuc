@@ -236,15 +236,19 @@ export default function PostsPage() {
     try {
       setIsDeleting(true);
       await deleteAdminArticle(targetIdToDelete);
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === targetIdToDelete ? { ...p, isDeleted: true } : p
+        )
+      );
       toast.success("Xóa bài viết thành công!");
-      loadPosts();
     } catch (err: any) {
       toast.error(err?.message || "Lỗi khi xóa!");
     } finally {
       setIsDeleting(false);
       setTargetIdToDelete(null);
     }
-  }, [targetIdToDelete, loadPosts]);
+  }, [targetIdToDelete]);
 
   const resetFilters = useCallback(() => {
     setSearchQuery("");
@@ -382,13 +386,45 @@ export default function PostsPage() {
           content: htmlToBlocks(postContent),
         };
         if (dialogMode === "add") {
-          await createAdminArticle(payload as any);
+          const newArticle = await createAdminArticle(payload as any);
+          if (newArticle) {
+            const newPost: Post = {
+              id: newArticle.id,
+              title: newArticle.title,
+              category: newArticle.categories?.name || postForm.category || "Tin tức",
+              views: newArticle.views || 0,
+              status: newArticle.status === "published" ? "Đã đăng" : "Nháp",
+              createdAt: newArticle.created_at ? new Date(newArticle.created_at).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
+              content: "",
+              coverImage: newArticle.thumbnail_key || "",
+              isDeleted: false,
+            };
+            setPosts((prev) => [newPost, ...prev]);
+          }
           toast.success("Thêm bài viết mới thành công!", { id: "post-submit" });
         } else if (editId) {
-          await updateAdminArticle(editId, payload as any);
+          const updatedArticle = await updateAdminArticle(editId, payload as any);
+          if (updatedArticle) {
+            setPosts((prev) =>
+              prev.map((p) =>
+                p.id === editId
+                  ? {
+                      ...p,
+                      title: updatedArticle.title,
+                      category: updatedArticle.categories?.name || postForm.category || "Tin tức",
+                      views: updatedArticle.views || 0,
+                      status: updatedArticle.status === "published" ? "Đã đăng" : "Nháp",
+                      createdAt: updatedArticle.created_at
+                        ? new Date(updatedArticle.created_at).toISOString().split("T")[0]
+                        : p.createdAt,
+                      coverImage: updatedArticle.thumbnail_key || "",
+                    }
+                  : p
+              )
+            );
+          }
           toast.success("Cập nhật bài viết thành công!", { id: "post-submit" });
         }
-        loadPosts();
         setCurrentView("list");
       } catch (err: any) {
         toast.error(err?.message || "Có lỗi xảy ra, vui lòng thử lại!", { id: "post-submit" });
@@ -396,7 +432,7 @@ export default function PostsPage() {
         setIsPostSaving(false);
       }
     },
-    [postForm, postContent, postCoverImage, dialogMode, editId, categories, loadPosts]
+    [postForm, postContent, postCoverImage, dialogMode, editId, categories]
   );
 
   const handleTriggerImageUpload = useCallback(
