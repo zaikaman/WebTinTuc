@@ -1,45 +1,117 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { toast } from "sonner";
 
+/** Soft UI flag only — never used as a security decision. */
+const ADMIN_UI_FLAG = "admin_logged_in";
+
+function clearAdminUiFlag() {
+  try {
+    localStorage.removeItem(ADMIN_UI_FLAG);
+  } catch {
+    // ignore storage errors (private mode, etc.)
+  }
+}
+
+function setAdminUiFlag() {
+  try {
+    localStorage.setItem(ADMIN_UI_FLAG, "true");
+  } catch {
+    // ignore
+  }
+}
+
+/**
+ * Client-side admin soft lock.
+ * Real authorization is enforced by API `requireAdmin` + middleware session gate.
+ * This hook must fail closed: never show admin UI without a verified admin session.
+ */
 export function useAdminAuth() {
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem("admin_logged_in") === "true";
-  });
-  const [isAuthVerified, setIsAuthVerified] = useState<boolean>(false);
+  // Always start logged-out; wait for server-validated session before showing admin UI.
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAuthVerified, setIsAuthVerified] = useState(false);
   const [loginUsername, setLoginUsername] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const isExplicitLogoutRef = useRef(false);
 
-  // Session verification on mount
-  useEffect(() => {
-    const verifySession = async () => {
-      const cached = localStorage.getItem("admin_logged_in");
-      if (cached !== "true") {
-        setIsAuthVerified(true);
-        return;
-      }
+  const markLoggedOut = useCallback(() => {
+    clearAdminUiFlag();
+    setIsLoggedIn(false);
+  }, []);
+
+  const markLoggedIn = useCallback(() => {
+    setAdminUiFlag();
+    setIsLoggedIn(true);
+  }, []);
+
+  const verifyAdminSession = useCallback(async (): Promise<boolean> => {
+    // getUser() validates with the Auth server (not a trusted local cache like getSession).
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      markLoggedOut();
+      return false;
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (profileError || !profile || profile.role !== "admin") {
       try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        if (!session) {
-          localStorage.removeItem("admin_logged_in");
-          setIsLoggedIn(false);
-        }
+        await supabase.auth.signOut();
       } catch {
-        // Network error – trust localStorage for better UX
+        // ignore
+      }
+      markLoggedOut();
+      return false;
+    }
+
+    markLoggedIn();
+    return true;
+  }, [markLoggedIn, markLoggedOut]);
+
+  // Session verification on mount — fail closed on any error / network failure.
+  useEffect(() => {
+    let cancelled = false;
+
+    const run = async () => {
+      try {
+        await verifyAdminSession();
+      } catch {
+        // Network / unexpected error: do not trust localStorage or show admin UI.
+        markLoggedOut();
       } finally {
-        setIsAuthVerified(true);
+        if (!cancelled) setIsAuthVerified(true);
       }
     };
-    verifySession();
-  }, []);
+
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [verifyAdminSession, markLoggedOut]);
+
+  // Keep UI in sync across tabs / explicit sign-out elsewhere.
+  useEffect(() => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_OUT") {
+        markLoggedOut();
+        setIsAuthVerified(true);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [markLoggedOut]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,10 +132,7 @@ export function useAdminAuth() {
         return;
       }
 
-      const {
-        data: profile,
-        error: profileError,
-      } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("role")
         .eq("id", data.user.id)
@@ -71,16 +140,17 @@ export function useAdminAuth() {
 
       if (profileError || !profile || profile.role !== "admin") {
         await supabase.auth.signOut();
+        markLoggedOut();
         toast.error("Tài khoản này không có quyền quản trị!");
         return;
       }
 
-      localStorage.setItem("admin_logged_in", "true");
-      setIsLoggedIn(true);
+      markLoggedIn();
       setIsAuthVerified(true);
       toast.success("Đăng nhập quản trị thành công!");
     } catch (err) {
       console.error(err);
+      markLoggedOut();
       toast.error("Có lỗi xảy ra, vui lòng thử lại!");
     } finally {
       setIsLoading(false);
@@ -89,13 +159,11 @@ export function useAdminAuth() {
 
   const handleLogout = async () => {
     try {
-      isExplicitLogoutRef.current = true;
       await supabase.auth.signOut();
     } catch {
-      // ignore
+      // ignore network errors — still clear local UI state
     } finally {
-      localStorage.removeItem("admin_logged_in");
-      setIsLoggedIn(false);
+      markLoggedOut();
       setIsAuthVerified(true);
       toast.success("Đã đăng xuất khỏi hệ thống!");
     }

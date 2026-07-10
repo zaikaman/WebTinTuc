@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { updateSession } from "@/lib/supabase/middleware";
 
 interface RedirectEntry {
   to_path: string;
@@ -18,7 +19,7 @@ function evictStaleCacheEntries(): void {
 
   const now = Date.now();
   const entries = [...redirectCache.entries()];
-  
+
   // Sort by cachedAt (oldest first)
   entries.sort(([, a], [, b]) => a.cachedAt - b.cachedAt);
 
@@ -87,8 +88,63 @@ async function lookupRedirect(path: string): Promise<RedirectEntry | null> {
   }
 }
 
+function isAdminLoginPath(pathname: string): boolean {
+  return pathname === "/admin" || pathname === "/admin/";
+}
+
+function isAdminPath(pathname: string): boolean {
+  return pathname === "/admin" || pathname.startsWith("/admin/");
+}
+
+/**
+ * Soft gate for /admin pages:
+ * - Unauthenticated users may only open the login page (/admin).
+ * - Authenticated users hitting /admin are sent to the dashboard.
+ * - Protected /admin/* routes require a valid Supabase session cookie.
+ *
+ * This does not replace API requireAdmin; client bundles may still be public static assets.
+ */
+async function handleAdminGate(request: NextRequest): Promise<NextResponse | null> {
+  const { pathname } = request.nextUrl;
+  if (!isAdminPath(pathname)) return null;
+
+  const { user, response } = await updateSession(request);
+  const isLogin = isAdminLoginPath(pathname);
+
+  if (!user && !isLogin) {
+    const loginUrl = request.nextUrl.clone();
+    loginUrl.pathname = "/admin";
+    loginUrl.search = "";
+    const redirect = NextResponse.redirect(loginUrl);
+    // Preserve any refreshed/cleared auth cookies from updateSession.
+    response.cookies.getAll().forEach((cookie) => {
+      redirect.cookies.set(cookie.name, cookie.value);
+    });
+    return redirect;
+  }
+
+  if (user && isLogin) {
+    const dashboardUrl = request.nextUrl.clone();
+    dashboardUrl.pathname = "/admin/dashboard";
+    dashboardUrl.search = "";
+    const redirect = NextResponse.redirect(dashboardUrl);
+    response.cookies.getAll().forEach((cookie) => {
+      redirect.cookies.set(cookie.name, cookie.value);
+    });
+    return redirect;
+  }
+
+  return response;
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Admin soft gate (session cookie check)
+  if (isAdminPath(pathname)) {
+    const adminResponse = await handleAdminGate(request);
+    if (adminResponse) return adminResponse;
+  }
 
   const skip =
     pathname.startsWith("/api/") ||
