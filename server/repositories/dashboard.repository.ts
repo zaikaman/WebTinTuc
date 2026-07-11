@@ -18,6 +18,21 @@ const TOP_CACHE_TTL = 300     // 5 min for top lists
 // PERIOD DATE COMPUTATION
 // ============================================================
 
+function pad2(n: string | number) {
+  return String(n).padStart(2, '0')
+}
+
+function utcTodayStr() {
+  return new Date().toISOString().slice(0, 10)
+}
+
+/**
+ * Build inclusive [startDate, endDate] for custom day/month/year filters.
+ * - day+month(+year): that single calendar day
+ * - month(+year): full calendar month
+ * - year only: full calendar year
+ * Previous period is the immediately preceding equal-length range (day/month/year).
+ */
 function getPeriodDates(filters?: {
   timeFilter?: 'today' | 'week' | 'month' | 'year' | undefined
   day?: string | undefined
@@ -25,43 +40,175 @@ function getPeriodDates(filters?: {
   year?: string | undefined
 }) {
   const now = new Date()
-  const endDateStr = now.toISOString().slice(0, 10)
+  const todayStr = utcTodayStr()
   let startDateStr = ''
+  let endDateStr = todayStr
   let prevStartDateStr = ''
   let prevEndDateStr = ''
 
   const isCustom = !!(filters?.day || filters?.month || filters?.year)
 
   if (isCustom) {
-    const year = filters?.year || String(now.getFullYear())
+    const year = filters?.year || String(now.getUTCFullYear())
     const month = filters?.month || ''
     const day = filters?.day || ''
+    const y = Number(year)
 
     if (day && month) {
-      const dateStr = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+      // Single day
+      const dateStr = `${year}-${pad2(month)}-${pad2(day)}`
       startDateStr = dateStr
-      const targetDate = new Date(dateStr)
-      const prevDate = new Date(targetDate)
-      prevDate.setDate(targetDate.getDate() - 1)
-      prevStartDateStr = prevDate.toISOString().slice(0, 10)
+      endDateStr = dateStr
+      // Previous day (UTC-safe via Date.UTC)
+      const m = Number(month)
+      const d = Number(day)
+      const prev = new Date(Date.UTC(y, m - 1, d - 1))
+      prevStartDateStr = prev.toISOString().slice(0, 10)
       prevEndDateStr = prevStartDateStr
     } else if (month) {
-      startDateStr = `${year}-${month.padStart(2, '0')}-01`
-      const lastDay = new Date(Number(year), Number(month), 0).getDate()
-      const prevMonth = Number(month) - 1
-      const prevYear = prevMonth === 0 ? Number(year) - 1 : Number(year)
-      const prevMonthNorm = prevMonth === 0 ? 12 : prevMonth
-      prevStartDateStr = `${prevYear}-${String(prevMonthNorm).padStart(2, '0')}-01`
-      const prevLastDay = new Date(prevYear, prevMonthNorm, 0).getDate()
-      prevEndDateStr = `${prevYear}-${String(prevMonthNorm).padStart(2, '0')}-${String(prevLastDay).padStart(2, '0')}`
-    } else {
+      // Full calendar month
+      const m = Number(month)
+      startDateStr = `${year}-${pad2(month)}-01`
+      const lastDay = new Date(Date.UTC(y, m, 0)).getUTCDate()
+      endDateStr = `${year}-${pad2(month)}-${pad2(lastDay)}`
+
+      const prevMonth = m - 1 === 0 ? 12 : m - 1
+      const prevYear = m - 1 === 0 ? y - 1 : y
+      const prevLastDay = new Date(Date.UTC(prevYear, prevMonth, 0)).getUTCDate()
+      prevStartDateStr = `${prevYear}-${pad2(prevMonth)}-01`
+      prevEndDateStr = `${prevYear}-${pad2(prevMonth)}-${pad2(prevLastDay)}`
+    } else if (year) {
+      // Full calendar year
       startDateStr = `${year}-01-01`
-      prevStartDateStr = `${Number(year) - 1}-01-01`
-      prevEndDateStr = `${Number(year) - 1}-12-31`
+      endDateStr = `${year}-12-31`
+      prevStartDateStr = `${y - 1}-01-01`
+      prevEndDateStr = `${y - 1}-12-31`
+    } else if (day) {
+      // Day without month is invalid — treat as "today" of current month with that day if possible
+      const m = now.getUTCMonth() + 1
+      const dateStr = `${year}-${pad2(m)}-${pad2(day)}`
+      startDateStr = dateStr
+      endDateStr = dateStr
+      const prev = new Date(Date.UTC(y, m - 1, Number(day) - 1))
+      prevStartDateStr = prev.toISOString().slice(0, 10)
+      prevEndDateStr = prevStartDateStr
     }
   }
 
-  return { startDate: startDateStr, endDate: endDateStr, prevStartDate: prevStartDateStr, prevEndDate: prevEndDateStr, isCustom }
+  return {
+    startDate: startDateStr,
+    endDate: endDateStr,
+    prevStartDate: prevStartDateStr,
+    prevEndDate: prevEndDateStr,
+    isCustom,
+  }
+}
+
+/** Sum a numeric column over a date range from a daily stats table. */
+async function sumStatsInRange(
+  table: 'article_stats_daily' | 'ad_stats_daily',
+  column: 'views' | 'clicks',
+  startDate: string,
+  endDate: string
+): Promise<number> {
+  // Prefer PostgREST aggregate (avoids 1000-row default limit truncating the sum)
+  try {
+    const { data, error } = await supabaseAdmin
+      .from(table)
+      .select(`${column}.sum()`)
+      .gte('date', startDate)
+      .lte('date', endDate)
+      .maybeSingle()
+
+    if (!error && data) {
+      const row = data as Record<string, unknown>
+      const raw = row[`sum`] ?? row[column] ?? Object.values(row)[0]
+      const n = Number(raw ?? 0)
+      if (!Number.isNaN(n)) return n
+    }
+  } catch {
+    // fall through to client-side sum
+  }
+
+  // Fallback: page through rows if aggregate is unavailable
+  let sum = 0
+  let from = 0
+  const pageSize = 1000
+  for (;;) {
+    const { data, error } = await supabaseAdmin
+      .from(table)
+      .select(column)
+      .gte('date', startDate)
+      .lte('date', endDate)
+      .range(from, from + pageSize - 1)
+
+    if (error || !data || data.length === 0) break
+    for (const row of data as any[]) sum += Number(row[column] ?? 0)
+    if (data.length < pageSize) break
+    from += pageSize
+  }
+  return sum
+}
+
+/**
+ * Real aggregation for custom ranges (used when RPC is missing or fails).
+ * Maps period totals into todayViews / yesterdayViews so the client can display them.
+ */
+async function computeCustomStatsRange(
+  startDate: string,
+  endDate: string,
+  prevStartDate: string,
+  prevEndDate: string
+) {
+  const [countArt, countCat, countAd, periodViews, prevViews, periodClicks, prevClicks, periodArticles, prevPeriodArticles] =
+    await Promise.all([
+      supabaseAdmin.from('articles').select('*', { count: 'exact', head: true }).is('deleted_at', null),
+      supabaseAdmin.from('categories').select('*', { count: 'exact', head: true }).is('deleted_at', null),
+      supabaseAdmin.from('ads').select('*', { count: 'exact', head: true }).is('deleted_at', null),
+      sumStatsInRange('article_stats_daily', 'views', startDate, endDate),
+      sumStatsInRange('article_stats_daily', 'views', prevStartDate, prevEndDate),
+      sumStatsInRange('ad_stats_daily', 'clicks', startDate, endDate),
+      sumStatsInRange('ad_stats_daily', 'clicks', prevStartDate, prevEndDate),
+      supabaseAdmin
+        .from('articles')
+        .select('*', { count: 'exact', head: true })
+        .is('deleted_at', null)
+        .gte('created_at', `${startDate}T00:00:00.000Z`)
+        .lte('created_at', `${endDate}T23:59:59.999Z`),
+      supabaseAdmin
+        .from('articles')
+        .select('*', { count: 'exact', head: true })
+        .is('deleted_at', null)
+        .gte('created_at', `${prevStartDate}T00:00:00.000Z`)
+        .lte('created_at', `${prevEndDate}T23:59:59.999Z`),
+    ])
+
+  return {
+    totalArticles: countArt.count ?? 0,
+    totalCategories: countCat.count ?? 0,
+    totalAds: countAd.count ?? 0,
+    // Client custom path reads todayViews / yesterdayViews as current / previous period
+    todayViews: periodViews,
+    yesterdayViews: prevViews,
+    todayClicks: periodClicks,
+    yesterdayClicks: prevClicks,
+    weekViews: periodViews,
+    prevWeekViews: prevViews,
+    weekClicks: periodClicks,
+    prevWeekClicks: prevClicks,
+    monthViews: periodViews,
+    prevMonthViews: prevViews,
+    monthClicks: periodClicks,
+    prevMonthClicks: prevClicks,
+    yearViews: periodViews,
+    prevYearViews: prevViews,
+    yearClicks: periodClicks,
+    prevYearClicks: prevClicks,
+    totalViews: periodViews,
+    totalClicks: periodClicks,
+    periodArticles: periodArticles.count ?? 0,
+    prevPeriodArticles: prevPeriodArticles.count ?? 0,
+  }
 }
 
 // ============================================================
@@ -182,7 +329,7 @@ async function computeAllTimeframesFallback() {
 
 /**
  * Get stats for a CUSTOM date range (used when user specifies exact day/month/year).
- * Separate RPC + separate cache key based on date params.
+ * Tries RPC first; on miss/error runs real SQL aggregation (never return silent zeros).
  */
 const getCustomStatsRangeCached = unstable_cache(
   async (startDate: string, endDate: string, prevStartDate: string, prevEndDate: string) => {
@@ -191,25 +338,14 @@ const getCustomStatsRangeCached = unstable_cache(
         p_start_date: startDate,
         p_end_date: endDate,
         p_prev_start_date: prevStartDate,
-        p_prev_end_date: prevEndDate
+        p_prev_end_date: prevEndDate,
       })
       if (!error && data) return data as Record<string, any>
-    } catch { /* fall through */ }
-
-    // Minimal fallback for custom ranges — just counts, views/clicks as 0
-    const [artCount, catCount, adCount] = await Promise.all([
-      supabaseAdmin.from('articles').select('*', { count: 'exact', head: true }).is('deleted_at', null),
-      supabaseAdmin.from('categories').select('*', { count: 'exact', head: true }).is('deleted_at', null),
-      supabaseAdmin.from('ads').select('*', { count: 'exact', head: true }).is('deleted_at', null),
-    ])
-    return {
-      totalArticles: artCount.count ?? 0, totalCategories: catCount.count ?? 0, totalAds: adCount.count ?? 0,
-      todayViews: 0, yesterdayViews: 0, todayClicks: 0, yesterdayClicks: 0,
-      weekViews: 0, prevWeekViews: 0, weekClicks: 0, prevWeekClicks: 0,
-      monthViews: 0, prevMonthViews: 0, monthClicks: 0, prevMonthClicks: 0,
-      totalViews: 0, totalClicks: 0, prevYearViews: 0, prevYearClicks: 0,
-      periodArticles: 0, prevPeriodArticles: 0,
+    } catch {
+      // fall through to real aggregation
     }
+
+    return computeCustomStatsRange(startDate, endDate, prevStartDate, prevEndDate)
   },
   ['dashboard-custom-range'],
   { revalidate: CUSTOM_CACHE_TTL, tags: ['dashboard'] }
@@ -384,120 +520,40 @@ export async function getDashboardStats(filters?: {
     stats = await getAllTimeframesCached()
   }
 
-  // Compute the correct views/clicks based on the requested time filter
-  const timeFilter = filters?.timeFilter || 'month'
+  // Always return RAW all-timeframe fields so the client can switch
+  // today/week/month/year without another network round-trip.
+  const totalViews = stats.totalViews ?? stats.yearViews ?? 0
+  const totalClicks = stats.totalClicks ?? stats.yearClicks ?? 0
+  const todayViews = stats.todayViews ?? 0
+  const yesterdayViews = stats.yesterdayViews ?? 0
+  const weekViews = stats.weekViews ?? 0
+  const prevWeekViews = stats.prevWeekViews ?? 0
+  const monthViews = stats.monthViews ?? 0
+  const prevMonthViews = stats.prevMonthViews ?? 0
+  const yearViews = stats.yearViews ?? totalViews
+  const prevYearViews = stats.prevYearViews ?? 0
+  const todayClicks = stats.todayClicks ?? 0
+  const yesterdayClicks = stats.yesterdayClicks ?? 0
+  const weekClicks = stats.weekClicks ?? 0
+  const prevWeekClicks = stats.prevWeekClicks ?? 0
+  const monthClicks = stats.monthClicks ?? 0
+  const prevMonthClicks = stats.prevMonthClicks ?? 0
+  const yearClicks = stats.yearClicks ?? totalClicks
+  const prevYearClicks = stats.prevYearClicks ?? 0
+  const periodArticles = stats.periodArticles ?? 0
+  const prevPeriodArticles = stats.prevPeriodArticles ?? 0
 
-  let totalViews: number, todayViews: number, yesterdayViews: number
-  let weekViews: number, prevWeekViews: number
-  let monthViews: number, prevMonthViews: number
-  let prevYearViews: number
-  let totalClicks: number, todayClicks: number, yesterdayClicks: number
-  let weekClicks: number, prevWeekClicks: number
-  let monthClicks: number, prevMonthClicks: number
-  let prevYearClicks: number
-  let periodArticles: number, prevPeriodArticles: number
+  // Top lists: standard filters use last 7 days; custom uses the custom range
+  const topStart = isCustom ? (startDate || endDate) : (() => {
+    const d = new Date()
+    d.setDate(d.getDate() - 6)
+    return d.toISOString().slice(0, 10)
+  })()
 
-  if (isCustom) {
-    // For custom ranges, use the same pattern as before
-    totalViews = stats.totalViews ?? 0
-    todayViews = stats.todayViews ?? 0
-    yesterdayViews = stats.yesterdayViews ?? 0
-    weekViews = stats.weekViews ?? 0
-    prevWeekViews = stats.prevWeekViews ?? 0
-    monthViews = stats.monthViews ?? 0
-    prevMonthViews = stats.prevMonthViews ?? 0
-    prevYearViews = stats.prevYearViews ?? 0
-    totalClicks = stats.totalClicks ?? 0
-    todayClicks = stats.todayClicks ?? 0
-    yesterdayClicks = stats.yesterdayClicks ?? 0
-    weekClicks = stats.weekClicks ?? 0
-    prevWeekClicks = stats.prevWeekClicks ?? 0
-    monthClicks = stats.monthClicks ?? 0
-    prevMonthClicks = stats.prevMonthClicks ?? 0
-    prevYearClicks = stats.prevYearClicks ?? 0
-    periodArticles = stats.periodArticles ?? 0
-    prevPeriodArticles = stats.prevPeriodArticles ?? 0
-  } else {
-    // For standard timeframes, select the relevant fields from pre-computed data
-    totalViews = stats.totalViews ?? 0
-    totalClicks = stats.totalClicks ?? 0
-    periodArticles = stats.periodArticles ?? 0
-    prevPeriodArticles = stats.prevPeriodArticles ?? 0
-
-    switch (timeFilter) {
-      case 'today':
-        todayViews = stats.todayViews ?? 0
-        yesterdayViews = stats.yesterdayViews ?? 0
-        weekViews = stats.weekViews ?? 0
-        prevWeekViews = stats.prevWeekViews ?? 0
-        monthViews = stats.monthViews ?? 0
-        prevMonthViews = stats.prevMonthViews ?? 0
-        prevYearViews = stats.prevYearViews ?? 0
-        todayClicks = stats.todayClicks ?? 0
-        yesterdayClicks = stats.yesterdayClicks ?? 0
-        weekClicks = stats.weekClicks ?? 0
-        prevWeekClicks = stats.prevWeekClicks ?? 0
-        monthClicks = stats.monthClicks ?? 0
-        prevMonthClicks = stats.prevMonthClicks ?? 0
-        prevYearClicks = stats.prevYearClicks ?? 0
-        break
-      case 'week':
-        todayViews = stats.weekViews ?? 0
-        yesterdayViews = stats.prevWeekViews ?? 0
-        weekViews = stats.weekViews ?? 0
-        prevWeekViews = stats.prevWeekViews ?? 0
-        monthViews = stats.monthViews ?? 0
-        prevMonthViews = stats.prevMonthViews ?? 0
-        prevYearViews = stats.prevYearViews ?? 0
-        todayClicks = stats.weekClicks ?? 0
-        yesterdayClicks = stats.prevWeekClicks ?? 0
-        weekClicks = stats.weekClicks ?? 0
-        prevWeekClicks = stats.prevWeekClicks ?? 0
-        monthClicks = stats.monthClicks ?? 0
-        prevMonthClicks = stats.prevMonthClicks ?? 0
-        prevYearClicks = stats.prevYearClicks ?? 0
-        break
-      case 'month':
-        todayViews = stats.monthViews ?? 0
-        yesterdayViews = stats.prevMonthViews ?? 0
-        weekViews = stats.weekViews ?? 0
-        prevWeekViews = stats.prevWeekViews ?? 0
-        monthViews = stats.monthViews ?? 0
-        prevMonthViews = stats.prevMonthViews ?? 0
-        prevYearViews = stats.prevYearViews ?? 0
-        todayClicks = stats.monthClicks ?? 0
-        yesterdayClicks = stats.prevMonthClicks ?? 0
-        weekClicks = stats.weekClicks ?? 0
-        prevWeekClicks = stats.prevWeekClicks ?? 0
-        monthClicks = stats.monthClicks ?? 0
-        prevMonthClicks = stats.prevMonthClicks ?? 0
-        prevYearClicks = stats.prevYearClicks ?? 0
-        break
-      case 'year':
-      default:
-        todayViews = stats.yearViews ?? 0
-        yesterdayViews = stats.prevYearViews ?? 0
-        weekViews = stats.monthViews ?? 0
-        prevWeekViews = stats.prevMonthViews ?? 0
-        monthViews = stats.yearViews ?? 0
-        prevMonthViews = stats.prevYearViews ?? 0
-        prevYearViews = stats.prevYearViews ?? 0
-        todayClicks = stats.yearClicks ?? 0
-        yesterdayClicks = stats.prevYearClicks ?? 0
-        weekClicks = stats.monthClicks ?? 0
-        prevWeekClicks = stats.prevMonthClicks ?? 0
-        monthClicks = stats.yearClicks ?? 0
-        prevMonthClicks = stats.prevYearClicks ?? 0
-        prevYearClicks = stats.prevYearClicks ?? 0
-        break
-    }
-  }
-
-  // Top articles, categories, ads (parallel)
   const [topArticles, topCat, topAds, recentActivities] = await Promise.all([
-    getTopArticlesCached(startDate || endDate, endDate, 5),
+    getTopArticlesCached(topStart, endDate, 5),
     isCustom ? getTopCategoriesForPeriodCached(startDate, endDate, 5) : getTopCategoriesCached(5),
-    getTopAdsCached(startDate || endDate, endDate, 5),
+    getTopAdsCached(topStart, endDate, 5),
     getRecentActivitiesCached(),
   ])
 
@@ -507,9 +563,29 @@ export async function getDashboardStats(filters?: {
     totalArticles: stats.totalArticles ?? 0,
     totalCategories: stats.totalCategories ?? 0,
     totalAds: stats.totalAds ?? 0,
-    totalViews, todayViews, yesterdayViews, weekViews, prevWeekViews, monthViews, prevMonthViews, prevYearViews,
-    totalClicks, todayClicks, yesterdayClicks, weekClicks, prevWeekClicks, monthClicks, prevMonthClicks, prevYearClicks,
-    periodArticles, prevPeriodArticles,
-    topArticles, topCategories, topAds, recentActivities,
+    totalViews,
+    yearViews,
+    todayViews,
+    yesterdayViews,
+    weekViews,
+    prevWeekViews,
+    monthViews,
+    prevMonthViews,
+    prevYearViews,
+    totalClicks,
+    yearClicks,
+    todayClicks,
+    yesterdayClicks,
+    weekClicks,
+    prevWeekClicks,
+    monthClicks,
+    prevMonthClicks,
+    prevYearClicks,
+    periodArticles,
+    prevPeriodArticles,
+    topArticles,
+    topCategories,
+    topAds,
+    recentActivities,
   }
 }

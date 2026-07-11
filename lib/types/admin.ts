@@ -109,6 +109,8 @@ export interface AdminDashboardStats {
   totalClicks: number
   prevYearViews?: number
   prevYearClicks?: number
+  yearViews?: number
+  yearClicks?: number
   periodArticles?: number
   prevPeriodArticles?: number
   todayViews: number
@@ -126,6 +128,7 @@ export interface AdminDashboardStats {
   topArticles: Array<{
     id: number
     title: string
+    category?: string
     categories?: { name: string }
     views?: number
     trending_views?: number

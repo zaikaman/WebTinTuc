@@ -1,7 +1,7 @@
 "use client";
 
 export const DashboardSkeleton = () => (
-  <div className="space-y-6 animate-pulse">
+  <div className="flex flex-col gap-6 animate-pulse">
     {/* HEADER ACTION BANNER */}
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden">
       <div className="absolute top-0 left-0 w-2.5 h-full bg-gray-250" />
@@ -136,7 +136,7 @@ export const DashboardSkeleton = () => (
 );
 
 export const LogoFooterSkeleton = () => (
-  <div className="space-y-6 animate-pulse">
+  <div className="flex flex-col gap-6 animate-pulse">
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-150 shadow-sm">
       <div className="space-y-2 w-full max-w-[300px]">
         <div className="h-6 bg-gray-200 rounded-lg w-3/4"></div>

@@ -36,13 +36,15 @@ function normalizeArticlePayload(data: ArticlePayload, isUpdate = false) {
   return payload
 }
 
-export const listAdminArticles = unstable_cache(
-  async (options = {}) => {
-    return articleRepository.listAdminArticles(options)
-  },
-  ['admin-articles-list'],
-  { revalidate: 300, tags: ['admin-articles'] }
-)
+export async function listAdminArticles(options: Record<string, unknown> = {}) {
+  // Cache key includes serialized options so page/search/filter variants stay correct.
+  const optionsKey = JSON.stringify(options ?? {})
+  return unstable_cache(
+    async () => articleRepository.listAdminArticles(options as any),
+    ['admin-articles-list', optionsKey],
+    { revalidate: 60, tags: ['admin-articles'] }
+  )()
+}
 
 export async function listPublicArticles(options = {}) {
   return articleRepository.listPublicArticles(options)

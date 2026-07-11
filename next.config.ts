@@ -18,6 +18,9 @@ const nextConfig: NextConfig = {
     },
     optimizePackageImports: [
       "@radix-ui/react-dialog",
+      "lucide-react",
+      "framer-motion",
+      "@tanstack/react-query",
     ],
   },
   images: {

@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   LayoutDashboard,
@@ -17,16 +18,23 @@ interface AdminSidebarProps {
   sidebarOpen: boolean;
   logoUrl: string | null;
   logoWebsiteName: string;
-  onTabChange: (tab: TabType) => void;
   onCloseSidebar: () => void;
 }
 
-const navItems: { tab: TabType; label: string; icon?: React.ComponentType<{ size?: number; className?: string }>; svg?: React.ReactNode }[] = [
-  { tab: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { tab: "posts", label: "Quản lý bài viết", icon: FileText },
-  { tab: "categories", label: "Quản lý danh mục", icon: Folder },
+const navItems: {
+  tab: TabType;
+  href: string;
+  label: string;
+  icon?: React.ComponentType<{ size?: number; className?: string }>;
+  svg?: React.ReactNode;
+}[] = [
+  { tab: "dashboard", href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { tab: "posts", href: "/admin/posts", label: "Quản lý bài viết", icon: FileText },
+  { tab: "categories", href: "/admin/categories", label: "Quản lý danh mục", icon: Folder },
   {
-    tab: "ads", label: "Quản lý AD",
+    tab: "ads",
+    href: "/admin/ads",
+    label: "Quản lý AD",
     svg: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
         <rect width="18" height="18" x="3" y="3" rx="2" />
@@ -37,7 +45,9 @@ const navItems: { tab: TabType; label: string; icon?: React.ComponentType<{ size
     ),
   },
   {
-    tab: "logo-footer", label: "Logo & Footer",
+    tab: "logo-footer",
+    href: "/admin/logo-footer",
+    label: "Logo & Footer",
     svg: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
         <rect width="18" height="18" x="3" y="3" rx="2" />
@@ -46,8 +56,8 @@ const navItems: { tab: TabType; label: string; icon?: React.ComponentType<{ size
       </svg>
     ),
   },
-  { tab: "media", label: "Quản lý Media", icon: ImageIcon },
-  { tab: "accounts", label: "Quản lý Tài khoản", icon: Lock },
+  { tab: "media", href: "/admin/media", label: "Quản lý Media", icon: ImageIcon },
+  { tab: "accounts", href: "/admin/accounts", label: "Quản lý Tài khoản", icon: Lock },
 ];
 
 export default function AdminSidebar({
@@ -55,12 +65,10 @@ export default function AdminSidebar({
   sidebarOpen,
   logoUrl,
   logoWebsiteName,
-  onTabChange,
   onCloseSidebar,
 }: AdminSidebarProps) {
   return (
     <>
-      {/* Mobile sidebar overlay */}
       <AnimatePresence>
         {sidebarOpen && (
           <motion.div
@@ -79,7 +87,6 @@ export default function AdminSidebar({
         } lg:sticky lg:top-0 lg:h-screen lg:flex`}
       >
         <div>
-          {/* Logo Brand Header */}
           <div className="flex items-center gap-3.5 mb-10 mt-2">
             {logoUrl ? (
               <img
@@ -92,8 +99,11 @@ export default function AdminSidebar({
                 {(logoWebsiteName || "W").slice(0, 1).toUpperCase()}
               </div>
             )}
-            <span className="font-extrabold text-[22px] tracking-tight drop-shadow-sm">{logoWebsiteName || "Logo"}</span>
+            <span className="font-extrabold text-[22px] tracking-tight drop-shadow-sm">
+              {logoWebsiteName || "Logo"}
+            </span>
             <button
+              type="button"
               onClick={onCloseSidebar}
               className="ml-auto lg:hidden text-white hover:text-red-100 p-1"
             >
@@ -101,30 +111,33 @@ export default function AdminSidebar({
             </button>
           </div>
 
-          {/* Navigation Links */}
           <nav className="flex flex-col gap-2">
-            {navItems.map(({ tab, label, icon: Icon, svg }) => (
-              <button
-                key={tab}
-                onClick={() => onTabChange(tab)}
-                className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 group ${
-                  activeTab === tab
-                    ? "bg-[#cb4643] text-white shadow-md border-l-4 border-white"
-                    : "text-white/80 hover:text-white hover:bg-white/10"
-                }`}
-              >
-                {Icon ? (
-                  <Icon size={18} className="flex-shrink-0" />
-                ) : svg ? (
-                  svg
-                ) : null}
-                <span>{label}</span>
-              </button>
-            ))}
+            {navItems.map(({ tab, href, label, icon: Icon, svg }) => {
+              const isActive = activeTab === tab;
+              return (
+                <Link
+                  key={tab}
+                  href={href}
+                  prefetch
+                  onClick={onCloseSidebar}
+                  className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 group ${
+                    isActive
+                      ? "bg-[#cb4643] text-white shadow-md border-l-4 border-white"
+                      : "text-white/80 hover:text-white hover:bg-white/10"
+                  }`}
+                >
+                  {Icon ? (
+                    <Icon size={18} className="flex-shrink-0" />
+                  ) : svg ? (
+                    svg
+                  ) : null}
+                  <span>{label}</span>
+                </Link>
+              );
+            })}
           </nav>
         </div>
 
-        {/* Sidebar Footer Link */}
         <div className="pt-4 border-t border-white/20 text-xs text-white/60 text-center">
           Admin Control Center &copy; 2026
         </div>

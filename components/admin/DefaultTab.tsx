@@ -126,7 +126,7 @@ export default function DefaultTab({
   };
 
   return (
-    <>
+    <div className="flex flex-col gap-6">
       {/* HEADER ACTION BANNER */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-150 shadow-sm">
         <div>
@@ -645,6 +645,6 @@ export default function DefaultTab({
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

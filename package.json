@@ -13,8 +13,10 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1061.0",
     "@aws-sdk/s3-request-presigner": "^3.1077.0",
+    "@radix-ui/react-dialog": "^1.1.14",
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.106.2",
+    "@tanstack/react-query": "^5.101.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.539.0",
@@ -25,12 +27,10 @@
     "slugify": "^1.6.9",
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
-    "@radix-ui/react-dialog": "^1.1.14",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@next/bundle-analyzer": "^15.5.19",
-
     "@types/node": "^24.2.1",
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",

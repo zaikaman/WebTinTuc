@@ -36,11 +36,12 @@
 @layer base {
   * {
     @apply border-border;
-    margin: 0;
-    padding: 0;
     box-sizing: border-box;
   }
+  /* Do NOT zero all margins/padding on * — that fights Tailwind space-y / gap utilities. */
   body {
+    margin: 0;
+    padding: 0;
     font-size: 12px;
     color: #333;
     background-color: #f4f6f8;
@@ -54,6 +55,11 @@
   }
   ul, ol {
     list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  h1, h2, h3, h4, h5, h6, p {
+    margin: 0;
   }
   :where(p, span, li, h1, h2, h3, h4, h5, h6, a, button, label, td, th) {
     overflow-wrap: anywhere;

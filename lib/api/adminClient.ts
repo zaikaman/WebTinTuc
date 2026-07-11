@@ -7,6 +7,7 @@ import type {
   AdminStorageResponse,
   AdminUploadResponse,
   AdminDashboardStats,
+  AdminPaginationMeta,
   CreateArticlePayload,
   CreateCategoryPayload,
   CreateAdPayload,
@@ -24,7 +25,10 @@ async function fetchAdmin<T>(path: string, options: RequestInit = {}): Promise<T
     ...(options.headers as Record<string, string> || {}),
   };
 
-  const response = await fetch(url, { cache: "no-store", ...options, headers });
+  // Default: no browser cache for mutations; GETs may pass cache: "default" / next options.
+  const method = (options.method || "GET").toUpperCase();
+  const defaultCache: RequestCache = method === "GET" ? "no-store" : "no-store";
+  const response = await fetch(url, { cache: defaultCache, ...options, headers });
   
   if (!response.ok) {
     let message = `API Error: ${response.statusText}`;
@@ -40,7 +44,8 @@ async function fetchAdmin<T>(path: string, options: RequestInit = {}): Promise<T
 }
 
 // ARTICLES
-export const getAdminArticles = (qs = "") => fetchAdmin<{ items: AdminArticle[] }>(`/articles${qs}`);
+export const getAdminArticles = (qs = "") =>
+  fetchAdmin<{ items: AdminArticle[]; meta?: AdminPaginationMeta }>(`/articles${qs}`);
 export const getAdminArticleById = (id: number) => fetchAdmin<AdminArticle>(`/articles/${id}`);
 export const createAdminArticle = (data: CreateArticlePayload) => fetchAdmin<AdminArticle>("/articles", { method: "POST", body: JSON.stringify(data) });
 export const updateAdminArticle = (id: number, data: Partial<CreateArticlePayload>) => fetchAdmin<AdminArticle>(`/articles/${id}`, { method: "PATCH", body: JSON.stringify(data) });

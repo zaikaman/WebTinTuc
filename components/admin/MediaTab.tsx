@@ -55,7 +55,7 @@ export default function MediaTab({
   onUploadClick,
 }: MediaTabProps) {
   return (
-    <div className="space-y-5 animate-fade-in">
+    <div className="flex flex-col gap-6 animate-fade-in">
       {/* Header Panel */}
       <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

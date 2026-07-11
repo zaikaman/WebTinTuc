@@ -29,6 +29,20 @@ describe('articleListQuerySchema', () => {
     expect(result.sortBy).toBe('title')
   })
 
+  it('parses includeDeleted query strings correctly (not z.coerce.boolean)', () => {
+    // Regression: Boolean("false") === true broke hide-deleted filter
+    expect(articleListQuerySchema.parse({ includeDeleted: 'false' }).includeDeleted).toBe(false)
+    expect(articleListQuerySchema.parse({ includeDeleted: 'true' }).includeDeleted).toBe(true)
+    expect(articleListQuerySchema.parse({ includeDeleted: '0' }).includeDeleted).toBe(false)
+    expect(articleListQuerySchema.parse({ includeDeleted: '1' }).includeDeleted).toBe(true)
+    expect(articleListQuerySchema.parse({}).includeDeleted).toBeUndefined()
+  })
+
+  it('parses featured query strings correctly', () => {
+    expect(articleListQuerySchema.parse({ featured: 'false' }).featured).toBe(false)
+    expect(articleListQuerySchema.parse({ featured: 'true' }).featured).toBe(true)
+  })
+
   it('rejects invalid status', () => {
     expect(() => articleListQuerySchema.parse({ status: 'deleted' })).toThrow()
   })

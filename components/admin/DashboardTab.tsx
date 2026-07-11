@@ -46,7 +46,7 @@ export default function DashboardTab({
   }
 
   return (
-    <>
+    <div className="flex flex-col gap-6">
       {/* HEADER ACTION BANNER */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden group">
         <div className="absolute top-0 left-0 w-2.5 h-full bg-[#E55956]" />
@@ -149,12 +149,30 @@ export default function DashboardTab({
                 onApplyFilter();
               }
             }}
-            className="px-5 py-2.5 bg-gray-900 hover:bg-black active:scale-[0.98] text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center justify-center h-[38px]"
+            disabled={!dashboardDay && !dashboardMonth && !dashboardYear}
+            className="px-5 py-2.5 bg-gray-900 hover:bg-black active:scale-[0.98] text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center justify-center h-[38px] disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100"
           >
             Lọc
           </button>
         </div>
       </div>
+
+      {(dashboardDay || dashboardMonth || dashboardYear) && (
+        <p className="text-[11px] text-gray-500 font-medium px-1">
+          Lọc tùy chỉnh:{" "}
+          <span className="font-bold text-gray-800">
+            {[
+              dashboardDay ? `Ngày ${Number(dashboardDay)}` : null,
+              dashboardMonth ? `Tháng ${Number(dashboardMonth)}` : null,
+              dashboardYear || new Date().getFullYear(),
+            ]
+              .filter(Boolean)
+              .join(" / ")}
+          </span>
+          {" "}
+          — nhấn <span className="font-bold">Lọc</span> để áp dụng. Chọn tab Hôm nay/Tuần/Tháng/Năm để xóa lọc tùy chỉnh.
+        </p>
+      )}
 
       {/* METRICS CARDS SECTION */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -393,6 +411,6 @@ export default function DashboardTab({
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

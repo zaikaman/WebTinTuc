@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { paginationSchema } from './common.schema'
+import { paginationSchema, queryBooleanSchema } from './common.schema'
 import './i18n'
 
 // ==========================================
@@ -92,18 +92,18 @@ export const articleListQuerySchema = paginationSchema.extend({
   categoryId: z.coerce.number().int().positive().optional(),
   category: z.string().trim().optional(),
   status: articleStatusSchema.optional(),
-  featured: z.coerce.boolean().optional(),
+  featured: queryBooleanSchema,
   publishedFrom: z.string().datetime().optional(),
   publishedTo: z.string().datetime().optional(),
   sortBy: z.enum(['title', 'published_at', 'views', 'created_at']).default('created_at'),
-  includeDeleted: z.coerce.boolean().optional()
+  includeDeleted: queryBooleanSchema
 })
 
 export const publicArticleListQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(20),
   category: z.string().trim().optional(),
-  featured: z.coerce.boolean().optional()
+  featured: queryBooleanSchema
 })
 
 export const createArticleSchema = z.object({
