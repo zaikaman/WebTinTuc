@@ -600,30 +600,42 @@ export default function PostEditorView({
     [postForm, postContent, postCoverImage, mode, editId, categories, clearDraft]
   );
 
+  /**
+   * Insert HTML into the contenteditable without execCommand('insertHTML').
+   * Browsers sanitize insertHTML and strip data/event attributes used by the
+   * media resize toolbar — matching the working path from commit 0523987 that
+   * relied on innerHTML assignment for full toolbar markup.
+   */
   const insertHtmlToEditor = useCallback((html: string) => {
     if (!editorRef.current) return;
     editorRef.current.focus();
+
     const selection = window.getSelection();
-    let isInsideEditor = false;
+    let range: Range | null = null;
     if (selection && selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0);
-      let node = range.commonAncestorContainer;
+      const candidate = selection.getRangeAt(0);
+      let node: Node | null = candidate.commonAncestorContainer;
       while (node) {
         if (node === editorRef.current) {
-          isInsideEditor = true;
+          range = candidate;
           break;
         }
-        node = node.parentNode as Node;
+        node = node.parentNode;
       }
     }
-    if (isInsideEditor && selection) {
-      try {
-        document.execCommand("insertHTML", false, html);
-      } catch {
-        editorRef.current.innerHTML += html;
-      }
+
+    const template = document.createElement("template");
+    template.innerHTML = html;
+    const fragment = template.content;
+
+    if (range && selection) {
+      range.deleteContents();
+      range.insertNode(fragment);
+      range.collapse(false);
+      selection.removeAllRanges();
+      selection.addRange(range);
     } else {
-      editorRef.current.innerHTML += html;
+      editorRef.current.appendChild(fragment);
     }
     setPostContent(editorRef.current.innerHTML);
   }, []);
@@ -826,6 +838,63 @@ export default function PostEditorView({
     };
     window.addEventListener("editor-crop-image", handleCropEvent);
     return () => window.removeEventListener("editor-crop-image", handleCropEvent);
+  }, []);
+
+  /**
+   * Media toolbar (25/50/75/100%, delete, crop) — event delegation on the editor.
+   * Inline onclick from commit 0523987 is stripped by execCommand('insertHTML')
+   * and unreliable under CSP; data-editor-action attrs restore apply-frame-resize.
+   */
+  const handleEditorToolbarClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    const target = e.target as HTMLElement | null;
+    if (!target) return;
+
+    const actionEl = target.closest("[data-editor-action]") as HTMLElement | null;
+    if (!actionEl || !editor.contains(actionEl)) return;
+
+    const action = actionEl.getAttribute("data-editor-action");
+    if (!action) return;
+
+    const media =
+      (actionEl.closest("[data-editor-media]") as HTMLElement | null) ||
+      (actionEl.closest('[contenteditable="false"]') as HTMLElement | null);
+    if (!media || !editor.contains(media)) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (action === "resize") {
+      const width = actionEl.getAttribute("data-width") || "100%";
+      media.style.maxWidth = width;
+      // Keep margin: 0 auto so resized media stays centered (same as blocksToHtml).
+      if (!media.style.margin && !media.style.marginLeft) {
+        media.style.margin = "0 auto";
+      }
+      setPostContent(editor.innerHTML);
+      return;
+    }
+
+    if (action === "delete") {
+      media.remove();
+      setPostContent(editor.innerHTML);
+      return;
+    }
+
+    if (action === "crop") {
+      const img = media.querySelector("img");
+      if (!img) return;
+      if (!media.id) {
+        media.id = "img-" + Math.random().toString(36).substring(2, 9);
+      }
+      window.dispatchEvent(
+        new CustomEvent("editor-crop-image", {
+          detail: { src: img.src, id: media.id },
+        })
+      );
+    }
   }, []);
 
   const handleBack = useCallback(() => {
@@ -1103,6 +1172,7 @@ export default function PostEditorView({
               contentEditable
               suppressContentEditableWarning
               onInput={(e) => setPostContent(e.currentTarget.innerHTML)}
+              onClick={handleEditorToolbarClick}
               onMouseUp={saveSelection}
               onKeyUp={saveSelection}
               onFocus={saveSelection}

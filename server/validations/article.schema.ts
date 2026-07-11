@@ -24,7 +24,9 @@ const ImageBlockSchema = z.object({
   type: z.literal('image'),
   src: z.string().optional(),
   caption: z.string().optional(),
-  width: z.string().optional()
+  width: z.string().optional(),
+  /** DOM id used by the editor crop dialog to target the wrapper */
+  id: z.string().optional()
 })
 
 const VideoBlockSchema = z.object({

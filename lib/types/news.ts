@@ -8,6 +8,8 @@ export interface ContentBlock {
   align?: string | undefined;
   listType?: "ul" | "ol" | undefined;
   width?: string | undefined;
+  /** Editor media wrapper id (crop target); optional on public render */
+  id?: string | undefined;
   fontFamily?: string | undefined;
   fontSize?: string | undefined;
   style?: string | undefined;

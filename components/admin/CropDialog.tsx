@@ -172,8 +172,13 @@ export default function CropDialog({
                 const imgEl = wrapper.querySelector("img");
                 if (imgEl) {
                   imgEl.src = res.url;
-                  const ed = wrapper.closest("[contenteditable]");
-                  if (ed) ed.dispatchEvent(new Event("input", { bubbles: true }));
+                  // Prefer the real editor (contenteditable=true), not the media wrapper (false).
+                  const ed =
+                    (wrapper.closest('[contenteditable="true"]') as HTMLElement | null) ||
+                    (wrapper.parentElement?.closest("[contenteditable]") as HTMLElement | null);
+                  if (ed) {
+                    ed.dispatchEvent(new Event("input", { bubbles: true }));
+                  }
                 }
               }
               toast.success("Đã cắt cúp và chèn ảnh thành công!", { id: "upload-cropped" });
