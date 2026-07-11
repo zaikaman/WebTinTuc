@@ -183,7 +183,7 @@ export function CategoryContent({ featured, initialList, ads = [] }: CategoryCon
         </div>
 
         {/* Right Column: Sticky Sidebar Ads - Hidden on Mobile */}
-        <aside className="hidden lg:flex w-[300px] flex-shrink-0 flex-col gap-4">
+        <aside className="hidden lg:flex w-[300px] flex-shrink-0 lg:sticky lg:top-4 flex-col gap-4">
           <AdBanner 
             position="sidebar_1" 
             ads={ads} 

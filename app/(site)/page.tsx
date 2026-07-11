@@ -172,7 +172,7 @@ export default async function HomePage() {
         </div>
 
         {/* Right Column: Sidebar (contains 300x600 Ads) - Hidden on Mobile */}
-        <div className="hidden lg:block w-[300px] flex-shrink-0 space-y-4">
+        <div className="hidden lg:block w-[300px] flex-shrink-0 space-y-4 lg:sticky lg:top-4">
           {/* Ad 1: Zento Premium Cabinet */}
           <AdBanner 
             position="sidebar_1" 
