@@ -1,4 +1,4 @@
-- Remember to run pnpm build and fix all the errors if there are any after you're done.
+- Remember to run pnpm build and pnpm typecheck and fix all the errors if there are any after you're done.
 - Do not use the agent browser
 - Design must be consistent.
 - When done with a task or there's a question you want me to answer, play the completion sound: run `powershell -c "(New-Object Media.SoundPlayer '$(pwd)/public/done.wav').PlaySync()"` to play the "ding" sound from public/done.wav.

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // Mock all server services used by news.ts
 vi.mock('@/server/services/site-settings.service', () => ({

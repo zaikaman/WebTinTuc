@@ -103,8 +103,8 @@ const securityHeaders: { key: string; value: string }[] = [
 const nextConfig: NextConfig = {
   distDir: process.env.NEXT_DIST_DIR || ".next",
   typescript: {
-    // Skip type checking during next build — runs separately via pnpm typecheck
-    ignoreBuildErrors: true,
+    // Fail production builds on type errors — do not ship type-broken code
+    ignoreBuildErrors: false,
   },
   experimental: {
     staleTimes: {

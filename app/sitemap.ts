@@ -35,7 +35,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const articlesData = await articleService.listPublicArticles({ limit: 1000 });
     const articles = articlesData?.items || [];
     for (const article of articles) {
-      if (article.deleted_at || article.status !== 'published') continue;
+      // listPublicArticles already filters published + non-deleted
+      if (article.status !== 'published') continue;
       entries.push({
         url: `${siteUrl}/posts/${article.slug}`,
         lastModified: article.updated_at ? new Date(article.updated_at) : new Date(article.published_at ?? Date.now()),

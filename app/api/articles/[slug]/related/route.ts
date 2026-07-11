@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { fail, okCached, parseQuery } from '@/server/http'
+import { fail, okCached } from '@/server/http'
 import { slugParamSchema } from '@/server/validations/common.schema'
 import * as articleService from '@/server/services/article.service'
 
