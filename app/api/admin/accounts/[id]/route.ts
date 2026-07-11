@@ -6,6 +6,7 @@ import { actionResponse, fail, ok } from '@/server/http'
 import { z } from 'zod'
 import * as adminAccountService from '@/server/services/admin-account.service'
 import { deleteAdminAccountAction, updateAdminAccountAction } from '@/server/actions/admin-account.action'
+import { deleteAccountBodySchema } from '@/server/validations/admin-account.schema'
 
 const uuidParamSchema = z.object({
   id: z.string().uuid()
@@ -43,10 +44,21 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
   try {
     const admin = await requireAdmin(request)
     const { id } = uuidParamSchema.parse(await context.params)
+
+    let body: unknown = {}
+    try {
+      const text = await request.text()
+      if (text.trim()) body = JSON.parse(text)
+    } catch {
+      body = {}
+    }
+    const parsed = deleteAccountBodySchema.parse(body)
+
     return actionResponse(
       await deleteAdminAccountAction(
         id,
-        admin.id === 'admin-api-secret' ? request.headers.get('x-admin-secret') : null
+        admin.id === 'admin-api-secret' ? request.headers.get('x-admin-secret') : null,
+        parsed.confirmSelfDelete === true ? { confirmSelfDelete: true } : undefined
       )
     )
   } catch (error) {

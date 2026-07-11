@@ -581,7 +581,6 @@ export default function DefaultTab({
                   <th className="py-4 px-4 min-w-[200px]">Tên đăng nhập</th>
                   <th className="py-4 px-4 min-w-[200px]">Tên hiển thị</th>
                   <th className="py-4 px-4 w-44">Email</th>
-                  <th className="py-4 px-4 w-32 text-center">Vai trò</th>
                   <th className="py-4 px-4 w-40 text-center">Ngày tạo</th>
                   <th className="py-4 px-6 w-28 text-center">Thao tác</th>
                 </tr>
@@ -598,11 +597,6 @@ export default function DefaultTab({
                       <td className="py-4 px-4 text-gray-900 font-semibold">{acc.username}</td>
                       <td className="py-4 px-4 text-gray-750">{acc.display_name}</td>
                       <td className="py-4 px-4 text-gray-600">{acc.email || "(Chưa cấu hình)"}</td>
-                      <td className="py-4 px-4 text-center">
-                        <span className="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800 uppercase tracking-wide">
-                          {acc.role}
-                        </span>
-                      </td>
                       <td className="py-4 px-4 text-center text-gray-500">
                         {formatDateForDisplay(acc.created_at ? acc.created_at.split("T")[0] : "")}
                       </td>

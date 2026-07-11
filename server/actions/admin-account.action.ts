@@ -26,10 +26,17 @@ export async function updateAdminAccountAction(id: string, input: unknown, admin
   })
 }
 
-export async function deleteAdminAccountAction(id: string, adminSecret?: string | null) {
+export async function deleteAdminAccountAction(
+  id: string,
+  adminSecret?: string | null,
+  options?: { confirmSelfDelete?: boolean }
+) {
   return runAction(async () => {
-    await requireAdminAccess(adminSecret)
-    const result = await adminAccountService.deleteAdminAccount(id)
+    const admin = await requireAdminAccess(adminSecret)
+    const result = await adminAccountService.deleteAdminAccount(id, {
+      actorId: admin.id,
+      confirmSelfDelete: options?.confirmSelfDelete === true,
+    })
     revalidatePath('/admin/accounts')
     revalidateTag('admin-accounts')
     return result

@@ -207,6 +207,5 @@ export interface CreateAccountPayload {
   password?: string | undefined
   username: string
   display_name: string
-  role?: string | undefined
 }
 

@@ -337,6 +337,54 @@ END;
 $$;
 
 
+--
+-- Name: profiles_prevent_last_admin_delete(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.profiles_prevent_last_admin_delete() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF OLD.role = 'admin' THEN
+    IF NOT EXISTS (
+      SELECT 1
+      FROM public.profiles p
+      WHERE p.role = 'admin'
+        AND p.id IS DISTINCT FROM OLD.id
+    ) THEN
+      RAISE EXCEPTION 'Cannot delete the last admin profile'
+        USING ERRCODE = 'check_violation';
+    END IF;
+  END IF;
+  RETURN OLD;
+END;
+$$;
+
+
+--
+-- Name: profiles_prevent_last_admin_demotion(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.profiles_prevent_last_admin_demotion() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF OLD.role = 'admin' AND NEW.role IS DISTINCT FROM 'admin' THEN
+    IF NOT EXISTS (
+      SELECT 1
+      FROM public.profiles p
+      WHERE p.role = 'admin'
+        AND p.id IS DISTINCT FROM OLD.id
+    ) THEN
+      RAISE EXCEPTION 'Cannot demote the last admin profile'
+        USING ERRCODE = 'check_violation';
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
@@ -532,10 +580,11 @@ CREATE TABLE public.profiles (
     username character varying(50) NOT NULL,
     display_name character varying(100),
     avatar_key text,
-    role character varying(20) DEFAULT 'editor'::character varying NOT NULL,
+    -- Admin-only until multi-role is implemented (editor removed from CHECK).
+    role character varying(20) DEFAULT 'admin'::character varying NOT NULL,
     created_at timestamp with time zone DEFAULT now(),
     updated_at timestamp with time zone DEFAULT now(),
-    CONSTRAINT profiles_role_check CHECK (((role)::text = ANY ((ARRAY['admin'::character varying, 'editor'::character varying])::text[])))
+    CONSTRAINT profiles_role_check CHECK (((role)::text = 'admin'::text))
 );
 
 
@@ -1024,6 +1073,20 @@ CREATE OR REPLACE VIEW public.view_top_ads_7d AS
 --
 
 CREATE TRIGGER articles_search_vector_trigger BEFORE INSERT OR UPDATE ON public.articles FOR EACH ROW EXECUTE FUNCTION public.articles_search_vector_update();
+
+
+--
+-- Name: profiles profiles_prevent_last_admin_delete; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER profiles_prevent_last_admin_delete BEFORE DELETE ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.profiles_prevent_last_admin_delete();
+
+
+--
+-- Name: profiles profiles_prevent_last_admin_demotion; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER profiles_prevent_last_admin_demotion BEFORE UPDATE OF role ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.profiles_prevent_last_admin_demotion();
 
 
 --

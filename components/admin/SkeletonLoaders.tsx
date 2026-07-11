@@ -256,7 +256,6 @@ export const AccountsTableSkeleton = () => (
         <td className="py-4 px-4"><div className="h-4 bg-gray-200 rounded w-32"></div></td>
         <td className="py-4 px-4"><div className="h-4 bg-gray-200 rounded w-40"></div></td>
         <td className="py-4 px-4"><div className="h-4 bg-gray-205 rounded w-44"></div></td>
-        <td className="py-4 px-4 text-center"><div className="h-6 bg-gray-150 rounded-full w-20 mx-auto"></div></td>
         <td className="py-4 px-4 text-center"><div className="h-4 bg-gray-100 rounded w-24 mx-auto"></div></td>
         <td className="py-4 px-6 text-center">
           <div className="flex items-center justify-center gap-2.5">

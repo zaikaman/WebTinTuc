@@ -78,7 +78,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
                   {auth.adminProfile?.displayName || "Administrator"}
                 </span>
                 <span className="text-[10px] font-semibold text-[#E55956] uppercase tracking-wider">
-                  {auth.adminProfile?.role || "admin"}
+                  Quản trị viên
                 </span>
               </div>
               <div

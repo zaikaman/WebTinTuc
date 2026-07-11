@@ -125,4 +125,11 @@ export const getAdminDashboardStats = (params?: {
 export const getAdminAccounts = (qs = "") => fetchAdmin<{ items: AdminAccount[] }>(`/accounts${qs}`);
 export const createAdminAccount = (data: CreateAccountPayload) => fetchAdmin<AdminAccount>("/accounts", { method: "POST", body: JSON.stringify(data) });
 export const updateAdminAccount = (id: string, data: Partial<CreateAccountPayload>) => fetchAdmin<AdminAccount>(`/accounts/${id}`, { method: "PATCH", body: JSON.stringify(data) });
-export const deleteAdminAccount = (id: string) => fetchAdmin<{ id: string }>(`/accounts/${id}`, { method: "DELETE" });
+export const deleteAdminAccount = (
+  id: string,
+  options?: { confirmSelfDelete?: boolean }
+) =>
+  fetchAdmin<{ id: string }>(`/accounts/${id}`, {
+    method: "DELETE",
+    body: JSON.stringify({ confirmSelfDelete: options?.confirmSelfDelete === true }),
+  });

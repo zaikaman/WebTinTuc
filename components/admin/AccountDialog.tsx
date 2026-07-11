@@ -1,7 +1,7 @@
 "use client";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ChevronDown, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { AdminAccount } from "./AdminTypes";
 
 interface AccountDialogProps {
@@ -89,22 +89,6 @@ export default function AccountDialog({
               className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white shadow-sm font-medium"
               required={dialogMode === "add"}
             />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-bold text-gray-900">
-              Vai trò
-            </label>
-            <div className="relative">
-              <select
-                value={accountForm.role || "admin"}
-                onChange={(e) => onFormChange({ ...accountForm, role: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white shadow-sm font-semibold text-gray-800 appearance-none cursor-pointer"
-              >
-                <option value="admin">Administrator</option>
-              </select>
-              <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-            </div>
           </div>
 
           <div className="flex items-center justify-center gap-4 pt-6 pb-2">

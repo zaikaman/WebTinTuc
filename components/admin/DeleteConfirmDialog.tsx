@@ -16,6 +16,8 @@ interface DeleteConfirmDialogProps {
   isDeleting: boolean;
   onConfirm: () => void;
   onCancel: () => void;
+  /** Extra warning when deleting the currently signed-in admin account. */
+  isSelfDelete?: boolean;
 }
 
 export default function DeleteConfirmDialog({
@@ -24,6 +26,7 @@ export default function DeleteConfirmDialog({
   isDeleting,
   onConfirm,
   onCancel,
+  isSelfDelete = false,
 }: DeleteConfirmDialogProps) {
   return (
     <Dialog open={open} onOpenChange={(open) => { if (!open) onCancel(); }}>
@@ -33,7 +36,7 @@ export default function DeleteConfirmDialog({
             {activeTab === "posts" && "Xóa bài viết"}
             {activeTab === "categories" && "Xóa danh mục"}
             {activeTab === "ads" && "Xóa quảng cáo"}
-            {activeTab === "accounts" && "Xóa tài khoản"}
+            {activeTab === "accounts" && (isSelfDelete ? "Xóa tài khoản của bạn" : "Xóa tài khoản")}
           </DialogTitle>
         </DialogHeader>
 
@@ -42,10 +45,15 @@ export default function DeleteConfirmDialog({
             {activeTab === "posts" && "Bạn có chắc chắn muốn xóa bài viết"}
             {activeTab === "categories" && "Bạn có chắc chắn muốn xóa danh mục"}
             {activeTab === "ads" && "Bạn có chắc chắn muốn xóa quảng cáo"}
-            {activeTab === "accounts" && "Bạn có chắc chắn muốn xóa tài khoản"}
+            {activeTab === "accounts" &&
+              (isSelfDelete
+                ? "Bạn đang xóa chính tài khoản đang đăng nhập"
+                : "Bạn có chắc chắn muốn xóa tài khoản")}
           </h3>
           <p className="text-sm font-semibold text-[#E55956]">
-            Dữ liệu bị xóa sẽ không thể khôi phục
+            {activeTab === "accounts" && isSelfDelete
+              ? "Bạn sẽ bị đăng xuất ngay sau khi xóa. Cần còn ít nhất một admin khác. Dữ liệu không thể khôi phục."
+              : "Dữ liệu bị xóa sẽ không thể khôi phục"}
           </p>
         </div>
 

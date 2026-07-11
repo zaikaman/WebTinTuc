@@ -130,6 +130,7 @@ export async function POST(request: NextRequest) {
 
     return ok({
       profile: {
+        id: data.user.id,
         email: data.user.email || email,
         displayName,
         username,

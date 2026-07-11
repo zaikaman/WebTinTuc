@@ -14,6 +14,7 @@ import AccountDialog from "@/components/admin/AccountDialog";
 import DeleteConfirmDialog from "@/components/admin/DeleteConfirmDialog";
 import QueryErrorBanner from "@/components/admin/QueryErrorBanner";
 import { adminKeys } from "@/lib/query/adminKeys";
+import { useAdminAuth } from "@/lib/hooks/useAdminAuth";
 import { toast } from "sonner";
 import type { AdminAccount } from "@/components/admin/AdminTypes";
 
@@ -22,6 +23,7 @@ const QS = "?limit=100";
 
 export default function AccountsPage() {
   const queryClient = useQueryClient();
+  const { adminProfile } = useAdminAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [accountsPage, setAccountsPage] = useState(1);
   const [dialogMode, setDialogMode] = useState<"add" | "edit">("add");
@@ -34,7 +36,6 @@ export default function AccountsPage() {
     display_name: "",
     email: "",
     password: "",
-    role: "admin",
   });
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [targetAccountIdToDelete, setTargetAccountIdToDelete] = useState<
@@ -43,6 +44,11 @@ export default function AccountsPage() {
   const [isAccountSaving, setIsAccountSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [localOverride, setLocalOverride] = useState<AdminAccount[] | null>(null);
+
+  const isSelfDelete =
+    Boolean(targetAccountIdToDelete) &&
+    Boolean(adminProfile?.id) &&
+    targetAccountIdToDelete === adminProfile?.id;
 
   const { data, isLoading, isFetching, isError, error, refetch } = useQuery({
     queryKey: adminKeys.accounts(QS),
@@ -86,7 +92,6 @@ export default function AccountsPage() {
       display_name: "",
       email: "",
       password: "",
-      role: "admin",
     });
     setAccountDialogOpen(true);
   }, []);
@@ -99,7 +104,6 @@ export default function AccountsPage() {
       display_name: item.display_name,
       email: item.email || "",
       password: "",
-      role: item.role,
     });
     setAccountDialogOpen(true);
   }, []);
@@ -111,11 +115,15 @@ export default function AccountsPage() {
 
   const executeDelete = useCallback(async () => {
     if (targetAccountIdToDelete === null) return;
+    const selfDelete =
+      Boolean(adminProfile?.id) && targetAccountIdToDelete === adminProfile?.id;
     setDeleteConfirmOpen(false);
     try {
       setIsDeleting(true);
       setLocalOverride(accounts.filter((a) => a.id !== targetAccountIdToDelete));
-      await deleteAdminAccount(targetAccountIdToDelete);
+      await deleteAdminAccount(targetAccountIdToDelete, {
+        confirmSelfDelete: selfDelete,
+      });
       toast.success("Xóa tài khoản thành công!");
       invalidate();
     } catch (e: any) {
@@ -125,7 +133,7 @@ export default function AccountsPage() {
       setIsDeleting(false);
       setTargetAccountIdToDelete(null);
     }
-  }, [targetAccountIdToDelete, accounts, invalidate]);
+  }, [targetAccountIdToDelete, accounts, invalidate, adminProfile?.id]);
 
   const handleFormSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -156,7 +164,6 @@ export default function AccountsPage() {
             password: accountForm.password?.trim(),
             username: accountForm.username.trim(),
             display_name: accountForm.display_name.trim(),
-            role: accountForm.role || "admin",
           });
           toast.success("Thêm tài khoản mới thành công!", { id: "account-submit" });
         } else if (editAccountId) {
@@ -164,7 +171,6 @@ export default function AccountsPage() {
             email: accountForm.email.trim(),
             username: accountForm.username.trim(),
             display_name: accountForm.display_name.trim(),
-            role: accountForm.role || "admin",
           };
           if (accountForm.password?.trim()) payload.password = accountForm.password.trim();
           toast.loading("Đang cập nhật...", { id: "account-submit" });
@@ -262,6 +268,7 @@ export default function AccountsPage() {
         open={deleteConfirmOpen}
         activeTab="accounts"
         isDeleting={isDeleting}
+        isSelfDelete={isSelfDelete}
         onConfirm={executeDelete}
         onCancel={() => {
           setDeleteConfirmOpen(false);

@@ -37,6 +37,7 @@ function setAdminUiFlag() {
 }
 
 export type AdminProfile = {
+  id: string;
   email: string;
   displayName: string;
   username: string;
@@ -62,7 +63,7 @@ export type AdminAuthValue = {
 const AdminAuthContext = createContext<AdminAuthValue | null>(null);
 
 function buildAdminProfile(
-  user: { email?: string | null },
+  user: { id: string; email?: string | null },
   profile: { role?: string; display_name?: string | null; username?: string | null }
 ): AdminProfile {
   const displayName =
@@ -78,6 +79,7 @@ function buildAdminProfile(
     .slice(0, 2)
     .toUpperCase() || "AD";
   return {
+    id: user.id,
     email: user.email || "",
     displayName,
     username,

@@ -118,7 +118,9 @@ export async function getAdminAccountById(id: string) {
 }
 
 export async function createAdminAccount(data: any) {
-  const { email, password, username, display_name, role = 'admin' } = data
+  const { email, password, username, display_name } = data
+  // Multi-role (e.g. editor) is not implemented — always create admin accounts.
+  const role = 'admin'
 
   // Check if profile username already exists in profiles table
   const { data: existingProfile } = await supabaseAdmin
@@ -172,7 +174,8 @@ export async function createAdminAccount(data: any) {
 }
 
 export async function updateAdminAccount(id: string, data: any) {
-  const { email, password, username, display_name, role } = data
+  // role is intentionally ignored — multi-role is not ready; never demote/promote via API.
+  const { email, password, username, display_name } = data
 
   // If username is changing, check for uniqueness
   if (username) {
@@ -200,13 +203,12 @@ export async function updateAdminAccount(id: string, data: any) {
     }
   }
 
-  // 2. Update profile details
+  // 2. Update profile details (never accept role changes from client)
   const profileUpdates: any = {
     updated_at: new Date().toISOString()
   }
   if (username) profileUpdates.username = username
   if (display_name) profileUpdates.display_name = display_name
-  if (role) profileUpdates.role = role
 
   const { data: profile, error: profileError } = await supabaseAdmin
     .from('profiles')
@@ -226,15 +228,64 @@ export async function updateAdminAccount(id: string, data: any) {
   }
 }
 
-export async function deleteAdminAccount(id: string) {
+export type DeleteAdminAccountOptions = {
+  /** Authenticated actor performing the delete (session user id). */
+  actorId?: string
+  /** Required when actor deletes their own account. */
+  confirmSelfDelete?: boolean
+}
+
+export async function deleteAdminAccount(id: string, options: DeleteAdminAccountOptions = {}) {
+  const { actorId, confirmSelfDelete = false } = options
+
+  const { data: target, error: targetError } = await supabaseAdmin
+    .from('profiles')
+    .select('id, role')
+    .eq('id', id)
+    .maybeSingle()
+
+  if (targetError) throw targetError
+  if (!target) {
+    throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy tài khoản')
+  }
+
+  const isSelfDelete =
+    Boolean(actorId) && actorId !== 'admin-api-secret' && actorId === id
+
+  // Last-admin guard: never remove the final admin profile (permanent lockout).
+  if (target.role === 'admin') {
+    const { count, error: countError } = await supabaseAdmin
+      .from('profiles')
+      .select('id', { count: 'exact', head: true })
+      .eq('role', 'admin')
+
+    if (countError) throw countError
+    if ((count ?? 0) <= 1) {
+      throw new ApiError(
+        400,
+        'BAD_REQUEST',
+        'Không thể xóa admin cuối cùng. Hệ thống cần ít nhất một tài khoản quản trị.'
+      )
+    }
+  }
+
+  // Self-delete requires explicit confirmation and (via last-admin guard) another admin.
+  if (isSelfDelete && !confirmSelfDelete) {
+    throw new ApiError(
+      400,
+      'BAD_REQUEST',
+      'Xóa tài khoản của chính bạn cần xác nhận rõ ràng. Vui lòng xác nhận lại thao tác.'
+    )
+  }
+
   // 1. Delete profile first
   const { error: profileError } = await supabaseAdmin
     .from('profiles')
     .delete()
     .eq('id', id)
-  
+
   if (profileError) {
-    console.error("Error deleting profile:", profileError)
+    throw new ApiError(400, 'BAD_REQUEST', 'Không thể xóa hồ sơ tài khoản')
   }
 
   // 2. Delete auth user

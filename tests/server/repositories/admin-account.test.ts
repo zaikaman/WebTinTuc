@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { supabaseAdmin } from '@/lib/supabase/admin'
+import { ApiError } from '@/server/http'
 
 function createMockQuery() {
   let resolvedValues: any[] = []
@@ -33,6 +34,7 @@ describe('adminAccountRepository', () => {
   let mockAuthAdmin: any
 
   beforeEach(() => {
+    vi.resetModules()
     mockQuery = createMockQuery()
     vi.mocked(supabaseAdmin).from = vi.fn().mockReturnValue(mockQuery)
     
@@ -102,7 +104,7 @@ describe('adminAccountRepository', () => {
     expect(result.email).toBe('admin1@example.com')
   })
 
-  it('createAdminAccount creates auth user and upserts profile', async () => {
+  it('createAdminAccount always assigns role admin (ignores client role)', async () => {
     // 1st query: Check if username exists (returns null)
     mockQuery.mockResolvedValueOnce({ data: null, error: null })
     
@@ -120,7 +122,8 @@ describe('adminAccountRepository', () => {
       email: 'admin3@example.com',
       password: 'password123',
       username: 'admin3',
-      display_name: 'Admin Three'
+      display_name: 'Admin Three',
+      role: 'editor',
     })
 
     expect(result.username).toBe('admin3')
@@ -130,14 +133,69 @@ describe('adminAccountRepository', () => {
       password: 'password123',
       email_confirm: true
     })
+    // Upsert should force role admin
+    expect(mockQuery.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ role: 'admin' })
+    )
   })
 
-  it('deleteAdminAccount deletes profile and auth user', async () => {
-    mockQuery.mockResolvedValue({ error: null })
+  it('deleteAdminAccount deletes profile and auth user when other admins exist', async () => {
+    // Target profile
+    mockQuery.mockResolvedValueOnce({ data: { id: 'u1', role: 'admin' }, error: null })
+    // Admin count
+    mockQuery.mockResolvedValueOnce({ data: null, error: null, count: 2 })
+    // Profile delete
+    mockQuery.mockResolvedValueOnce({ error: null })
     mockAuthAdmin.deleteUser.mockResolvedValue({ error: null })
 
     const { deleteAdminAccount } = await import('@/server/repositories/admin-account.repository')
-    const result = await deleteAdminAccount('u1')
+    const result = await deleteAdminAccount('u1', { actorId: 'u2' })
+
+    expect(result.id).toBe('u1')
+    expect(mockAuthAdmin.deleteUser).toHaveBeenCalledWith('u1')
+  })
+
+  it('deleteAdminAccount refuses to delete the last admin', async () => {
+    mockQuery.mockResolvedValueOnce({ data: { id: 'u1', role: 'admin' }, error: null })
+    mockQuery.mockResolvedValueOnce({ data: null, error: null, count: 1 })
+
+    const { deleteAdminAccount } = await import('@/server/repositories/admin-account.repository')
+
+    await expect(deleteAdminAccount('u1', { actorId: 'u2' })).rejects.toMatchObject({
+      status: 400,
+      code: 'BAD_REQUEST',
+      message: expect.stringContaining('admin cuối cùng'),
+    } as Partial<ApiError>)
+    expect(mockAuthAdmin.deleteUser).not.toHaveBeenCalled()
+  })
+
+  it('deleteAdminAccount refuses self-delete without confirmSelfDelete', async () => {
+    mockQuery.mockResolvedValueOnce({ data: { id: 'u1', role: 'admin' }, error: null })
+    mockQuery.mockResolvedValueOnce({ data: null, error: null, count: 2 })
+
+    const { deleteAdminAccount } = await import('@/server/repositories/admin-account.repository')
+
+    await expect(
+      deleteAdminAccount('u1', { actorId: 'u1', confirmSelfDelete: false })
+    ).rejects.toMatchObject({
+      status: 400,
+      code: 'BAD_REQUEST',
+      message: expect.stringContaining('xác nhận'),
+    } as Partial<ApiError>)
+    expect(mockAuthAdmin.deleteUser).not.toHaveBeenCalled()
+  })
+
+  it('deleteAdminAccount allows self-delete with confirmation when another admin exists', async () => {
+    mockQuery.mockResolvedValueOnce({ data: { id: 'u1', role: 'admin' }, error: null })
+    mockQuery.mockResolvedValueOnce({ data: null, error: null, count: 2 })
+    mockQuery.mockResolvedValueOnce({ error: null })
+    mockAuthAdmin.deleteUser.mockResolvedValue({ error: null })
+
+    const { deleteAdminAccount } = await import('@/server/repositories/admin-account.repository')
+    const result = await deleteAdminAccount('u1', {
+      actorId: 'u1',
+      confirmSelfDelete: true,
+    })
 
     expect(result.id).toBe('u1')
     expect(mockAuthAdmin.deleteUser).toHaveBeenCalledWith('u1')
