@@ -12,11 +12,20 @@ describe('siteSettingsService', () => {
     vi.clearAllMocks()
   })
 
-  it('getSiteSettings delegates to repository', async () => {
+  it('getSiteSettings delegates to repository (uncached admin path)', async () => {
     const mockSettings = { id: 1, brand: { name: 'Test' } }
     vi.mocked(settingsRepository.getSiteSettings).mockResolvedValue(mockSettings)
 
     const result = await settingsService.getSiteSettings()
+    expect(result).toEqual(mockSettings)
+    expect(settingsRepository.getSiteSettings).toHaveBeenCalledTimes(1)
+  })
+
+  it('getPublicSiteSettings returns settings for public consumers', async () => {
+    const mockSettings = { id: 1, brand: { name: 'Public' } }
+    vi.mocked(settingsRepository.getSiteSettings).mockResolvedValue(mockSettings)
+
+    const result = await settingsService.getPublicSiteSettings()
     expect(result).toEqual(mockSettings)
   })
 
