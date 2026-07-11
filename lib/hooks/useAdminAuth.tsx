@@ -118,10 +118,21 @@ async function verifyAdminSessionNetwork(): Promise<{
 }
 
 export function AdminAuthProvider({ children }: { children: ReactNode }) {
-  const [isLoggedIn, setIsLoggedIn] = useState(() => sessionCache?.isAdmin === true);
+  const [isLoggedIn, setIsLoggedIn] = useState(() => {
+    if (sessionCache) return sessionCache.isAdmin;
+    if (typeof window !== "undefined") {
+      return localStorage.getItem(ADMIN_UI_FLAG) === "true";
+    }
+    return false;
+  });
   const [isAuthVerified, setIsAuthVerified] = useState(() => {
-    if (!sessionCache) return false;
-    return Date.now() - sessionCache.checkedAt < SESSION_CACHE_TTL_MS;
+    if (sessionCache) {
+      return Date.now() - sessionCache.checkedAt < SESSION_CACHE_TTL_MS;
+    }
+    if (typeof window !== "undefined") {
+      return localStorage.getItem(ADMIN_UI_FLAG) === "true";
+    }
+    return false;
   });
   const [loginUsername, setLoginUsername] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
