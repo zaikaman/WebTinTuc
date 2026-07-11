@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { fail, ok, parseQuery } from '@/server/http'
+import { fail, okCached, parseQuery } from '@/server/http'
 import * as articleService from '@/server/services/article.service'
 import { z } from 'zod'
 
@@ -37,7 +37,7 @@ export async function GET(
     const { slug } = await params
     const query = parseQuery(request, categoryArticleQuerySchema)
     const data = await articleService.getArticlesByCategorySlug(slug, query)
-    return ok(data)
+    return okCached(data)
   } catch (error) {
     return fail(error)
   }

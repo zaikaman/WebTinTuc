@@ -1,4 +1,3 @@
-import { unstable_cache } from 'next/cache'
 import { generateSlug } from '@/lib/format/slug'
 import * as articleRepository from '@/server/repositories/article.repository'
 import * as categoryRepository from '@/server/repositories/category.repository'
@@ -36,14 +35,9 @@ function normalizeArticlePayload(data: ArticlePayload, isUpdate = false) {
   return payload
 }
 
+/** Admin lists are uncached so create/update/delete show immediately on reload. */
 export async function listAdminArticles(options: Record<string, unknown> = {}) {
-  // Cache key includes serialized options so page/search/filter variants stay correct.
-  const optionsKey = JSON.stringify(options ?? {})
-  return unstable_cache(
-    async () => articleRepository.listAdminArticles(options as any),
-    ['admin-articles-list', optionsKey],
-    { revalidate: 60, tags: ['admin-articles'] }
-  )()
+  return articleRepository.listAdminArticles(options as any)
 }
 
 export async function listPublicArticles(options = {}) {
@@ -134,8 +128,8 @@ export async function getArticlesOptions(options: any = {}) {
 }
 
 /**
- * Lấy danh sách bài viết theo category slug.
- * Trả về { category, articles: { items, meta } } để FE dùng làm CategoryFeed.
+ * Lß║Ñy danh s├ích b├ái viß║┐t theo category slug.
+ * Trß║ú vß╗ü { category, articles: { items, meta } } ─æß╗â FE d├╣ng l├ám CategoryFeed.
  */
 export async function getArticlesByCategorySlug(
   categorySlug: string,

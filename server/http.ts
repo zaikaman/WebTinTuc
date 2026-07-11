@@ -24,7 +24,14 @@ export class ApiError extends Error {
   }
 }
 
-function withCacheControl(init?: ResponseInit, ttl = 60): ResponseInit {
+function withNoCacheHeaders(init?: ResponseInit): ResponseInit {
+  const headers = new Headers(init?.headers);
+  headers.set("Cache-Control", "no-store, no-cache, must-revalidate");
+  headers.set("Pragma", "no-cache");
+  return { ...init, headers };
+}
+
+function withPublicCacheHeaders(init?: ResponseInit, ttl = 60): ResponseInit {
   const headers = new Headers(init?.headers);
   if (!headers.has("Cache-Control")) {
     headers.set("Cache-Control", `public, s-maxage=${ttl}, stale-while-revalidate=${ttl * 10}`);
@@ -32,8 +39,14 @@ function withCacheControl(init?: ResponseInit, ttl = 60): ResponseInit {
   return { ...init, headers };
 }
 
+// Default: no-store for admin safety
 export function ok<T>(data: T, init?: ResponseInit) {
-  return Response.json({ success: true, data }, withCacheControl(init))
+  return Response.json({ success: true, data }, withNoCacheHeaders(init))
+}
+
+// Explicit opt-in for public CDN caching
+export function okCached<T>(data: T, ttl = 60, init?: ResponseInit) {
+  return Response.json({ success: true, data }, withPublicCacheHeaders(init, ttl))
 }
 
 export function created<T>(data: T) {
@@ -50,7 +63,7 @@ export type ActionResult<T> =
 
 export function actionResponse<T>(result: ActionResult<T>, successInit?: ResponseInit) {
   if (result.success) {
-    return Response.json(result, withCacheControl(successInit))
+    return Response.json(result, withNoCacheHeaders(successInit))
   }
 
   const statusByCode: Record<ApiErrorCode, number> = {

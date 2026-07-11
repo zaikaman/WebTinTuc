@@ -73,6 +73,17 @@ export default function PostEditorView({
   const editorRef = useRef<HTMLDivElement>(null);
   const savedSelectionRef = useRef<Range | null>(null);
 
+  const [fontMenuOpen, setFontMenuOpen] = useState(false);
+  const [sizeMenuOpen, setSizeMenuOpen] = useState(false);
+  const [editorStates, setEditorStates] = useState({
+    isBold: false,
+    isItalic: false,
+    isUnderline: false,
+    align: "left",
+    fontFamily: "Font chữ",
+    fontSize: "Cỡ chữ",
+  });
+
   const [imageDialogOpen, setImageDialogOpen] = useState(false);
   const [imageUrl, setImageUrl] = useState("");
   const [imageCaption, setImageCaption] = useState("");
@@ -247,6 +258,62 @@ export default function PostEditorView({
     ].forEach((k) => localStorage.removeItem(k));
   }, []);
 
+  const getElementsInRange = useCallback((range: Range): HTMLElement[] => {
+    const elements: HTMLElement[] = [];
+    if (!editorRef.current) return elements;
+
+    if (range.collapsed) {
+      let parent =
+        range.commonAncestorContainer.nodeType === Node.ELEMENT_NODE
+          ? (range.commonAncestorContainer as HTMLElement)
+          : range.commonAncestorContainer.parentElement;
+      if (parent && editorRef.current.contains(parent)) {
+        elements.push(parent);
+      }
+      return elements;
+    }
+
+    const treeWalker = document.createTreeWalker(editorRef.current, NodeFilter.SHOW_ELEMENT, {
+      acceptNode: (node) =>
+        range.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT,
+    });
+
+    let currentNode = treeWalker.nextNode() as HTMLElement | null;
+    while (currentNode) {
+      let hasTextChild = false;
+      for (let j = 0; j < currentNode.childNodes.length; j++) {
+        if (
+          currentNode.childNodes[j].nodeType === Node.TEXT_NODE &&
+          currentNode.childNodes[j].textContent?.trim()
+        ) {
+          hasTextChild = true;
+          break;
+        }
+      }
+      if (
+        hasTextChild ||
+        currentNode.tagName === "IMG" ||
+        currentNode.tagName === "VIDEO" ||
+        currentNode.tagName === "IFRAME"
+      ) {
+        elements.push(currentNode);
+      }
+      currentNode = treeWalker.nextNode() as HTMLElement | null;
+    }
+
+    if (elements.length === 0) {
+      let parent =
+        range.commonAncestorContainer.nodeType === Node.ELEMENT_NODE
+          ? (range.commonAncestorContainer as HTMLElement)
+          : range.commonAncestorContainer.parentElement;
+      if (parent && editorRef.current.contains(parent)) {
+        elements.push(parent);
+      }
+    }
+
+    return elements;
+  }, []);
+
   const saveSelection = useCallback(() => {
     const selection = window.getSelection();
     if (selection && selection.rangeCount > 0) {
@@ -260,9 +327,66 @@ export default function PostEditorView({
         }
         node = node.parentNode;
       }
-      if (isInside) savedSelectionRef.current = range.cloneRange();
+      if (isInside) {
+        savedSelectionRef.current = range.cloneRange();
+
+        const isEmpty =
+          !editorRef.current ||
+          editorRef.current.innerHTML.trim() === "" ||
+          editorRef.current.innerHTML === "<p><br></p>" ||
+          editorRef.current.innerText.trim() === "";
+
+        if (isEmpty) {
+          setEditorStates({
+            isBold: false,
+            isItalic: false,
+            isUnderline: false,
+            align: "left",
+            fontFamily: "Font chữ",
+            fontSize: "Cỡ chữ",
+          });
+          try {
+            document.execCommand("removeFormat", false, undefined);
+          } catch {
+            // ignore
+          }
+          return;
+        }
+
+        const selectedElements = getElementsInRange(range);
+        const fontSizes = new Set<string>();
+        const fontFamilies = new Set<string>();
+        const alignments = new Set<string>();
+
+        selectedElements.forEach((el) => {
+          if (editorRef.current && editorRef.current.contains(el)) {
+            try {
+              const style = window.getComputedStyle(el);
+              if (style.fontSize) fontSizes.add(style.fontSize);
+              if (style.fontFamily) {
+                const cleanFont = style.fontFamily.split(",")[0].replace(/['"]/g, "").trim();
+                if (cleanFont) fontFamilies.add(cleanFont);
+              }
+              const ta = style.textAlign || "left";
+              const cleanAlign = ta === "start" ? "left" : ta === "end" ? "right" : ta;
+              alignments.add(cleanAlign);
+            } catch {
+              // ignore
+            }
+          }
+        });
+
+        setEditorStates({
+          isBold: document.queryCommandState("bold"),
+          isItalic: document.queryCommandState("italic"),
+          isUnderline: document.queryCommandState("underline"),
+          align: alignments.size === 1 ? Array.from(alignments)[0] : "left",
+          fontFamily: fontFamilies.size === 1 ? Array.from(fontFamilies)[0] : "Font chữ",
+          fontSize: fontSizes.size === 1 ? Array.from(fontSizes)[0] : "Cỡ chữ",
+        });
+      }
     }
-  }, []);
+  }, [getElementsInRange]);
 
   const restoreSelection = useCallback(() => {
     if (editorRef.current) editorRef.current.focus();
@@ -290,30 +414,136 @@ export default function PostEditorView({
     [restoreSelection, saveSelection]
   );
 
-  const handleFontFamilyChange = useCallback(
-    (e: React.ChangeEvent<HTMLSelectElement>) => {
-      const font = e.target.value;
-      if (!font) return;
-      setTimeout(() => executeEditorCommand("fontName", font), 0);
+  const applyFontFamily = useCallback(
+    (font: string) => {
+      restoreSelection();
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0) {
+        setFontMenuOpen(false);
+        return;
+      }
+      const range = selection.getRangeAt(0);
+
+      if (range.collapsed) {
+        const span = document.createElement("span");
+        span.style.fontFamily = font;
+        span.innerHTML = "&#8203;";
+        range.insertNode(span);
+        const newRange = document.createRange();
+        if (span.firstChild) {
+          newRange.setStart(span.firstChild, 1);
+          newRange.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(newRange);
+          savedSelectionRef.current = newRange.cloneRange();
+        }
+        if (editorRef.current) setPostContent(editorRef.current.innerHTML);
+      } else {
+        try {
+          document.execCommand("styleWithCSS", false, "false");
+        } catch {
+          // ignore
+        }
+        document.execCommand("fontName", false, "tempfontfamily");
+        if (editorRef.current) {
+          const fontElements = editorRef.current.querySelectorAll("font[face='tempfontfamily']");
+          const spans: HTMLSpanElement[] = [];
+          fontElements.forEach((fontEl) => {
+            const span = document.createElement("span");
+            span.style.fontFamily = font;
+            span.innerHTML = fontEl.innerHTML;
+            fontEl.parentNode?.replaceChild(span, fontEl);
+            spans.push(span);
+          });
+          if (spans.length > 0) {
+            const newRange = document.createRange();
+            newRange.setStartBefore(spans[0]);
+            newRange.setEndAfter(spans[spans.length - 1]);
+            selection.removeAllRanges();
+            selection.addRange(newRange);
+            savedSelectionRef.current = newRange.cloneRange();
+          }
+          setPostContent(editorRef.current.innerHTML);
+        }
+      }
+      saveSelection();
+      setFontMenuOpen(false);
+      setEditorStates((s) => ({ ...s, fontFamily: font }));
     },
-    [executeEditorCommand]
+    [restoreSelection, saveSelection]
   );
 
-  const handleFontSizeChange = useCallback(
-    (e: React.ChangeEvent<HTMLSelectElement>) => {
-      const val = e.target.value;
-      if (!val) return;
-      let size = "3";
-      if (val === "12px") size = "1";
-      else if (val === "14px") size = "2";
-      else if (val === "16px") size = "3";
-      else if (val === "18px") size = "4";
-      else if (val === "20px") size = "5";
-      else if (val === "24px") size = "6";
-      setTimeout(() => executeEditorCommand("fontSize", size), 0);
+  const applyFontSize = useCallback(
+    (val: string) => {
+      restoreSelection();
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0) {
+        setSizeMenuOpen(false);
+        return;
+      }
+      const range = selection.getRangeAt(0);
+
+      if (range.collapsed) {
+        const span = document.createElement("span");
+        span.style.fontSize = val;
+        span.innerHTML = "&#8203;";
+        range.insertNode(span);
+        const newRange = document.createRange();
+        if (span.firstChild) {
+          newRange.setStart(span.firstChild, 1);
+          newRange.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(newRange);
+          savedSelectionRef.current = newRange.cloneRange();
+        }
+        if (editorRef.current) setPostContent(editorRef.current.innerHTML);
+      } else {
+        try {
+          document.execCommand("styleWithCSS", false, "false");
+        } catch {
+          // ignore
+        }
+        document.execCommand("fontSize", false, "7");
+        if (editorRef.current) {
+          const fontElements = editorRef.current.querySelectorAll("font[size='7']");
+          const spans: HTMLSpanElement[] = [];
+          fontElements.forEach((fontEl) => {
+            const span = document.createElement("span");
+            span.style.fontSize = val;
+            span.innerHTML = fontEl.innerHTML;
+            fontEl.parentNode?.replaceChild(span, fontEl);
+            spans.push(span);
+          });
+          if (spans.length > 0) {
+            const newRange = document.createRange();
+            newRange.setStartBefore(spans[0]);
+            newRange.setEndAfter(spans[spans.length - 1]);
+            selection.removeAllRanges();
+            selection.addRange(newRange);
+            savedSelectionRef.current = newRange.cloneRange();
+          }
+          setPostContent(editorRef.current.innerHTML);
+        }
+      }
+      saveSelection();
+      setSizeMenuOpen(false);
+      setEditorStates((s) => ({ ...s, fontSize: val }));
     },
-    [executeEditorCommand]
+    [restoreSelection, saveSelection]
   );
+
+  // Close font/size menus when clicking outside
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest(".font-dropdown") && !target.closest(".size-dropdown")) {
+        setFontMenuOpen(false);
+        setSizeMenuOpen(false);
+      }
+    };
+    window.addEventListener("mousedown", handleOutsideClick);
+    return () => window.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
 
   const handleSavePost = useCallback(
     async (e: React.FormEvent) => {
@@ -564,63 +794,220 @@ export default function PostEditorView({
             />
           </div>
 
-          <div className="flex flex-wrap items-center gap-1 bg-white border border-gray-200 rounded-xl p-1.5 shadow-sm text-gray-600 flex-shrink-0">
-            <div className="relative">
-              <select
-                value=""
-                onChange={handleFontFamilyChange}
-                className="bg-transparent hover:bg-gray-100 px-2.5 py-1.5 rounded-lg text-xs font-semibold outline-none cursor-pointer appearance-none pr-6 border-none text-gray-700"
+          <div className="sticky top-[65px] z-20 flex flex-wrap items-center gap-1 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl p-1.5 shadow-md text-gray-600 flex-shrink-0 transition-all">
+            <div className="relative font-dropdown">
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  setFontMenuOpen(!fontMenuOpen);
+                  setSizeMenuOpen(false);
+                }}
+                className="flex items-center gap-1 bg-transparent hover:bg-gray-100 px-2.5 py-1.5 rounded-lg text-xs font-semibold outline-none cursor-pointer border-none text-gray-700 select-none min-w-[110px] justify-between"
               >
-                <option value="" disabled hidden>
-                  Font chữ
-                </option>
-                <option value="Arial">Arial</option>
-                <option value="Times New Roman">Times New Roman</option>
-                <option value="Helvetica">Helvetica</option>
-                <option value="Georgia">Georgia</option>
-              </select>
-              <ChevronDown
-                size={12}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-              />
+                <span>{editorStates.fontFamily}</span>
+                <ChevronDown size={12} className="text-gray-400" />
+              </button>
+              {fontMenuOpen && (
+                <div
+                  onMouseDown={(e) => e.preventDefault()}
+                  className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg py-1.5 z-40 min-w-[150px]"
+                >
+                  {["Arial", "Times New Roman", "Helvetica", "Georgia", "Courier New", "Verdana"].map(
+                    (font) => (
+                      <button
+                        key={font}
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => applyFontFamily(font)}
+                        className={`w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 transition-colors block ${
+                          editorStates.fontFamily === font
+                            ? "text-[#E55956] font-bold"
+                            : "text-gray-700"
+                        }`}
+                        style={{ fontFamily: font }}
+                      >
+                        {font}
+                      </button>
+                    )
+                  )}
+                </div>
+              )}
             </div>
             <div className="h-4 w-px bg-gray-200 mx-1" />
-            <div className="relative">
-              <select
-                value=""
-                onChange={handleFontSizeChange}
-                className="bg-transparent hover:bg-gray-100 px-2.5 py-1.5 rounded-lg text-xs font-semibold outline-none cursor-pointer appearance-none pr-6 border-none text-gray-700"
+            <div className="relative size-dropdown">
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  setSizeMenuOpen(!sizeMenuOpen);
+                  setFontMenuOpen(false);
+                }}
+                className="flex items-center gap-1 bg-transparent hover:bg-gray-100 px-2.5 py-1.5 rounded-lg text-xs font-semibold outline-none cursor-pointer border-none text-gray-700 select-none min-w-[80px] justify-between"
               >
-                <option value="" disabled hidden>
-                  Cỡ chữ
-                </option>
-                <option value="12px">12px</option>
-                <option value="14px">14px</option>
-                <option value="16px">16px</option>
-                <option value="18px">18px</option>
-                <option value="20px">20px</option>
-                <option value="24px">24px</option>
-              </select>
-              <ChevronDown
-                size={12}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-              />
+                <span>{editorStates.fontSize}</span>
+                <ChevronDown size={12} className="text-gray-400" />
+              </button>
+              {sizeMenuOpen && (
+                <div
+                  onMouseDown={(e) => e.preventDefault()}
+                  className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg py-1.5 z-40 min-w-[100px]"
+                >
+                  {["12px", "14px", "16px", "18px", "20px", "24px", "32px"].map((size) => (
+                    <button
+                      key={size}
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => applyFontSize(size)}
+                      className={`w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 transition-colors block ${
+                        editorStates.fontSize === size
+                          ? "text-[#E55956] font-bold"
+                          : "text-gray-700"
+                      }`}
+                    >
+                      {size}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="h-4 w-px bg-gray-200 mx-1" />
-            <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => executeEditorCommand("bold")} className="p-1.5 hover:bg-gray-100 rounded-lg"><Bold size={15} /></button>
-            <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => executeEditorCommand("italic")} className="p-1.5 hover:bg-gray-100 rounded-lg"><Italic size={15} /></button>
-            <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => executeEditorCommand("underline")} className="p-1.5 hover:bg-gray-100 rounded-lg"><Underline size={15} /></button>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => executeEditorCommand("bold")}
+              className={`p-1.5 rounded-lg transition-colors ${
+                editorStates.isBold
+                  ? "bg-gray-100 text-gray-900 font-bold"
+                  : "hover:bg-gray-100 text-gray-700 hover:text-gray-900"
+              }`}
+              title="Chữ đậm"
+            >
+              <Bold size={15} />
+            </button>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => executeEditorCommand("italic")}
+              className={`p-1.5 rounded-lg transition-colors ${
+                editorStates.isItalic
+                  ? "bg-gray-100 text-gray-900 font-bold"
+                  : "hover:bg-gray-100 text-gray-700 hover:text-gray-900"
+              }`}
+              title="Chữ nghiêng"
+            >
+              <Italic size={15} />
+            </button>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => executeEditorCommand("underline")}
+              className={`p-1.5 rounded-lg transition-colors ${
+                editorStates.isUnderline
+                  ? "bg-gray-100 text-gray-900 font-bold"
+                  : "hover:bg-gray-100 text-gray-700 hover:text-gray-900"
+              }`}
+              title="Gạch chân"
+            >
+              <Underline size={15} />
+            </button>
             <div className="h-4 w-px bg-gray-200 mx-1" />
-            <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => executeEditorCommand("justifyLeft")} className="p-1.5 hover:bg-gray-100 rounded-lg"><AlignLeft size={15} /></button>
-            <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => executeEditorCommand("justifyCenter")} className="p-1.5 hover:bg-gray-100 rounded-lg"><AlignCenter size={15} /></button>
-            <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => executeEditorCommand("justifyRight")} className="p-1.5 hover:bg-gray-100 rounded-lg"><AlignRight size={15} /></button>
-            <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => executeEditorCommand("justifyFull")} className="p-1.5 hover:bg-gray-100 rounded-lg"><AlignJustify size={15} /></button>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => executeEditorCommand("justifyLeft")}
+              className={`p-1.5 rounded-lg transition-colors ${
+                editorStates.align === "left" || editorStates.align === "start"
+                  ? "bg-gray-100 text-gray-900 font-bold"
+                  : "hover:bg-gray-100 text-gray-700 hover:text-gray-900"
+              }`}
+              title="Căn lề trái"
+            >
+              <AlignLeft size={15} />
+            </button>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => executeEditorCommand("justifyCenter")}
+              className={`p-1.5 rounded-lg transition-colors ${
+                editorStates.align === "center"
+                  ? "bg-gray-100 text-gray-900 font-bold"
+                  : "hover:bg-gray-100 text-gray-700 hover:text-gray-900"
+              }`}
+              title="Căn lề giữa"
+            >
+              <AlignCenter size={15} />
+            </button>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => executeEditorCommand("justifyRight")}
+              className={`p-1.5 rounded-lg transition-colors ${
+                editorStates.align === "right" || editorStates.align === "end"
+                  ? "bg-gray-100 text-gray-900 font-bold"
+                  : "hover:bg-gray-100 text-gray-700 hover:text-gray-900"
+              }`}
+              title="Căn lề phải"
+            >
+              <AlignRight size={15} />
+            </button>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => executeEditorCommand("justifyFull")}
+              className={`p-1.5 rounded-lg transition-colors ${
+                editorStates.align === "justify"
+                  ? "bg-gray-100 text-gray-900 font-bold"
+                  : "hover:bg-gray-100 text-gray-700 hover:text-gray-900"
+              }`}
+              title="Căn lề đều"
+            >
+              <AlignJustify size={15} />
+            </button>
             <div className="h-4 w-px bg-gray-200 mx-1" />
-            <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => executeEditorCommand("insertUnorderedList")} className="p-1.5 hover:bg-gray-100 rounded-lg"><List size={15} /></button>
-            <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => executeEditorCommand("insertOrderedList")} className="p-1.5 hover:bg-gray-100 rounded-lg"><ListOrdered size={15} /></button>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => executeEditorCommand("insertUnorderedList")}
+              className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900 text-gray-700"
+              title="Danh sách không thứ tự"
+            >
+              <List size={15} />
+            </button>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => executeEditorCommand("insertOrderedList")}
+              className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900 text-gray-700"
+              title="Danh sách có thứ tự"
+            >
+              <ListOrdered size={15} />
+            </button>
             <div className="h-4 w-px bg-gray-200 mx-1" />
-            <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => { setImageDialogOpen(true); loadMedia(); }} className="p-1.5 hover:bg-gray-100 rounded-lg"><ImageIcon size={15} /></button>
-            <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => { setVideoDialogOpen(true); loadMedia(); }} className="p-1.5 hover:bg-gray-100 rounded-lg"><Video size={15} /></button>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                setImageDialogOpen(true);
+                loadMedia();
+              }}
+              className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900 text-gray-700"
+              title="Chèn ảnh"
+            >
+              <ImageIcon size={15} />
+            </button>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                setVideoDialogOpen(true);
+                loadMedia();
+              }}
+              className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hover:text-gray-900 text-gray-700"
+              title="Chèn video"
+            >
+              <Video size={15} />
+            </button>
           </div>
 
           <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 flex flex-col min-h-[450px] overflow-y-auto">
