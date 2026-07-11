@@ -44,15 +44,18 @@ describe('runAction', () => {
     }
   })
 
-  it('returns internal error for unknown errors', async () => {
+  it('returns internal error for unknown errors without leaking internal details', async () => {
     const result = await runAction(async () => {
-      throw new Error('Something unexpected')
+      throw new Error('relation "secret_table" does not exist')
     })
     expect(result).toEqual({
       success: false,
       code: 'INTERNAL_ERROR',
-      message: 'Something unexpected',
+      message: 'Lỗi hệ thống',
     })
+    if (!result.success) {
+      expect(result.message).not.toContain('secret_table')
+    }
   })
 
   it('returns generic message for non-Error throws', async () => {

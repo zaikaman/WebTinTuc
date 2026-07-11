@@ -33,11 +33,11 @@ describe('ok', () => {
     expect(body).toEqual({ success: true, data })
   })
 
-  it('includes cache control headers by default', () => {
+  it('includes no-store cache control headers by default', () => {
     const response = ok({})
     const cacheControl = response.headers.get('Cache-Control')
-    expect(cacheControl).toContain('public')
-    expect(cacheControl).toContain('s-maxage=60')
+    expect(cacheControl).toContain('no-store')
+    expect(cacheControl).toContain('no-cache')
   })
 
   it('merges with custom init', async () => {
@@ -100,13 +100,14 @@ describe('fail', () => {
     expect(body.message).toBe('Access denied')
   })
 
-  it('handles unknown errors as 500', async () => {
-    const response = fail(new Error('Something broke'))
+  it('handles unknown errors as 500 without leaking internal details', async () => {
+    const response = fail(new Error('relation "secret_table" does not exist'))
     expect(response.status).toBe(500)
     const body = await response.json()
     expect(body.success).toBe(false)
     expect(body.code).toBe('INTERNAL_ERROR')
-    expect(body.message).toBe('Something broke')
+    expect(body.message).toBe('Internal Server Error')
+    expect(body.message).not.toContain('secret_table')
   })
 
   it('handles non-Error values as 500', async () => {

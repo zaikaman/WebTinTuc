@@ -105,8 +105,12 @@ export function fail(error: unknown) {
     )
   }
 
-  const message = error instanceof Error ? error.message : 'Internal Server Error'
-  return Response.json({ success: false, code: 'INTERNAL_ERROR', message }, { status: 500 })
+  // Never leak raw Error messages (Postgres/PostgREST/R2/etc.) to clients
+  console.error('[api]', error)
+  return Response.json(
+    { success: false, code: 'INTERNAL_ERROR', message: 'Internal Server Error' },
+    { status: 500 }
+  )
 }
 
 export function parseQuery<T extends z.ZodType>(request: NextRequest, schema: T): z.infer<T> {

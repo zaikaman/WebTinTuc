@@ -25,10 +25,12 @@ export async function runAction<T>(handler: () => Promise<T>): Promise<ActionRes
       }
     }
 
+    // Never leak raw Error messages (Postgres/PostgREST/R2/etc.) to clients
+    console.error('[action]', error)
     return {
       success: false,
       code: 'INTERNAL_ERROR',
-      message: error instanceof Error ? error.message : 'Lỗi hệ thống'
+      message: 'Lỗi hệ thống'
     }
   }
 }

@@ -267,17 +267,11 @@ Same pattern for any future public-facing entities.
 
 ---
 
-### 10. Internal errors returned to clients
+### 10. Internal errors returned to clients — FIXED
 
 **Where:** `server/http.ts` `fail()`, `server/actions/action-result.ts`
 
-```ts
-message: error instanceof Error ? error.message : 'Internal Server Error'
-```
-
-**Impact:** Postgres/PostgREST/R2 error strings can leak schema, constraints, or infrastructure details to attackers.
-
-**Fix:** Log full error server-side; return generic message for 500s. Keep specific messages only for known `ApiError` / Zod.
+**Status:** Fixed. Unknown errors are logged server-side (`console.error`) and clients receive only a generic message (`Internal Server Error` / `Lỗi hệ thống`). Specific messages remain for known `ApiError` and Zod validation errors.
 
 ---
 
