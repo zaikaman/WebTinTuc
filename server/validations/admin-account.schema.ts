@@ -6,6 +6,12 @@ export const accountListQuerySchema = paginationSchema.extend({
   search: z.string().optional()
 })
 
+/** Public admin login body (rate-limited server route). */
+export const adminLoginSchema = z.object({
+  email: z.string().trim().email('Email không đúng định dạng'),
+  password: z.string().min(1, 'Vui lòng nhập mật khẩu'),
+})
+
 export const createAccountSchema = z.object({
   email: z.string().email('Email không đúng định dạng'),
   password: z.string().min(6, 'Mật khẩu phải chứa ít nhất 6 ký tự'),

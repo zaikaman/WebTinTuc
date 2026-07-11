@@ -9,6 +9,7 @@ export type ApiErrorCode =
   | 'FORBIDDEN'
   | 'NOT_FOUND'
   | 'CONFLICT'
+  | 'TOO_MANY_REQUESTS'
   | 'INTERNAL_ERROR'
 
 export class ApiError extends Error {
@@ -72,6 +73,7 @@ export function actionResponse<T>(result: ActionResult<T>, successInit?: Respons
     FORBIDDEN: 403,
     NOT_FOUND: 404,
     CONFLICT: 409,
+    TOO_MANY_REQUESTS: 429,
     INTERNAL_ERROR: 500
   }
 

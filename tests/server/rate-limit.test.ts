@@ -1,5 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { checkRateLimit, getRateLimitKey } from '@/server/rate-limit'
+import {
+  checkRateLimit,
+  checkAuthRateLimit,
+  getRateLimitKey,
+  getRateLimitCount,
+  getRateLimitTtl,
+  resetRateLimit,
+  normalizeEmailKey,
+  __resetMemoryRateLimitStoreForTests,
+} from '@/server/rate-limit'
 
 describe('getRateLimitKey', () => {
   it('builds a key from x-forwarded-for header', () => {
@@ -24,6 +33,12 @@ describe('getRateLimitKey', () => {
     const headers = new Headers()
     const key = getRateLimitKey(headers, 'test')
     expect(key).toBe('ratelimit:test:unknown')
+  })
+})
+
+describe('normalizeEmailKey', () => {
+  it('trims and lowercases email', () => {
+    expect(normalizeEmailKey('  Admin@Example.COM ')).toBe('admin@example.com')
   })
 })
 
@@ -95,5 +110,41 @@ describe('checkRateLimit', () => {
     const result = await checkRateLimit('test-key', 10, 600)
     expect(result.allowed).toBe(true)
     expect(result.remaining).toBe(10)
+  })
+})
+
+describe('checkAuthRateLimit (memory fallback)', () => {
+  beforeEach(() => {
+    __resetMemoryRateLimitStoreForTests()
+    delete process.env.UPSTASH_REDIS_REST_URL
+    delete process.env.UPSTASH_REDIS_REST_TOKEN
+  })
+
+  afterEach(() => {
+    __resetMemoryRateLimitStoreForTests()
+  })
+
+  it('allows under the limit and blocks after max', async () => {
+    const key = 'auth:test:ip1'
+    for (let i = 0; i < 3; i++) {
+      const r = await checkAuthRateLimit(key, 3, 900)
+      expect(r.allowed).toBe(true)
+    }
+    const blocked = await checkAuthRateLimit(key, 3, 900)
+    expect(blocked.allowed).toBe(false)
+    expect(blocked.remaining).toBe(0)
+    expect(blocked.resetAfterSecs).toBeGreaterThan(0)
+  })
+
+  it('tracks count and resets on success path', async () => {
+    const key = 'auth:test:fail'
+    await checkAuthRateLimit(key, 5, 900)
+    await checkAuthRateLimit(key, 5, 900)
+    expect(await getRateLimitCount(key)).toBe(2)
+    expect(await getRateLimitTtl(key)).toBeGreaterThan(0)
+
+    await resetRateLimit(key)
+    expect(await getRateLimitCount(key)).toBe(0)
+    expect(await getRateLimitTtl(key)).toBe(0)
   })
 })

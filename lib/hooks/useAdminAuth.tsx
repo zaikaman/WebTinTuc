@@ -222,31 +222,51 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
 
       setIsLoading(true);
       try {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: loginUsername.trim(),
-          password: loginPassword,
+        // Server-side login enforces IP rate limit + failure lockout before Supabase auth.
+        const res = await fetch("/api/admin/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: loginUsername.trim(),
+            password: loginPassword,
+          }),
+          cache: "no-store",
         });
 
-        if (error || !data.user) {
-          toast.error("Email hoặc mật khẩu không chính xác!");
-          return;
+        let payload: {
+          success?: boolean;
+          message?: string;
+          data?: {
+            profile: AdminProfile;
+            session: { access_token: string; refresh_token: string };
+          };
+        } | null = null;
+        try {
+          payload = await res.json();
+        } catch {
+          payload = null;
         }
 
-        const { data: profile, error: profileError } = await supabase
-          .from("profiles")
-          .select("role, display_name, username")
-          .eq("id", data.user.id)
-          .single();
-
-        if (profileError || !profile || profile.role !== "admin") {
-          await supabase.auth.signOut();
+        if (!res.ok || !payload?.success || !payload.data?.session || !payload.data?.profile) {
           markLoggedOut();
-          toast.error("Tài khoản này không có quyền quản trị!");
+          toast.error(payload?.message || "Email hoặc mật khẩu không chính xác!");
           return;
         }
 
-        markLoggedIn(buildAdminProfile(data.user, profile));
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: payload.data.session.access_token,
+          refresh_token: payload.data.session.refresh_token,
+        });
+
+        if (sessionError) {
+          markLoggedOut();
+          toast.error("Không thể thiết lập phiên đăng nhập. Vui lòng thử lại!");
+          return;
+        }
+
+        markLoggedIn(payload.data.profile);
         setIsAuthVerified(true);
+        setLoginPassword("");
         toast.success("Đăng nhập quản trị thành công!");
       } catch (err) {
         console.error(err);
