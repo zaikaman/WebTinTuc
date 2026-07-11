@@ -169,23 +169,24 @@ describe('articleRepository', () => {
     expect(supabaseAdmin.rpc).toHaveBeenCalledWith('get_trending_articles', { p_limit: 5, p_days: 7 })
   })
 
-  it('incrementArticleViews increments existing views', async () => {
-    const currentArticle = { id: 1, views: 10 }
-    // First call: select views
-    const mockQuery1 = createMockQuery()
-    mockQuery1.mockResolvedValue({ data: currentArticle, error: null })
-    // Second call: update
-    const mockQuery2 = createMockQuery()
-    mockQuery2.mockResolvedValue({ error: null })
-
-    vi.mocked(supabaseAdmin).from
-      .mockReturnValueOnce(mockQuery1)
-      .mockReturnValueOnce(mockQuery2)
+  it('incrementArticleViews uses atomic RPC', async () => {
+    vi.mocked(supabaseAdmin).rpc = vi.fn().mockResolvedValue({ data: null, error: null })
 
     const { incrementArticleViews } = await import('@/server/repositories/article.repository')
     await incrementArticleViews(1, 5)
 
-    expect(mockQuery1.single).toHaveBeenCalled()
-    expect(mockQuery2.update).toHaveBeenCalled()
+    expect(supabaseAdmin.rpc).toHaveBeenCalledWith('increment_article_views', {
+      p_id: 1,
+      p_count: 5,
+    })
+  })
+
+  it('incrementArticleViews no-ops for non-positive counts', async () => {
+    vi.mocked(supabaseAdmin).rpc = vi.fn()
+
+    const { incrementArticleViews } = await import('@/server/repositories/article.repository')
+    await incrementArticleViews(1, 0)
+
+    expect(supabaseAdmin.rpc).not.toHaveBeenCalled()
   })
 })

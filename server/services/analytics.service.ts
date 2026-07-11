@@ -53,51 +53,63 @@ export async function recordAdClick(adId: number) {
   return { adId, date, buffered: Boolean(wroteRedis) }
 }
 
+/** Site-wide page view (buffered in Redis as page:views:YYYY-MM-DD). */
+export async function recordPageView() {
+  const date = todayKey()
+  const wroteRedis = await redis(['INCR', `page:views:${date}`])
+  if (!wroteRedis) await flushPageViewsToPostgres(date, 1)
+  return { date, buffered: Boolean(wroteRedis) }
+}
+
+/**
+ * Atomically increment article_stats_daily.views and articles.views.
+ * Safe under concurrent flushes (SQL ON CONFLICT DO UPDATE).
+ */
 export async function flushArticleViewsToPostgres(articleId: number, date: string, views: number) {
-  const { data: existing, error: existingError } = await supabaseAdmin
-    .from('article_stats_daily')
-    .select('views')
-    .eq('article_id', articleId)
-    .eq('date', date)
-    .maybeSingle()
+  if (views <= 0) return
 
-  if (existingError) throw existingError
-
-  const { error } = await supabaseAdmin.from('article_stats_daily').upsert(
-    {
-      article_id: articleId,
-      date,
-      views: Number(existing?.views ?? 0) + views,
-      updated_at: new Date().toISOString()
-    },
-    { onConflict: 'article_id,date' }
-  )
+  const { error } = await supabaseAdmin.rpc('increment_article_stats_daily', {
+    p_article_id: articleId,
+    p_date: date,
+    p_views: views
+  })
 
   if (error) throw error
   await incrementArticleViews(articleId, views)
 }
 
-export async function flushAdStatsToPostgres(adId: number, date: string, impressions: number, clicks: number) {
-  const { data: existing, error: existingError } = await supabaseAdmin
-    .from('ad_stats_daily')
-    .select('impressions, clicks')
-    .eq('ad_id', adId)
-    .eq('date', date)
-    .maybeSingle()
+/**
+ * Atomically increment ad_stats_daily impressions/clicks.
+ * Safe under concurrent flushes (SQL ON CONFLICT DO UPDATE).
+ */
+export async function flushAdStatsToPostgres(
+  adId: number,
+  date: string,
+  impressions: number,
+  clicks: number
+) {
+  if (impressions <= 0 && clicks <= 0) return
 
-  if (existingError) throw existingError
-
-  const { error } = await supabaseAdmin.from('ad_stats_daily').upsert(
-    {
-      ad_id: adId,
-      date,
-      impressions: Number(existing?.impressions ?? 0) + impressions,
-      clicks: Number(existing?.clicks ?? 0) + clicks,
-      updated_at: new Date().toISOString()
-    },
-    { onConflict: 'ad_id,date' }
-  )
+  const { error } = await supabaseAdmin.rpc('increment_ad_stats_daily', {
+    p_ad_id: adId,
+    p_date: date,
+    p_impressions: Math.max(0, impressions),
+    p_clicks: Math.max(0, clicks)
+  })
 
   if (error) throw error
 }
 
+/**
+ * Atomically add to page_stats_daily.page_views (never overwrite absolute totals).
+ */
+export async function flushPageViewsToPostgres(date: string, pageViews: number) {
+  if (pageViews <= 0) return
+
+  const { error } = await supabaseAdmin.rpc('increment_page_stats_daily', {
+    p_date: date,
+    p_page_views: pageViews
+  })
+
+  if (error) throw error
+}

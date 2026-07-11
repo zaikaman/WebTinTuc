@@ -1,8 +1,12 @@
 import { NextRequest } from 'next/server'
 import { ok, fail, ApiError } from '@/server/http'
-import { flushArticleViewsToPostgres, flushAdStatsToPostgres } from '@/server/services/analytics.service'
+import {
+  flushArticleViewsToPostgres,
+  flushAdStatsToPostgres,
+  flushPageViewsToPostgres
+} from '@/server/services/analytics.service'
 
-type RedisResult = { result: string | string[] | null }
+type RedisResult = { result: string | string[] | number | null }
 
 async function redisCommand(command: (string | number)[]) {
   const url = process.env.UPSTASH_REDIS_REST_URL
@@ -40,13 +44,18 @@ async function redisScan(pattern: string): Promise<string[]> {
   return keys
 }
 
-async function redisGet(key: string): Promise<number> {
-  const val = await redisCommand(['GET', key])
-  return val ? Number(val) : 0
+/**
+ * Atomically read and clear a counter. Callers must restore via INCRBY on Postgres failure
+ * so concurrent flushes cannot double-count and failed writes do not drop data.
+ */
+async function redisGetDel(key: string): Promise<number> {
+  const val = await redisCommand(['GETDEL', key])
+  return val != null && val !== '' ? Number(val) : 0
 }
 
-async function redisDel(key: string) {
-  await redisCommand(['DEL', key])
+async function redisIncrBy(key: string, amount: number) {
+  if (amount <= 0) return
+  await redisCommand(['INCRBY', key, amount])
 }
 
 // Pattern: views:article:{id}:{YYYY-MM-DD}
@@ -96,49 +105,72 @@ export async function GET(request: NextRequest) {
     const errors: string[] = []
 
     // --- Flush article views ---
+    // GETDEL then Postgres; restore Redis on failure (never delete-before-write).
     const articleViewKeys = await redisScan('views:article:*:????-??-??')
 
     for (const key of articleViewKeys) {
       const parsed = parseArticleViewKey(key)
       if (!parsed) continue
 
+      let count = 0
       try {
-        const count = await redisGet(key)
+        count = await redisGetDel(key)
         if (count > 0) {
           await flushArticleViewsToPostgres(parsed.articleId, parsed.date, count)
-          await redisDel(key)
           flushedArticles++
         }
       } catch (err) {
+        if (count > 0) {
+          try {
+            await redisIncrBy(key, count)
+          } catch {
+            errors.push(`article key ${key}: failed to restore Redis after Postgres error`)
+          }
+        }
         errors.push(`article key ${key}: ${err instanceof Error ? err.message : String(err)}`)
       }
     }
 
-    // Also flush total view counters (views:article:{id}:total) — these are handled
-    // inside flushArticleViewsToPostgres already via incrementArticleViews, so no separate flush needed.
+    // Lifetime article.views is updated inside flushArticleViewsToPostgres via incrementArticleViews.
 
-    // --- Flush ad impressions ---
+    // --- Flush ad impressions + clicks ---
+    // Collect with GETDEL, write once per (adId, date), restore all taken counters on failure.
+    type AdFlushBucket = {
+      adId: number
+      date: string
+      impressions: number
+      clicks: number
+      restores: { key: string; amount: number }[]
+    }
+    const adStats = new Map<string, AdFlushBucket>()
+
     const adImpressionKeys = await redisScan('impressions:ad:*:????-??-??')
-    // Group by (adId, date) since we may have both impression + click keys
-    const adStats = new Map<string, { adId: number; date: string; impressions: number; clicks: number }>()
 
     for (const key of adImpressionKeys) {
       const parsed = parseAdImpressionKey(key)
       if (!parsed) continue
 
       try {
-        const count = await redisGet(key)
+        const count = await redisGetDel(key)
+        if (count <= 0) continue
+
         const mapKey = `${parsed.adId}:${parsed.date}`
-        const existing = adStats.get(mapKey) ?? { adId: parsed.adId, date: parsed.date, impressions: 0, clicks: 0 }
+        const existing =
+          adStats.get(mapKey) ?? {
+            adId: parsed.adId,
+            date: parsed.date,
+            impressions: 0,
+            clicks: 0,
+            restores: []
+          }
         existing.impressions += count
+        existing.restores.push({ key, amount: count })
         adStats.set(mapKey, existing)
-        await redisDel(key)
       } catch (err) {
         errors.push(`impression key ${key}: ${err instanceof Error ? err.message : String(err)}`)
       }
     }
 
-    // --- Flush ad clicks ---
     const adClickKeys = await redisScan('clicks:ad:*:????-??-??')
 
     for (const key of adClickKeys) {
@@ -146,29 +178,45 @@ export async function GET(request: NextRequest) {
       if (!parsed) continue
 
       try {
-        const count = await redisGet(key)
+        const count = await redisGetDel(key)
+        if (count <= 0) continue
+
         const mapKey = `${parsed.adId}:${parsed.date}`
-        const existing = adStats.get(mapKey) ?? { adId: parsed.adId, date: parsed.date, impressions: 0, clicks: 0 }
+        const existing =
+          adStats.get(mapKey) ?? {
+            adId: parsed.adId,
+            date: parsed.date,
+            impressions: 0,
+            clicks: 0,
+            restores: []
+          }
         existing.clicks += count
+        existing.restores.push({ key, amount: count })
         adStats.set(mapKey, existing)
-        await redisDel(key)
       } catch (err) {
         errors.push(`click key ${key}: ${err instanceof Error ? err.message : String(err)}`)
       }
     }
 
-    // Write ad stats to Postgres
-    for (const { adId, date, impressions, clicks } of adStats.values()) {
+    for (const bucket of adStats.values()) {
+      const { adId, date, impressions, clicks, restores } = bucket
       try {
         await flushAdStatsToPostgres(adId, date, impressions, clicks)
         flushedAds++
       } catch (err) {
+        for (const { key, amount } of restores) {
+          try {
+            await redisIncrBy(key, amount)
+          } catch {
+            errors.push(`ad ${adId}/${date}: failed to restore Redis key ${key}`)
+          }
+        }
         errors.push(`ad flush ${adId}/${date}: ${err instanceof Error ? err.message : String(err)}`)
       }
     }
 
     // --- Flush page views (total site traffic) ---
-    // Key pattern: page:views:{YYYY-MM-DD}
+    // Key pattern: page:views:{YYYY-MM-DD} — written by recordPageView()
     let flushedPageDays = 0
     const pageViewKeys = await redisScan('page:views:????-??-??')
 
@@ -177,20 +225,21 @@ export async function GET(request: NextRequest) {
       const date = parts[2]
       if (!date?.match(/^\d{4}-\d{2}-\d{2}$/)) continue
 
+      let pageViews = 0
       try {
-        const pageViews = await redisGet(key)
+        pageViews = await redisGetDel(key)
         if (pageViews > 0) {
-          const { supabaseAdmin } = await import('@/lib/supabase/admin')
-          await supabaseAdmin
-            .from('page_stats_daily')
-            .upsert(
-              { date, page_views: pageViews, updated_at: new Date().toISOString() },
-              { onConflict: 'date', ignoreDuplicates: false }
-            )
-          await redisDel(key)
+          await flushPageViewsToPostgres(date, pageViews)
           flushedPageDays++
         }
       } catch (err) {
+        if (pageViews > 0) {
+          try {
+            await redisIncrBy(key, pageViews)
+          } catch {
+            errors.push(`page_stats flush ${date}: failed to restore Redis after Postgres error`)
+          }
+        }
         errors.push(`page_stats flush ${date}: ${err instanceof Error ? err.message : String(err)}`)
       }
     }

@@ -46,11 +46,13 @@ describe('checkRateLimit', () => {
   const originalFetch = globalThis.fetch
 
   beforeEach(() => {
+    __resetMemoryRateLimitStoreForTests()
     globalThis.fetch = vi.fn()
   })
 
   afterEach(() => {
     globalThis.fetch = originalFetch
+    __resetMemoryRateLimitStoreForTests()
   })
 
   it('allows request when under the limit', async () => {
@@ -86,34 +88,57 @@ describe('checkRateLimit', () => {
       if (urlStr.includes('EXPIRE')) {
         return { ok: true, json: () => Promise.resolve({ result: 1 }) } as Response
       }
+      if (urlStr.includes('TTL')) {
+        return { ok: true, json: () => Promise.resolve({ result: 600 }) } as Response
+      }
       return { ok: true, json: () => Promise.resolve({ result: null }) } as Response
     })
 
     await checkRateLimit('first-key', 10, 600)
-    // INCR call + EXPIRE call
-    expect(callCount).toBe(2)
+    // INCR + EXPIRE + TTL
+    expect(callCount).toBe(3)
   })
 
-  it('fails open when Redis is unavailable', async () => {
+  it('falls back to memory when Redis is unavailable', async () => {
     vi.mocked(globalThis.fetch).mockRejectedValue(new Error('Network error'))
 
-    const result = await checkRateLimit('test-key', 10, 600)
+    const result = await checkRateLimit('redis-down-key', 10, 600)
     expect(result.allowed).toBe(true)
-    expect(result.remaining).toBe(10)
+    expect(result.remaining).toBe(9)
+    expect(result.resetAfterSecs).toBe(600)
+    expect(await getRateLimitCount('redis-down-key')).toBe(1)
   })
 
-  it('fails open when Redis returns non-ok response', async () => {
+  it('falls back to memory when Redis returns non-ok response', async () => {
     vi.mocked(globalThis.fetch).mockResolvedValue({
       ok: false,
     } as Response)
 
-    const result = await checkRateLimit('test-key', 10, 600)
+    const result = await checkRateLimit('redis-nok-key', 10, 600)
     expect(result.allowed).toBe(true)
-    expect(result.remaining).toBe(10)
+    expect(result.remaining).toBe(9)
+    expect(await getRateLimitCount('redis-nok-key')).toBe(1)
+  })
+
+  it('enforces limit via memory fallback when Redis is down', async () => {
+    vi.mocked(globalThis.fetch).mockRejectedValue(new Error('Network error'))
+
+    const key = 'analytics:spam'
+    for (let i = 0; i < 3; i++) {
+      const r = await checkRateLimit(key, 3, 3600)
+      expect(r.allowed).toBe(true)
+    }
+    const blocked = await checkRateLimit(key, 3, 3600)
+    expect(blocked.allowed).toBe(false)
+    expect(blocked.remaining).toBe(0)
+    expect(blocked.resetAfterSecs).toBeGreaterThan(0)
   })
 })
 
 describe('checkAuthRateLimit (memory fallback)', () => {
+  const prevUrl = process.env.UPSTASH_REDIS_REST_URL
+  const prevToken = process.env.UPSTASH_REDIS_REST_TOKEN
+
   beforeEach(() => {
     __resetMemoryRateLimitStoreForTests()
     delete process.env.UPSTASH_REDIS_REST_URL
@@ -122,6 +147,10 @@ describe('checkAuthRateLimit (memory fallback)', () => {
 
   afterEach(() => {
     __resetMemoryRateLimitStoreForTests()
+    if (prevUrl !== undefined) process.env.UPSTASH_REDIS_REST_URL = prevUrl
+    else delete process.env.UPSTASH_REDIS_REST_URL
+    if (prevToken !== undefined) process.env.UPSTASH_REDIS_REST_TOKEN = prevToken
+    else delete process.env.UPSTASH_REDIS_REST_TOKEN
   })
 
   it('allows under the limit and blocks after max', async () => {

@@ -328,19 +328,14 @@ export async function listTrendingArticles(limit = 10, days = 7) {
     .filter(<T>(a: T): a is NonNullable<T> => a !== null)
 }
 
+/** Atomically add to articles.views (SQL UPDATE … views = views + count). */
 export async function incrementArticleViews(id: number, count: number) {
-  const { data: current, error: currentError } = await supabaseAdmin
-    .from('articles')
-    .select('views')
-    .eq('id', id)
-    .single()
+  if (count <= 0) return
 
-  if (currentError) throw currentError
-
-  const { error } = await supabaseAdmin
-    .from('articles')
-    .update({ views: Number(current.views ?? 0) + count, updated_at: new Date().toISOString() })
-    .eq('id', id)
+  const { error } = await supabaseAdmin.rpc('increment_article_views', {
+    p_id: id,
+    p_count: count
+  })
 
   if (error) throw error
 }

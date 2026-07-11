@@ -1,7 +1,7 @@
 'use server'
 
 import { adEventSchema } from '@/server/validations/ad.schema'
-import { articleViewBodySchema } from '@/server/validations/analytics.schema'
+import { articleViewBodySchema, pageViewBodySchema } from '@/server/validations/analytics.schema'
 import * as analyticsService from '@/server/services/analytics.service'
 import { runAction } from './action-result'
 
@@ -26,3 +26,9 @@ export async function recordAdClickAction(input: unknown) {
   })
 }
 
+export async function recordPageViewAction(input?: unknown) {
+  return runAction(async () => {
+    pageViewBodySchema.parse(input ?? {})
+    return analyticsService.recordPageView()
+  })
+}

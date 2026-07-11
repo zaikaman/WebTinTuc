@@ -4,6 +4,7 @@ import { Header } from "@/components/Header";
 import { JsonLd } from "@/components/JsonLd";
 import { getSiteSettings } from "@/lib/api/news";
 import { OfflineDetector } from "@/components/OfflineDetector";
+import PageViewTracker from "@/components/PageViewTracker";
 
 export const revalidate = 60;
 
@@ -29,6 +30,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
   return (
     <>
       <JsonLd data={breadcrumbJsonLd} />
+      <PageViewTracker />
       <div className="w-full max-w-[970px] mx-auto min-h-screen flex flex-col">
         <Suspense fallback={<div className="h-[94px] bg-[#e24a48] w-full" />}>
           <Header brand={settings.brand} categories={categories} />
@@ -41,4 +43,3 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
     </>
   );
 }
-

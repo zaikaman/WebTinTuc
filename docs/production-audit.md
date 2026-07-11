@@ -211,17 +211,16 @@ An admin (or attacker with admin/API access) can create a redirect used for phis
 
 ## High
 
-### 7. Rate limiting fails open and depends on optional Redis
+### 7. Rate limiting uses per-process memory when Redis is optional
 
 **Where:** `server/rate-limit.ts`
 
-- Missing Upstash env → `redisCommand` returns `null` → count becomes `0` → **allowed**  
-- Exceptions → `{ allowed: true }`  
-- Used by view / impression / click APIs  
+- Missing Upstash env or Redis errors → **in-process memory** counters (never fail open)  
+- Used by view / impression / click / page-view APIs and admin login  
 
-**Impact:** Without Redis (or under Redis outage), analytics spam and cost amplification are unlimited. Even with Redis, spoofable `X-Forwarded-For` lets attackers rotate IPs unless the platform overwrites that header.
+**Impact:** Limits still enforce without Redis, but only **per isolate** — multi-instance serverless can exceed the intended global cap by roughly `N × maxCount`. Spoofable `X-Forwarded-For` still lets attackers rotate IPs unless the platform overwrites that header.
 
-**Fix:** In production, require Redis for mutative public analytics or use a durable fallback (e.g. short in-memory + edge rate limit). Trust only the platform’s client IP. Consider fail-closed for abuse-sensitive routes if Redis is configured but errors.
+**Mitigation / residual:** Prefer Upstash in production for shared counters. Trust only the platform’s client IP. Optional: edge WAF / platform rate limits for extra headroom.
 
 ---
 
@@ -251,20 +250,17 @@ Same pattern for any future public-facing entities.
 
 ---
 
-### 9. Analytics flush races and incomplete page-view pipeline
+### 9. Analytics flush races and incomplete page-view pipeline — FIXED
 
 **Where:** `server/services/analytics.service.ts`, `app/api/cron/flush/route.ts`, `incrementArticleViews`
 
-**Issues:**
+**Status:** Fixed.
 
-1. **Read → add → upsert** on `article_stats_daily` / `ad_stats_daily` is not atomic; concurrent flushes lose increments.  
-2. **Article `views`** uses the same non-atomic pattern.  
-3. Cron **DELETEs Redis keys before Postgres succeeds** for ad stats (impressions deleted at L135 even if later upsert fails).  
-4. **Page views:** flush looks for `page:views:YYYY-MM-DD` but **nothing in the codebase writes those keys** → dead code / incomplete feature.  
-5. Page flush **upserts absolute `page_views` from Redis** (overwrite), not additive — wrong if ever partially reused.
-
-**Fix:** Use SQL `INSERT … ON CONFLICT DO UPDATE SET views = table.views + EXCLUDED.views` (or RPC). Use Redis GETDEL / multi or Lua. Only delete Redis after successful write. Implement or remove page-view tracking consistently.
-
+1. Atomic SQL RPCs (`increment_article_stats_daily`, `increment_ad_stats_daily`, `increment_page_stats_daily`) use `INSERT … ON CONFLICT DO UPDATE SET col = col + EXCLUDED.col`.  
+2. `increment_article_views` RPC does `UPDATE articles SET views = views + p_count`.  
+3. Cron uses Redis `GETDEL` and restores via `INCRBY` if Postgres fails (no delete-before-write).  
+4. Site-wide page views: `recordPageView` → Redis `page:views:YYYY-MM-DD`, client `PageViewTracker` + `POST /api/analytics/page-view`.  
+5. Page flush uses additive RPC (never absolute overwrite).
 ---
 
 ### 10. Internal errors returned to clients — FIXED

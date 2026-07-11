@@ -1,14 +1,14 @@
 /**
- * Redis-based sliding window rate limiter.
+ * Sliding-window rate limiter.
  *
- * Uses INCR + EXPIRE pattern:
- * - First call for a key: SET key=1, EXPIRE windowSecs
- * - Subsequent calls: INCR key (TTL preserved from first call)
+ * Uses Redis INCR + EXPIRE when Upstash is configured:
+ * - First call for a key: INCR → 1, EXPIRE windowSecs
+ * - Subsequent calls: INCR (TTL preserved from first call)
  * - If count > maxCount → rate limited
  *
- * Auth-sensitive helpers (`checkAuthRateLimit`, etc.) fall back to an
- * in-process memory store when Redis is unavailable so login protection
- * does not silently fail open.
+ * When Redis is missing or unreachable, falls back to an in-process memory
+ * store so public analytics and login protection never silently fail open.
+ * Memory limits are per isolate (not shared across serverless instances).
  */
 
 type RedisResult = { result: string | number | null }
@@ -90,52 +90,17 @@ export interface RateLimitResult {
 /**
  * Check if a request is within the rate limit.
  *
- * Fail-open when Redis is unavailable (legacy behavior for analytics routes).
- * Prefer `checkAuthRateLimit` for login / abuse-sensitive endpoints.
+ * Prefer Redis when configured; otherwise (or on Redis errors) use per-process
+ * memory. Never fails open — counters always advance and limits are enforced.
  *
  * @param key     - Unique key (e.g. "ratelimit:view:127.0.0.1:42")
  * @param maxCount - Max requests allowed in the window (default: 1)
- * @param windowSecs - Sliding window duration in seconds (default: 600 = 10 min)
+ * @param windowSecs - Fixed window duration in seconds (default: 600 = 10 min)
  */
 export async function checkRateLimit(
   key: string,
   maxCount = 1,
   windowSecs = 600
-): Promise<RateLimitResult> {
-  try {
-    // Increment the counter
-    const countResult = await redisCommand(['INCR', key])
-    // null → Redis unavailable / not configured
-    if (countResult === null) {
-      return { allowed: true, remaining: maxCount }
-    }
-
-    const count = Number(countResult ?? 0)
-
-    // Set expiry only on first increment (count === 1)
-    if (count === 1) {
-      await redisCommand(['EXPIRE', key, windowSecs])
-    }
-
-    const remaining = Math.max(0, maxCount - count)
-    return {
-      allowed: count <= maxCount,
-      remaining,
-    }
-  } catch {
-    // If Redis is unavailable, fail open (allow the request) to avoid blocking legitimate traffic
-    return { allowed: true, remaining: maxCount }
-  }
-}
-
-/**
- * Auth-sensitive rate limit: Redis when available, otherwise in-process memory.
- * Never fails open.
- */
-export async function checkAuthRateLimit(
-  key: string,
-  maxCount: number,
-  windowSecs: number
 ): Promise<RateLimitResult> {
   try {
     const countResult = await redisCommand(['INCR', key])
@@ -166,6 +131,18 @@ export async function checkAuthRateLimit(
     remaining: Math.max(0, maxCount - count),
     resetAfterSecs: ttlSecs,
   }
+}
+
+/**
+ * Auth-sensitive rate limit. Same backend as {@link checkRateLimit}
+ * (Redis + memory fallback); named separately so login call sites stay explicit.
+ */
+export async function checkAuthRateLimit(
+  key: string,
+  maxCount: number,
+  windowSecs: number
+): Promise<RateLimitResult> {
+  return checkRateLimit(key, maxCount, windowSecs)
 }
 
 /**

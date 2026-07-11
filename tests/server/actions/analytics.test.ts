@@ -4,14 +4,15 @@ vi.mock('@/server/services/analytics.service', () => ({
   recordArticleView: vi.fn(),
   recordAdImpression: vi.fn(),
   recordAdClick: vi.fn(),
+  recordPageView: vi.fn(),
 }))
 
 vi.mock('@/server/validations/analytics.schema', () => ({
   articleViewBodySchema: { parse: vi.fn((input) => input) },
   adImpressionBodySchema: { parse: vi.fn((input) => input) },
   adClickBodySchema: { parse: vi.fn((input) => input) },
+  pageViewBodySchema: { parse: vi.fn((input) => input ?? {}) },
 }))
-
 vi.mock('@/server/validations/ad.schema', () => ({
   adEventSchema: { parse: vi.fn((input) => input) },
 }))
@@ -47,6 +48,16 @@ describe('analyticsActions', () => {
 
     const { recordAdClickAction } = await import('@/server/actions/analytics.action')
     const result = await recordAdClickAction({ adId: 3 })
+
+    expect(result.success).toBe(true)
+  })
+
+  it('recordPageViewAction records page view', async () => {
+    const { recordPageView } = await import('@/server/services/analytics.service')
+    vi.mocked(recordPageView).mockResolvedValue({ date: '2024-01-01', buffered: true })
+
+    const { recordPageViewAction } = await import('@/server/actions/analytics.action')
+    const result = await recordPageViewAction({ path: '/' })
 
     expect(result.success).toBe(true)
   })
