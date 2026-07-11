@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { ApiError } from '@/server/http'
+import { orIlikeContains } from '@/server/lib/postgrest'
 import { pageMeta, toRange } from '@/server/validations/common.schema'
 
 type AccountListOptions = {
@@ -19,7 +20,7 @@ export async function listAdminAccounts(options: AccountListOptions = {}) {
     .eq('role', 'admin')
 
   if (options.search) {
-    query = query.or(`username.ilike.%${options.search}%,display_name.ilike.%${options.search}%`)
+    query = query.or(orIlikeContains(['username', 'display_name'], options.search))
   }
 
   // Apply sorting (newest first)

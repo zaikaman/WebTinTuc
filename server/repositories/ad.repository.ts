@@ -1,6 +1,10 @@
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { ApiError } from '@/server/http'
+import { orIlikeContains } from '@/server/lib/postgrest'
 import { pageMeta, toRange } from '@/server/validations/common.schema'
+
+/** Public ad payload: only fields needed by AdBanner / MobileAdsStack. */
+const PUBLIC_AD_SELECT = 'id, type, position, media_key, target_url, status, html_code'
 
 type AdListOptions = {
   page?: number
@@ -26,7 +30,7 @@ export async function listAdminAds(options: AdListOptions = {}) {
     .range(from, to)
     .order(options.sortBy ?? 'created_at', { ascending: (options.sortOrder ?? 'desc') === 'asc' })
 
-  if (options.search) query = query.or(`name.ilike.%${options.search}%,position.ilike.%${options.search}%`)
+  if (options.search) query = query.or(orIlikeContains(['name', 'position'], options.search))
   if (options.position) query = query.eq('position', options.position)
   if (options.status) query = query.eq('status', options.status)
   if (options.startDate) query = query.gte('starts_at', options.startDate)
@@ -41,7 +45,7 @@ export async function listPublicAds(position?: string) {
   const now = new Date().toISOString()
   let query = supabaseAdmin
     .from('ads')
-    .select('*')
+    .select(PUBLIC_AD_SELECT)
     .eq('status', 'active')
     .is('deleted_at', null)
     .or(`starts_at.is.null,starts_at.lte.${now}`)

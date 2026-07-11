@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { ApiError } from '@/server/http'
+import { orIlikeContains } from '@/server/lib/postgrest'
 import { pageMeta, toRange } from '@/server/validations/common.schema'
 
 type RedirectListOptions = {
@@ -23,7 +24,7 @@ export async function listRedirects(options: RedirectListOptions = {}) {
       ascending: (options.sortOrder ?? 'desc') === 'asc'
     })
 
-  if (options.search) query = query.or(`from_path.ilike.%${options.search}%,to_path.ilike.%${options.search}%`)
+  if (options.search) query = query.or(orIlikeContains(['from_path', 'to_path'], options.search))
 
   const { data, error, count } = await query
   if (error) throw error

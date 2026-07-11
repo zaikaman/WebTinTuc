@@ -48,13 +48,17 @@ describe('adRepository', () => {
   })
 
   it('listPublicAds returns active, non-deleted ads', async () => {
-    const items = [{ id: 1, name: 'Active Ad' }]
+    const items = [{ id: 1, position: 'sidebar', type: 'image' }]
     mockQuery.mockResolvedValue({ data: items, error: null })
 
     const { listPublicAds } = await import('@/server/repositories/ad.repository')
     const result = await listPublicAds('sidebar')
 
     expect(result).toHaveLength(1)
+    expect(mockQuery.select).toHaveBeenCalledWith(
+      'id, type, position, media_key, target_url, status, html_code'
+    )
+    expect(mockQuery.eq).toHaveBeenCalledWith('position', 'sidebar')
   })
 
   it('getAdById returns ad', async () => {

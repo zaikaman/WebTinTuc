@@ -119,12 +119,20 @@ const getSiteSettingsCached = unstable_cache(
 
 export const getSiteSettings = getSiteSettingsCached;
 
+/** Homepage shows 6 latest cards + carousel fill from the same pool. */
+const HOME_LATEST_LIMIT = 6
+/**
+ * Category page: 1 featured + 12 initial list + up to 4 for "Xem thêm"
+ * (see CategoryContent).
+ */
+const CATEGORY_FEED_LIMIT = 17
+
 const getHomeFeedCached = unstable_cache(
   async (): Promise<HomeFeed> => {
     try {
       const [featuredData, latestData] = await Promise.all([
         articleService.listPublicArticles({ featured: true, limit: 1 }),
-        articleService.listPublicArticles({ limit: 12 }),
+        articleService.listPublicArticles({ limit: HOME_LATEST_LIMIT }),
       ]);
       
       const featuredItems = featuredData?.items || [];
@@ -220,7 +228,7 @@ const getCategoryFeedCached = unstable_cache(
     try {
       const [categoryData, articlesData] = await Promise.all([
         categoryService.getCategoryBySlug(categorySlug),
-        articleService.listPublicArticles({ category: categorySlug, limit: 50 }),
+        articleService.listPublicArticles({ category: categorySlug, limit: CATEGORY_FEED_LIMIT }),
       ]);
 
       if (!categoryData) return undefined;

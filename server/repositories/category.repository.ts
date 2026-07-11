@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { ApiError } from '@/server/http'
+import { orIlikeContains } from '@/server/lib/postgrest'
 import { pageMeta, toRange } from '@/server/validations/common.schema'
 
 type CategoryListOptions = {
@@ -26,7 +27,7 @@ export async function listAdminCategories(options: CategoryListOptions = {}) {
       nullsFirst: false
     })
 
-  if (options.search) query = query.or(`name.ilike.%${options.search}%,slug.ilike.%${options.search}%`)
+  if (options.search) query = query.or(orIlikeContains(['name', 'slug'], options.search))
   if (options.status) query = query.eq('status', options.status)
 
   const { data, error, count } = await query

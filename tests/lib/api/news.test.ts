@@ -166,12 +166,14 @@ describe('getHomeFeed', () => {
         { id: 2, slug: 'latest-1', title: 'Latest 1', category: {}, published_at: '2024-01-02', thumbnail_key: '' },
         { id: 3, slug: 'latest-2', title: 'Latest 2', category: {}, published_at: '2024-01-03', thumbnail_key: '' },
       ],
-      meta: { page: 1, limit: 12, total: 2, totalPages: 1 },
+      meta: { page: 1, limit: 6, total: 2, totalPages: 1 },
     } as any)
 
     const { getHomeFeed } = await import('@/lib/api/news')
     const result = await getHomeFeed()
 
+    expect(articleService.listPublicArticles).toHaveBeenNthCalledWith(1, { featured: true, limit: 1 })
+    expect(articleService.listPublicArticles).toHaveBeenNthCalledWith(2, { limit: 6 })
     expect(result.featuredArticle).toBeDefined()
     expect(result.featuredArticle?.title).toBe('Featured')
     expect(result.latestArticles).toHaveLength(2)
@@ -269,12 +271,13 @@ describe('getCategoryFeed', () => {
         { id: 2, slug: 'second', title: 'Second', category: {}, published_at: '2024-01-02', thumbnail_key: '' },
         { id: 3, slug: 'third', title: 'Third', category: {}, published_at: '2024-01-03', thumbnail_key: '' },
       ],
-      meta: { page: 1, limit: 50, total: 3, totalPages: 1 },
+      meta: { page: 1, limit: 17, total: 3, totalPages: 1 },
     } as any)
 
     const { getCategoryFeed } = await import('@/lib/api/news')
     const result = await getCategoryFeed('tin-tuc')
 
+    expect(articleService.listPublicArticles).toHaveBeenCalledWith({ category: 'tin-tuc', limit: 17 })
     expect(result).toBeDefined()
     expect(result?.label).toBe('Tin tức')
     expect(result?.featured.title).toBe('First')
@@ -329,13 +332,13 @@ describe('getPublicAds', () => {
   it('returns ads from service', async () => {
     const adService = await import('@/server/services/ad.service')
     vi.mocked(adService.listPublicAds).mockResolvedValue([
-      { id: 1, name: 'Banner', position: 'header' },
+      { id: 1, type: 'image', position: 'header', media_key: '/ad.webp', target_url: '#', status: 'active', html_code: null },
     ] as any)
 
     const { getPublicAds } = await import('@/lib/api/news')
     const result = await getPublicAds()
 
     expect(result).toHaveLength(1)
-    expect(result[0].name).toBe('Banner')
+    expect(result[0].position).toBe('header')
   })
 })

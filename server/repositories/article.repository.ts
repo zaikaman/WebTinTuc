@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { ApiError } from '@/server/http'
+import { orIlikeContains } from '@/server/lib/postgrest'
 import { pageMeta, toRange } from '@/server/validations/common.schema'
 
 const ARTICLE_SELECT = `
@@ -27,6 +28,18 @@ const ARTICLE_LIST_SELECT = `
   deleted_at,
   categories(*),
   profiles(*)
+`
+
+/** Columns needed for public article cards / list rows (no content, no profiles). */
+const ARTICLE_CARD_SELECT = `
+  id,
+  title,
+  slug,
+  summary,
+  thumbnail_key,
+  views,
+  published_at,
+  created_at
 `
 
 type ArticleListOptions = {
@@ -62,7 +75,7 @@ export async function listAdminArticles(options: ArticleListOptions = {}) {
     .order(sortBy, { ascending: sortOrder === 'asc', nullsFirst: false })
 
   if (options.search) {
-    query = query.or(`title.ilike.%${options.search}%,summary.ilike.%${options.search}%,slug.ilike.%${options.search}%`)
+    query = query.or(orIlikeContains(['title', 'summary', 'slug'], options.search))
   }
   if (options.categoryId) query = query.eq('category_id', options.categoryId)
   if (normalizeStatus(options)) query = query.eq('status', normalizeStatus(options))
@@ -81,12 +94,12 @@ export async function listPublicArticles(options: ArticleListOptions = {}) {
   const page = options.page
   const limit = options.limit ?? 20
   const { from, to } = toRange(page ?? 1, limit)
-  const categorySelect = options.category ? 'categories!inner(*)' : 'categories(*)'
+  const categorySelect = options.category ? 'categories!inner(name, slug)' : 'categories(name, slug)'
   const countOption = page !== undefined ? ('exact' as const) : undefined
 
   let query = supabaseAdmin
     .from('articles')
-    .select(`id, title, slug, summary, thumbnail_key, category_id, author_id, views, status, featured, created_at, updated_at, published_at, ${categorySelect}, profiles(username, display_name)`, countOption ? { count: countOption } : undefined)
+    .select(`${ARTICLE_CARD_SELECT}, ${categorySelect}`, countOption ? { count: countOption } : undefined)
     .eq('status', 'published')
     .is('deleted_at', null)
     .range(from, to)
@@ -239,7 +252,7 @@ export async function searchArticles(queryText: string, page = 1, limit = 10) {
   const { data, error, count } = await supabaseAdmin
     .from('articles')
     .select(ARTICLE_LIST_SELECT, { count: 'exact' })
-    .or(`title.ilike.%${normalizedQuery}%,summary.ilike.%${normalizedQuery}%`)
+    .or(orIlikeContains(['title', 'summary'], normalizedQuery))
     .eq('status', 'published')
     .is('deleted_at', null)
     .range(from, to)

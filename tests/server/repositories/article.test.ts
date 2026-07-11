@@ -47,6 +47,20 @@ describe('articleRepository', () => {
     expect(mockQuery.or).toHaveBeenCalled()
   })
 
+  it('listAdminArticles escapes PostgREST filter metacharacters in search', async () => {
+    mockQuery.mockResolvedValue({ data: [], error: null, count: 0 })
+
+    const { listAdminArticles } = await import('@/server/repositories/article.repository')
+    await listAdminArticles({ search: 'a,b%_."x' })
+
+    expect(mockQuery.or).toHaveBeenCalledWith(
+      expect.stringMatching(/title\.ilike\."%a,b\\%\\_\.""x%"/)
+    )
+    // Must not inject a bare comma-separated extra filter clause
+    const orArg = mockQuery.or.mock.calls[0][0] as string
+    expect(orArg).not.toMatch(/ilike\.%a,b/)
+  })
+
   it('listPublicArticles only returns published, non-deleted', async () => {
     const items = [{ id: 2, title: 'Public', categories: {}, profiles: {} }]
     mockQuery.mockResolvedValue({ data: items, error: null, count: 1 })
