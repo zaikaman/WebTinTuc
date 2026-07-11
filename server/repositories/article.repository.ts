@@ -150,13 +150,15 @@ export async function updateArticle(id: number, articleData: Record<string, unkn
 }
 
 export async function softDeleteArticle(id: number) {
-  const { error } = await supabaseAdmin
+  const { data, error } = await supabaseAdmin
     .from('articles')
     .update({ deleted_at: new Date().toISOString(), updated_at: new Date().toISOString() })
     .eq('id', id)
+    .select(ARTICLE_SELECT)
+    .single()
 
   if (error) throw error
-  return { id }
+  return data
 }
 
 export async function restoreArticle(id: number) {

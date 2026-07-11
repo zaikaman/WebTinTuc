@@ -97,13 +97,17 @@ describe('articleRepository', () => {
     expect(mockQuery.update).toHaveBeenCalled()
   })
 
-  it('softDeleteArticle sets deleted_at', async () => {
-    mockQuery.mockResolvedValue({ error: null })
+  it('softDeleteArticle sets deleted_at and returns article', async () => {
+    const article = { id: 1, slug: 'deleted-slug', categories: { slug: 'thoi-su' }, profiles: {} }
+    mockQuery.mockResolvedValue({ data: article, error: null })
 
     const { softDeleteArticle } = await import('@/server/repositories/article.repository')
     const result = await softDeleteArticle(1)
 
     expect(result.id).toBe(1)
+    expect(result.slug).toBe('deleted-slug')
+    expect(mockQuery.update).toHaveBeenCalled()
+    expect(mockQuery.select).toHaveBeenCalled()
   })
 
   it('restoreArticle sets deleted_at to null', async () => {

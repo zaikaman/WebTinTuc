@@ -126,10 +126,11 @@ describe('articleService', () => {
   })
 
   it('deleteExistingArticle delegates to softDelete', async () => {
-    vi.mocked(articleRepository.softDeleteArticle).mockResolvedValue({ id: 1 })
+    const deleted = { id: 1, slug: 'deleted-slug', categories: { slug: 'thoi-su' } }
+    vi.mocked(articleRepository.softDeleteArticle).mockResolvedValue(deleted as any)
 
     const result = await articleService.deleteExistingArticle(1)
-    expect(result).toEqual({ id: 1 })
+    expect(result).toEqual(deleted)
   })
 
   it('restoreExistingArticle delegates to repository', async () => {
