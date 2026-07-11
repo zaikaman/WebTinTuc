@@ -134,13 +134,29 @@ describe('articleRepository', () => {
     expect(result.id).toBe(1)
   })
 
-  it('searchArticles uses textSearch for queries >= 2 chars', async () => {
+  it('searchArticles uses title-only FTS (weight A) for queries >= 2 chars', async () => {
     mockQuery.mockResolvedValue({ data: [], error: null, count: 0 })
 
     const { searchArticles } = await import('@/server/repositories/article.repository')
-    await searchArticles('test query', 1, 10)
+    await searchArticles('công nghệ', 1, 10)
 
-    expect(mockQuery.textSearch).toHaveBeenCalled()
+    // Accents stripped; each token restricted to weight A (title), not summary (B)
+    expect(mockQuery.textSearch).toHaveBeenCalledWith(
+      'search_vector',
+      'cong:A & nghe:A',
+      { config: 'simple' }
+    )
+    expect(mockQuery.or).not.toHaveBeenCalled()
+  })
+
+  it('searchArticles falls back to title-only ilike for short queries', async () => {
+    mockQuery.mockResolvedValue({ data: [], error: null, count: 0 })
+
+    const { searchArticles } = await import('@/server/repositories/article.repository')
+    await searchArticles('a', 1, 10)
+
+    expect(mockQuery.textSearch).not.toHaveBeenCalled()
+    expect(mockQuery.or).toHaveBeenCalledWith(expect.stringMatching(/^title\.ilike\./))
   })
 
   it('listTrendingArticles uses RPC and returns sorted', async () => {

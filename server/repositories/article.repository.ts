@@ -223,36 +223,50 @@ export async function searchArticles(queryText: string, page = 1, limit = 10) {
   // Normalize helper: strip accents and lowercase for accent-insensitive matching
   const normalize = (str: string) =>
     str
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/đ/g, "d")
-      .replace(/Đ/g, "D")
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/đ/g, 'd')
+      .replace(/Đ/g, 'D')
       .toLowerCase()
-      .trim();
+      .trim()
 
-  const normalizedQuery = normalize(queryText);
+  const trimmedQuery = queryText.trim()
+  const normalizedQuery = normalize(trimmedQuery)
 
-  // Use PostgreSQL Full-Text Search via search_vector GIN index for queries >= 2 chars
-  // The search_vector uses 'simple' config which is already accent-insensitive
+  // Title-only search. search_vector weights: title = A, summary = B (see articles_search_vector_update).
+  // Restrict tsquery terms to weight A so summary-only matches (false positives in the header
+  // suggestions dropdown) are excluded, while unaccent + GIN index stay in use.
   if (normalizedQuery.length >= 2) {
+    const tokens = normalizedQuery
+      .split(/\s+/)
+      .map((t) => t.replace(/['&|!():*<>]/g, ''))
+      .filter((t) => t.length > 0)
+
+    if (tokens.length === 0) {
+      return { items: [], meta: pageMeta(0, page, limit) }
+    }
+
+    // to_tsquery (default textSearch type) supports weight labels; plainto_tsquery does not.
+    const tsQuery = tokens.map((t) => `${t}:A`).join(' & ')
+
     const { data, error, count } = await supabaseAdmin
       .from('articles')
       .select(ARTICLE_LIST_SELECT, { count: 'exact' })
-      .textSearch('search_vector', normalizedQuery, { type: 'plain', config: 'simple' })
+      .textSearch('search_vector', tsQuery, { config: 'simple' })
       .eq('status', 'published')
       .is('deleted_at', null)
       .range(from, to)
-      .order('published_at', { ascending: false, nullsFirst: false });
+      .order('published_at', { ascending: false, nullsFirst: false })
 
     if (error) throw error
     return { items: data ?? [], meta: pageMeta(count, page, limit) }
   }
 
-  // Fallback for single-char or empty queries — use normalized query for accent-insensitive matching
+  // Fallback for single-char queries — title only (substring match)
   const { data, error, count } = await supabaseAdmin
     .from('articles')
     .select(ARTICLE_LIST_SELECT, { count: 'exact' })
-    .or(orIlikeContains(['title', 'summary'], normalizedQuery))
+    .or(orIlikeContains(['title'], trimmedQuery || normalizedQuery))
     .eq('status', 'published')
     .is('deleted_at', null)
     .range(from, to)
