@@ -99,8 +99,9 @@ function isAdminPath(pathname: string): boolean {
 /**
  * Soft gate for /admin pages:
  * - Unauthenticated users may only open the login page (/admin).
- * - Authenticated users hitting /admin are sent to the dashboard.
- * - Protected /admin/* routes require a valid Supabase session cookie.
+ * - Authenticated *admin* users hitting /admin are sent to the dashboard.
+ * - Protected /admin/* routes require a valid Supabase session *and* profiles.role === "admin".
+ * - Non-admin authenticated users are not admitted into /admin/* (login excepted) to avoid redirect loops.
  *
  * This does not replace API requireAdmin; client bundles may still be public static assets.
  */
@@ -108,7 +109,7 @@ async function handleAdminGate(request: NextRequest): Promise<NextResponse | nul
   const { pathname } = request.nextUrl;
   if (!isAdminPath(pathname)) return null;
 
-  const { user, response } = await updateSession(request);
+  const { user, response, supabase } = await updateSession(request);
   const isLogin = isAdminLoginPath(pathname);
 
   if (!user && !isLogin) {
@@ -123,7 +124,35 @@ async function handleAdminGate(request: NextRequest): Promise<NextResponse | nul
     return redirect;
   }
 
-  if (user && isLogin) {
+  // Role check for any authenticated session on admin routes
+  let isAdmin = false;
+  if (user && supabase) {
+    try {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+      isAdmin = profile?.role === "admin";
+    } catch {
+      isAdmin = false;
+    }
+  }
+
+  // Non-admin with session: only allow login page (client will show "no permission")
+  if (user && !isAdmin && !isLogin) {
+    const loginUrl = request.nextUrl.clone();
+    loginUrl.pathname = "/admin";
+    loginUrl.search = "";
+    const redirect = NextResponse.redirect(loginUrl);
+    response.cookies.getAll().forEach((cookie) => {
+      redirect.cookies.set(cookie.name, cookie.value);
+    });
+    return redirect;
+  }
+
+  // Only real admins get the login → dashboard bounce
+  if (user && isAdmin && isLogin) {
     const dashboardUrl = request.nextUrl.clone();
     dashboardUrl.pathname = "/admin/dashboard";
     dashboardUrl.search = "";

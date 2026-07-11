@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, Eye, TrendingUp, FileText, MousePointerClick, BarChart3, ChevronDown } from "lucide-react";
+import { Download, Eye, TrendingUp, TrendingDown, FileText, MousePointerClick, BarChart3, ChevronDown } from "lucide-react";
 import { DashboardSkeleton } from "./SkeletonLoaders";
 import type { DashboardStats, AdminDashboardData } from "./AdminTypes";
 
@@ -21,6 +21,18 @@ interface DashboardTabProps {
   onExportReport: () => void;
   onApplyFilter: () => void;
   getCategoryStyles: (name: string) => { color: string; bg: string; icon: React.ComponentType<{ className?: string }> };
+  customFilterValid?: boolean;
+}
+
+function TrendBadge({ isUp, label }: { isUp: boolean; label: string }) {
+  const Icon = isUp ? TrendingUp : TrendingDown;
+  const color = isUp ? "text-emerald-500" : "text-red-500";
+  return (
+    <span className={`text-xs font-bold ${color} flex items-center gap-0.5`}>
+      <Icon size={12} />
+      {label}
+    </span>
+  );
 }
 
 export default function DashboardTab({
@@ -40,10 +52,17 @@ export default function DashboardTab({
   onExportReport,
   onApplyFilter,
   getCategoryStyles,
+  customFilterValid = false,
 }: DashboardTabProps) {
   if (loading) {
     return <DashboardSkeleton />;
   }
+
+  const filterHintParts = [
+    dashboardDay ? `Ngày ${Number(dashboardDay)}` : null,
+    dashboardMonth ? `Tháng ${Number(dashboardMonth)}` : null,
+    dashboardYear ? `Năm ${dashboardYear}` : null,
+  ].filter(Boolean);
 
   return (
     <div className="flex flex-col gap-6">
@@ -145,11 +164,9 @@ export default function DashboardTab({
           <button
             type="button"
             onClick={() => {
-              if (dashboardDay || dashboardMonth || dashboardYear) {
-                onApplyFilter();
-              }
+              if (customFilterValid) onApplyFilter();
             }}
-            disabled={!dashboardDay && !dashboardMonth && !dashboardYear}
+            disabled={!customFilterValid}
             className="px-5 py-2.5 bg-gray-900 hover:bg-black active:scale-[0.98] text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center justify-center h-[38px] disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100"
           >
             Lọc
@@ -161,14 +178,11 @@ export default function DashboardTab({
         <p className="text-[11px] text-gray-500 font-medium px-1">
           Lọc tùy chỉnh:{" "}
           <span className="font-bold text-gray-800">
-            {[
-              dashboardDay ? `Ngày ${Number(dashboardDay)}` : null,
-              dashboardMonth ? `Tháng ${Number(dashboardMonth)}` : null,
-              dashboardYear || new Date().getFullYear(),
-            ]
-              .filter(Boolean)
-              .join(" / ")}
+            {filterHintParts.length > 0 ? filterHintParts.join(" / ") : "—"}
           </span>
+          {dashboardDay && !dashboardMonth && (
+            <span className="text-red-500 font-semibold"> — cần chọn tháng khi đã chọn ngày</span>
+          )}
           {" "}
           — nhấn <span className="font-bold">Lọc</span> để áp dụng. Chọn tab Hôm nay/Tuần/Tháng/Năm để xóa lọc tùy chỉnh.
         </p>
@@ -188,10 +202,7 @@ export default function DashboardTab({
             <span className="text-3xl font-extrabold text-gray-900 tracking-tight">
               {stats.viewsVal}
             </span>
-            <span className="text-xs font-bold text-emerald-500 flex items-center gap-0.5">
-              <TrendingUp size={12} />
-              {stats.viewsChange}
-            </span>
+            <TrendBadge isUp={stats.isViewsUp} label={stats.viewsChange} />
           </div>
           <p className="text-[11px] text-gray-400 mt-2 font-medium">Lượt xem trang thực tế trong chu kỳ</p>
         </div>
@@ -208,12 +219,11 @@ export default function DashboardTab({
             <span className="text-3xl font-extrabold text-gray-900 tracking-tight">
               {stats.posts}
             </span>
-            <span className="text-xs font-bold text-emerald-500 flex items-center gap-0.5">
-              <TrendingUp size={12} />
+            <span className="text-xs font-bold text-gray-500 flex items-center gap-0.5">
               {stats.postsChange}
             </span>
           </div>
-          <p className="text-[11px] text-gray-400 mt-2 font-medium">Bài đăng và bản nháp hoạt động</p>
+          <p className="text-[11px] text-gray-400 mt-2 font-medium">Tổng bài đăng và bản nháp trên hệ thống</p>
         </div>
 
         <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all relative overflow-hidden group">
@@ -228,10 +238,7 @@ export default function DashboardTab({
             <span className="text-3xl font-extrabold text-gray-900 tracking-tight">
               {stats.clicks}
             </span>
-            <span className="text-xs font-bold text-emerald-500 flex items-center gap-0.5">
-              <TrendingUp size={12} />
-              {stats.clicksChange}
-            </span>
+            <TrendBadge isUp={stats.isClicksUp} label={stats.clicksChange} />
           </div>
           <p className="text-[11px] text-gray-400 mt-2 font-medium">Lượt click vào banner QC hiển thị</p>
         </div>
@@ -254,6 +261,11 @@ export default function DashboardTab({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {categoryStats.length === 0 && (
+            <p className="col-span-full text-sm text-gray-400 font-semibold py-6 text-center">
+              Chưa có dữ liệu danh mục để hiển thị.
+            </p>
+          )}
           {categoryStats.map((item) => {
             const style = getCategoryStyles(item.name);
             const IconComponent = style.icon;
@@ -318,6 +330,11 @@ export default function DashboardTab({
             </div>
 
             <div className="space-y-3">
+              {topPosts.length === 0 && (
+                <p className="text-sm text-gray-400 font-semibold py-6 text-center">
+                  Chưa có bài viết nổi bật trong khoảng thời gian này.
+                </p>
+              )}
               {topPosts.map((post, index) => {
                 const badgeColors = [
                   "bg-gradient-to-br from-red-500 to-[#E55956] text-white shadow-sm",

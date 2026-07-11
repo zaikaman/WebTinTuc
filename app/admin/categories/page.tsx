@@ -12,6 +12,7 @@ import { formatDateForDisplay } from "@/components/admin/AdminUtils";
 import DefaultTab from "@/components/admin/DefaultTab";
 import CategoryDialog from "@/components/admin/CategoryDialog";
 import DeleteConfirmDialog from "@/components/admin/DeleteConfirmDialog";
+import QueryErrorBanner from "@/components/admin/QueryErrorBanner";
 import { adminKeys } from "@/lib/query/adminKeys";
 import { toast } from "sonner";
 import type { Category } from "@/components/admin/AdminTypes";
@@ -48,7 +49,7 @@ export default function CategoriesPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [localOverride, setLocalOverride] = useState<Category[] | null>(null);
 
-  const { data, isLoading, isFetching } = useQuery({
+  const { data, isLoading, isFetching, isError, error, refetch } = useQuery({
     queryKey: adminKeys.categories(QS),
     queryFn: () => getAdminCategories(QS),
     staleTime: 60_000,
@@ -82,7 +83,7 @@ export default function CategoriesPage() {
   const handleOpenAddDialog = useCallback(() => {
     setDialogMode("add");
     setEditId(null);
-    setCategoryForm({ name: "", postCount: 0, priority: 0, status: "Hoạt động" });
+    setCategoryForm({ name: "", postCount: 0, priority: 1, status: "Hoạt động" });
     setCategoryDialogOpen(true);
   }, []);
 
@@ -166,7 +167,6 @@ export default function CategoriesPage() {
         priority: Number(categoryForm.priority) || 0,
         status: categoryForm.status === "Hoạt động" ? "active" : "inactive",
       };
-      setCategoryDialogOpen(false);
       setIsCategorySaving(true);
       try {
         if (dialogMode === "add") {
@@ -178,6 +178,7 @@ export default function CategoriesPage() {
           await updateAdminCategory(editId, payload as any);
           toast.success("Cập nhật danh mục thành công!", { id: "cat-submit" });
         }
+        setCategoryDialogOpen(false);
         invalidate();
       } catch (e: any) {
         toast.error(e?.message || "Có lỗi xảy ra, vui lòng thử lại!", {
@@ -195,6 +196,15 @@ export default function CategoriesPage() {
   return (
     <>
       <div className={isFetching && data ? "opacity-95" : undefined}>
+        {isError && (
+          <div className="mb-4">
+            <QueryErrorBanner
+              message={(error as Error)?.message || "Không thể tải danh mục."}
+              onRetry={() => void refetch()}
+              isRetrying={isFetching}
+            />
+          </div>
+        )}
         <DefaultTab
           activeTab="categories"
           searchQuery={searchQuery}
@@ -242,6 +252,7 @@ export default function CategoriesPage() {
           onAccountEdit={() => {}}
           onAccountDelete={() => {}}
           formatDateForDisplay={formatDateForDisplay}
+          pageSize={itemsPerPage}
         />
       </div>
 

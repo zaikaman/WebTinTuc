@@ -84,14 +84,12 @@ function getPeriodDates(filters?: {
       prevStartDateStr = `${y - 1}-01-01`
       prevEndDateStr = `${y - 1}-12-31`
     } else if (day) {
-      // Day without month is invalid — treat as "today" of current month with that day if possible
-      const m = now.getUTCMonth() + 1
-      const dateStr = `${year}-${pad2(m)}-${pad2(day)}`
-      startDateStr = dateStr
-      endDateStr = dateStr
-      const prev = new Date(Date.UTC(y, m - 1, Number(day) - 1))
-      prevStartDateStr = prev.toISOString().slice(0, 10)
-      prevEndDateStr = prevStartDateStr
+      // Day without month is invalid — reject by leaving empty range (client should block)
+      // Do not invent current UTC month.
+      startDateStr = ''
+      endDateStr = ''
+      prevStartDateStr = ''
+      prevEndDateStr = ''
     }
   }
 

@@ -12,6 +12,7 @@ import { formatDateForDisplay } from "@/components/admin/AdminUtils";
 import DefaultTab from "@/components/admin/DefaultTab";
 import AdDialog from "@/components/admin/AdDialog";
 import DeleteConfirmDialog from "@/components/admin/DeleteConfirmDialog";
+import QueryErrorBanner from "@/components/admin/QueryErrorBanner";
 import { adminKeys } from "@/lib/query/adminKeys";
 import { toast } from "sonner";
 import type { Ad } from "@/components/admin/AdminTypes";
@@ -68,7 +69,7 @@ export default function AdsPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [localOverride, setLocalOverride] = useState<Ad[] | null>(null);
 
-  const { data, isLoading, isFetching } = useQuery({
+  const { data, isLoading, isFetching, isError, refetch, error } = useQuery({
     queryKey: adminKeys.ads(QS),
     queryFn: () => getAdminAds(QS),
     staleTime: 60_000,
@@ -104,7 +105,7 @@ export default function AdsPage() {
     setEditId(null);
     setAdForm({
       name: "",
-      position: "Header",
+      position: "header",
       clicks: 0,
       startDate: new Date().toISOString().split("T")[0],
       endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
@@ -178,6 +179,10 @@ export default function AdsPage() {
         toast.error("Vui lòng nhập tên quảng cáo!");
         return;
       }
+      if (adForm.image?.startsWith("data:")) {
+        toast.error("Ảnh quảng cáo chưa được tải lên. Vui lòng chọn lại ảnh!");
+        return;
+      }
       const payload = {
         name: adForm.name,
         position: adForm.position || "header",
@@ -195,7 +200,6 @@ export default function AdsPage() {
             ? "inactive"
             : "active",
       };
-      setAdDialogOpen(false);
       setIsAdSaving(true);
       try {
         if (dialogMode === "add") {
@@ -207,6 +211,7 @@ export default function AdsPage() {
           await updateAdminAd(editId, payload as any);
           toast.success("Cập nhật quảng cáo thành công!", { id: "ad-submit" });
         }
+        setAdDialogOpen(false);
         invalidate();
       } catch (e: any) {
         toast.error(e?.message || "Có lỗi xảy ra, vui lòng thử lại!", {
@@ -224,6 +229,15 @@ export default function AdsPage() {
   return (
     <>
       <div className={isFetching && data ? "opacity-95" : undefined}>
+        {isError && (
+          <div className="mb-4">
+            <QueryErrorBanner
+              message={(error as Error)?.message || "Không thể tải danh sách quảng cáo."}
+              onRetry={() => void refetch()}
+              isRetrying={isFetching}
+            />
+          </div>
+        )}
         <DefaultTab
           activeTab="ads"
           searchQuery={searchQuery}
@@ -271,6 +285,7 @@ export default function AdsPage() {
           onAccountEdit={() => {}}
           onAccountDelete={() => {}}
           formatDateForDisplay={formatDateForDisplay}
+          pageSize={itemsPerPage}
         />
       </div>
 

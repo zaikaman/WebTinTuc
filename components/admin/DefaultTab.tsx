@@ -1,7 +1,8 @@
 "use client";
 
-import { Search, Plus, SquarePen, Trash2, ExternalLink, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Plus, SquarePen, Trash2, ExternalLink, ChevronDown, RotateCcw, Loader2 } from "lucide-react";
 import { PostsTableSkeleton, CategoriesTableSkeleton, AdsTableSkeleton, AccountsTableSkeleton } from "./SkeletonLoaders";
+import AdminPagination from "./AdminPagination";
 import type { Post, Category, Ad, AdminAccount } from "./AdminTypes";
 
 interface DefaultTabProps {
@@ -27,6 +28,8 @@ interface DefaultTabProps {
   onPostsPageChange: (p: number) => void;
   onPostEdit: (post: Post) => void;
   onPostDelete: (id: number) => void;
+  onPostRestore?: (id: number) => void;
+  restoringPostId?: number | null;
 
   categoriesLoading: boolean;
   paginatedCategories: Category[];
@@ -56,6 +59,8 @@ interface DefaultTabProps {
   onAccountDelete: (id: string) => void;
 
   formatDateForDisplay: (date: string) => string;
+  /** Page size for STT calculation (accounts). Defaults to 6. */
+  pageSize?: number;
 }
 
 export default function DefaultTab({
@@ -80,6 +85,8 @@ export default function DefaultTab({
   onPostsPageChange,
   onPostEdit,
   onPostDelete,
+  onPostRestore,
+  restoringPostId = null,
   categoriesLoading,
   paginatedCategories,
   categoriesPage,
@@ -105,6 +112,7 @@ export default function DefaultTab({
   onAccountEdit,
   onAccountDelete,
   formatDateForDisplay,
+  pageSize = 6,
 }: DefaultTabProps) {
   const currentPage =
     activeTab === "posts" ? postsPage
@@ -277,7 +285,7 @@ export default function DefaultTab({
                   <PostsTableSkeleton />
                 ) : paginatedPosts.length > 0 ? (
                   paginatedPosts.map((post) => (
-                    <tr key={post.id} className={`transition-colors text-sm font-medium whitespace-nowrap ${post.isDeleted ? 'opacity-50 bg-red-50/20' : 'hover:bg-gray-50/50'}`}>
+                    <tr key={post.id} className={`transition-colors text-sm font-medium whitespace-nowrap ${post.isDeleted ? 'opacity-70 bg-red-50/30' : 'hover:bg-gray-50/50'}`}>
                       <td className="py-4 px-6 text-center text-gray-400 font-bold">{post.id}</td>
                       <td className="py-4 px-4 whitespace-normal">
                         <div className="flex items-center gap-3">
@@ -288,7 +296,14 @@ export default function DefaultTab({
                               No Image
                             </div>
                           )}
-                          <span className="text-gray-900 font-semibold truncate max-w-[300px]" title={post.title}>{post.title}</span>
+                          <div className="min-w-0 flex flex-col gap-1">
+                            <span className="text-gray-900 font-semibold truncate max-w-[300px]" title={post.title}>{post.title}</span>
+                            {post.isDeleted && (
+                              <span className="inline-flex w-fit items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700">
+                                Đã xóa
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </td>
                       <td className="py-4 px-4 text-gray-600 text-center">{post.category}</td>
@@ -305,20 +320,40 @@ export default function DefaultTab({
                       </td>
                       <td className="py-4 px-6 text-center">
                         <div className="flex items-center justify-center gap-2.5">
-                          <button
-                            type="button"
-                            onClick={() => onPostEdit(post)}
-                            className="p-1.5 border border-amber-200 text-amber-600 rounded-lg hover:bg-amber-50 transition-colors"
-                          >
-                            <SquarePen size={15} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => onPostDelete(post.id!)}
-                            className="p-1.5 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
-                          >
-                            <Trash2 size={15} />
-                          </button>
+                          {post.isDeleted ? (
+                            <button
+                              type="button"
+                              onClick={() => onPostRestore?.(post.id!)}
+                              disabled={restoringPostId === post.id}
+                              className="p-1.5 border border-emerald-200 text-emerald-600 rounded-lg hover:bg-emerald-50 transition-colors disabled:opacity-60"
+                              title="Khôi phục bài viết"
+                            >
+                              {restoringPostId === post.id ? (
+                                <Loader2 size={15} className="animate-spin" />
+                              ) : (
+                                <RotateCcw size={15} />
+                              )}
+                            </button>
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => onPostEdit(post)}
+                                className="p-1.5 border border-amber-200 text-amber-600 rounded-lg hover:bg-amber-50 transition-colors"
+                                title="Sửa bài viết"
+                              >
+                                <SquarePen size={15} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => onPostDelete(post.id!)}
+                                className="p-1.5 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                                title="Xóa bài viết"
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -558,7 +593,7 @@ export default function DefaultTab({
                   paginatedAccounts.map((acc, index) => (
                     <tr key={acc.id} className="hover:bg-gray-50/50 transition-colors text-sm font-medium whitespace-nowrap">
                       <td className="py-4 px-6 text-center text-gray-400 font-bold">
-                        {(accountsPage - 1) * 10 + index + 1}
+                        {(accountsPage - 1) * pageSize + index + 1}
                       </td>
                       <td className="py-4 px-4 text-gray-900 font-semibold">{acc.username}</td>
                       <td className="py-4 px-4 text-gray-750">{acc.display_name}</td>
@@ -607,42 +642,11 @@ export default function DefaultTab({
 
         {/* PAGINATION CONTROLLER */}
         <div className="py-4 px-6 border-t border-gray-150 flex items-center justify-center">
-          <div className="inline-flex items-center bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden divide-x divide-gray-200">
-            <button
-              type="button"
-              onClick={() => { if (currentPage > 1) setPage(currentPage - 1); }}
-              disabled={currentPage === 1}
-              className="px-3 py-2 hover:bg-gray-50 text-gray-500 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
-            >
-              <ChevronLeft size={16} />
-            </button>
-
-            {Array.from({ length: totalPages }).map((_, idx) => {
-              const pageNumber = idx + 1;
-              return (
-                <button
-                  key={pageNumber}
-                  type="button"
-                  onClick={() => setPage(pageNumber)}
-                  className={`px-4 py-2 text-xs font-bold transition-all ${currentPage === pageNumber
-                    ? "bg-[#E55956] text-white"
-                    : "text-gray-700 hover:bg-gray-50"
-                    }`}
-                >
-                  {pageNumber}
-                </button>
-              );
-            })}
-
-            <button
-              type="button"
-              onClick={() => { if (currentPage < totalPages) setPage(currentPage + 1); }}
-              disabled={currentPage === totalPages}
-              className="px-3 py-2 hover:bg-gray-50 text-gray-500 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
-            >
-              <ChevronRight size={16} />
-            </button>
-          </div>
+          <AdminPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setPage}
+          />
         </div>
       </div>
     </div>

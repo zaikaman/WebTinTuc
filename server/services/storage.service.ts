@@ -40,46 +40,82 @@ export async function uploadFileToR2(file: File, folder: string = 'articles'): P
 export async function getStorageTree(prefix: string = '', recursive: boolean = false) {
   try {
     const cleanPrefix = prefix && !prefix.endsWith('/') ? `${prefix}/` : prefix
+    const bucket = process.env.R2_BUCKET_NAME || ''
+    const r2Url = process.env.R2_PUBLIC_URL || process.env.NEXT_PUBLIC_R2_PUBLIC_URL || ''
 
-    const command = new ListObjectsV2Command({
-      Bucket: process.env.R2_BUCKET_NAME || '',
-      Prefix: cleanPrefix,
-      Delimiter: recursive ? undefined : '/',
+    // Paginate ListObjectsV2 until !IsTruncated (S3/R2 default page size ≤1000 keys)
+    const allContents: Array<{ Key: string; Size: number; LastModified?: Date }> = []
+    const allPrefixes: string[] = []
+    let continuationToken: string | undefined
+
+    do {
+      const command = new ListObjectsV2Command({
+        Bucket: bucket,
+        Prefix: cleanPrefix,
+        Delimiter: recursive ? undefined : '/',
+        ContinuationToken: continuationToken,
+      })
+      const response = await s3Client.send(command)
+      if (response.Contents?.length) {
+        for (const item of response.Contents) {
+          if (!item.Key) continue
+          allContents.push({
+            Key: item.Key,
+            Size: item.Size ?? 0,
+            ...(item.LastModified ? { LastModified: item.LastModified } : {}),
+          })
+        }
+      }
+      if (response.CommonPrefixes?.length) {
+        for (const p of response.CommonPrefixes) {
+          if (p.Prefix) allPrefixes.push(p.Prefix)
+        }
+      }
+      continuationToken = response.IsTruncated ? response.NextContinuationToken : undefined
+    } while (continuationToken)
+
+    const subFolders = allPrefixes
+      .map((fullPath) => {
+        const relative = fullPath.startsWith(cleanPrefix)
+          ? fullPath.slice(cleanPrefix.length)
+          : fullPath
+        const name = relative.replace(/\/$/, '').split('/').filter(Boolean)[0] || ''
+        return {
+          name,
+          path: fullPath.replace(/\/$/, ''),
+        }
+      })
+      .filter((f) => f.name !== '')
+
+    // Deduplicate by path (pagination edge cases)
+    const seenPaths = new Set<string>()
+    const uniqueSubFolders = subFolders.filter((f) => {
+      if (seenPaths.has(f.path)) return false
+      seenPaths.add(f.path)
+      return true
     })
 
-    const response = await s3Client.send(command)
-
-    const subFolders = response.CommonPrefixes?.map((p) => {
-      const fullPath = p.Prefix || ''
-      const parts = fullPath.replace(cleanPrefix, '').split('/')
-      return {
-        name: parts[0],
-        path: fullPath
-      }
-    }).filter(f => f.name !== '') || []
-
-    const files = response.Contents
-      ?.filter((file) => file.Key !== cleanPrefix)
+    const files = allContents
+      .filter((file) => file.Key !== cleanPrefix && !file.Key.endsWith('/'))
       .map((file) => {
-        const key = file.Key || ''
+        const key = file.Key
         const ext = key.split('.').pop()?.toLowerCase() || ''
-        
+
         let type = 'file'
         if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) type = 'image'
         if (['mp4', 'webm', 'ogg', 'mov'].includes(ext)) type = 'video'
 
-        const r2Url = process.env.R2_PUBLIC_URL || process.env.NEXT_PUBLIC_R2_PUBLIC_URL || '';
         return {
           key,
           name: key.split('/').pop() || '',
           size: file.Size || 0,
           lastModified: file.LastModified,
           type,
-          url: `${r2Url}/${key}`
+          url: `${r2Url}/${key}`,
         }
-      }) || []
+      })
 
-    return { subFolders, files }
+    return { subFolders: uniqueSubFolders, files }
   } catch (error) {
     console.error('R2 List Tree Error:', error)
     throw new Error('Failed to fetch storage data')

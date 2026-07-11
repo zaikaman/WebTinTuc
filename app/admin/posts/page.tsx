@@ -1,16 +1,18 @@
 "use client";
 
-import React, { useState, useMemo, useCallback, useEffect } from "react";
+import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getAdminArticles,
   deleteAdminArticle,
+  restoreAdminArticle,
   getAdminCategories,
 } from "@/lib/api/adminClient";
 import { formatDateForDisplay } from "@/components/admin/AdminUtils";
 import DefaultTab from "@/components/admin/DefaultTab";
 import DeleteConfirmDialog from "@/components/admin/DeleteConfirmDialog";
+import QueryErrorBanner from "@/components/admin/QueryErrorBanner";
 import { adminKeys } from "@/lib/query/adminKeys";
 import { toast } from "sonner";
 import type { Post } from "@/components/admin/AdminTypes";
@@ -70,6 +72,7 @@ export default function PostsPage() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [targetIdToDelete, setTargetIdToDelete] = useState<number | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [restoringId, setRestoringId] = useState<number | null>(null);
 
   // Categories for filter + editor
   const { data: categoriesData } = useQuery({
@@ -90,9 +93,38 @@ export default function PostsPage() {
     return found?.id as number | undefined;
   }, [postCategoryFilter, categories]);
 
+  // Filter fingerprint: when filters change, use page 1 immediately (same render)
+  // and sync postsPage state so it cannot snap back to the old page.
+  const filterKey = useMemo(
+    () =>
+      JSON.stringify({
+        search: debouncedSearch || "",
+        hideDeletedPosts,
+        categoryId: categoryId ?? null,
+        postStartDate,
+        postEndDate,
+      }),
+    [debouncedSearch, hideDeletedPosts, categoryId, postStartDate, postEndDate]
+  );
+  const filterPageRef = useRef({ key: filterKey, page: postsPage });
+  if (filterPageRef.current.key !== filterKey) {
+    filterPageRef.current = { key: filterKey, page: 1 };
+  } else {
+    filterPageRef.current = { key: filterKey, page: postsPage };
+  }
+  const effectivePage = filterPageRef.current.page;
+
+  useEffect(() => {
+    if (postsPage !== 1 && effectivePage === 1) {
+      setPostsPage(1);
+    }
+    // Only when filter-driven page reset is active
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterKey]);
+
   const listParams = useMemo(
     () => ({
-      page: postsPage,
+      page: effectivePage,
       limit: PAGE_SIZE,
       search: debouncedSearch || undefined,
       includeDeleted: !hideDeletedPosts,
@@ -105,7 +137,7 @@ export default function PostsPage() {
         : undefined,
     }),
     [
-      postsPage,
+      effectivePage,
       debouncedSearch,
       hideDeletedPosts,
       categoryId,
@@ -129,7 +161,7 @@ export default function PostsPage() {
     return `?${parts.join("&")}`;
   }, [listParams]);
 
-  const { data, isLoading, isFetching } = useQuery({
+  const { data, isLoading, isFetching, isError, error, refetch } = useQuery({
     queryKey: adminKeys.articles(listParams as any),
     queryFn: () => getAdminArticles(qs),
     staleTime: 30_000,
@@ -144,11 +176,6 @@ export default function PostsPage() {
     return list;
   }, [data, hideDeletedPosts]);
   const totalPages = data?.meta?.totalPages || 1;
-
-  // Reset page when filters change
-  useEffect(() => {
-    setPostsPage(1);
-  }, [debouncedSearch, postCategoryFilter, postStartDate, postEndDate, hideDeletedPosts]);
 
   const invalidatePosts = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: adminKeys.articlesRoot });
@@ -171,6 +198,25 @@ export default function PostsPage() {
     setDeleteConfirmOpen(true);
   }, []);
 
+  const handleRestore = useCallback(
+    async (id: number) => {
+      try {
+        setRestoringId(id);
+        toast.loading("Đang khôi phục bài viết...", { id: "post-restore" });
+        await restoreAdminArticle(id);
+        toast.success("Khôi phục bài viết thành công!", { id: "post-restore" });
+        invalidatePosts();
+      } catch (err: any) {
+        toast.error(err?.message || "Lỗi khi khôi phục bài viết!", {
+          id: "post-restore",
+        });
+      } finally {
+        setRestoringId(null);
+      }
+    },
+    [invalidatePosts]
+  );
+
   const executeDelete = useCallback(async () => {
     if (targetIdToDelete === null) return;
     setDeleteConfirmOpen(false);
@@ -192,6 +238,8 @@ export default function PostsPage() {
     setPostCategoryFilter("all");
     setPostStartDate("");
     setPostEndDate("");
+    setHideDeletedPosts(true);
+    setPostsPage(1);
   }, []);
 
   // Restore draft editor on mount
@@ -240,6 +288,15 @@ export default function PostsPage() {
   return (
     <>
       <div className={isFetching && data ? "opacity-95" : undefined}>
+        {isError && (
+          <div className="mb-4">
+            <QueryErrorBanner
+              message={(error as Error)?.message || "Không thể tải danh sách bài viết."}
+              onRetry={() => void refetch()}
+              isRetrying={isFetching}
+            />
+          </div>
+        )}
         <DefaultTab
           activeTab="posts"
           searchQuery={searchQuery}
@@ -257,11 +314,13 @@ export default function PostsPage() {
           onOpenAddDialog={handleOpenAddDialog}
           postsLoading={showLoading}
           paginatedPosts={posts}
-          postsPage={postsPage}
+          postsPage={effectivePage}
           postsTotalPages={totalPages}
           onPostsPageChange={setPostsPage}
           onPostEdit={handleOpenEditDialog}
           onPostDelete={handleConfirmDelete}
+          onPostRestore={handleRestore}
+          restoringPostId={restoringId}
           categoriesLoading={false}
           paginatedCategories={[]}
           categoriesPage={1}
@@ -287,6 +346,7 @@ export default function PostsPage() {
           onAccountEdit={() => {}}
           onAccountDelete={() => {}}
           formatDateForDisplay={formatDateForDisplay}
+          pageSize={PAGE_SIZE}
         />
       </div>
 

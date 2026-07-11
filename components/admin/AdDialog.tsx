@@ -1,7 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ChevronDown, ExternalLink, Loader2, Upload } from "lucide-react";
+import { uploadAdminMedia } from "@/lib/api/adminClient";
+import { toast } from "sonner";
 import type { Ad } from "./AdminTypes";
 
 interface AdDialogProps {
@@ -23,6 +26,35 @@ export default function AdDialog({
   onFormChange,
   onSubmit,
 }: AdDialogProps) {
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+
+  const handleImageUpload = async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast.error("Vui lòng chọn file ảnh hợp lệ!");
+      return;
+    }
+    setIsUploadingImage(true);
+    toast.loading("Đang tải ảnh quảng cáo lên...", { id: "ad-image-upload" });
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("folder", "ads");
+      const res = await uploadAdminMedia(fd);
+      if (res?.url) {
+        onFormChange({ ...adForm, image: res.url });
+        toast.success("Tải ảnh quảng cáo thành công!", { id: "ad-image-upload" });
+      } else {
+        throw new Error("Không nhận được URL từ server");
+      }
+    } catch (err: any) {
+      toast.error("Tải ảnh thất bại: " + (err?.message || err), {
+        id: "ad-image-upload",
+      });
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[480px] w-[95%] max-h-[90vh] overflow-y-auto rounded-[24px] p-6 border border-gray-100 shadow-2xl bg-white text-[#2c3e50] outline-none [&>button]:hidden">
@@ -181,27 +213,31 @@ export default function AdDialog({
               </div>
             ) : (
               <div
-                onClick={() => document.getElementById("ad-upload-input")?.click()}
+                onClick={() => {
+                  if (!isUploadingImage && !isSaving) {
+                    document.getElementById("ad-upload-input")?.click();
+                  }
+                }}
                 className="border-2 border-dashed border-gray-200 hover:border-[#E55956] hover:bg-[#E55956]/5 transition-all rounded-xl p-5 flex flex-col items-center justify-center gap-2 cursor-pointer aspect-[2.2/1] w-full group bg-gray-50/20"
               >
-                <Upload size={24} className="text-gray-400 group-hover:text-[#E55956] transition-colors" />
+                {isUploadingImage ? (
+                  <Loader2 size={24} className="text-[#E55956] animate-spin" />
+                ) : (
+                  <Upload size={24} className="text-gray-400 group-hover:text-[#E55956] transition-colors" />
+                )}
                 <span className="text-xs font-bold text-gray-500 group-hover:text-[#E55956] transition-colors">
-                  Click để tải ảnh hoặc kéo thả
+                  {isUploadingImage ? "Đang tải ảnh lên..." : "Click để tải ảnh hoặc kéo thả"}
                 </span>
                 <input
                   type="file"
                   id="ad-upload-input"
                   className="hidden"
                   accept="image/*"
+                  disabled={isUploadingImage || isSaving}
                   onChange={(e) => {
                     const file = e.target.files?.[0];
-                    if (file) {
-                      const reader = new FileReader();
-                      reader.onloadend = () => {
-                        onFormChange({ ...adForm, image: reader.result as string });
-                      };
-                      reader.readAsDataURL(file);
-                    }
+                    e.target.value = "";
+                    if (file) void handleImageUpload(file);
                   }}
                 />
               </div>
@@ -212,14 +248,14 @@ export default function AdDialog({
             <button
               type="button"
               onClick={() => onOpenChange(false)}
-              disabled={isSaving}
+              disabled={isSaving || isUploadingImage}
               className="flex-1 max-w-[144px] py-3 border border-gray-200 hover:bg-gray-50 text-gray-900 text-lg font-bold rounded-xl transition-all shadow-sm flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Hủy
             </button>
             <button
               type="submit"
-              disabled={isSaving}
+              disabled={isSaving || isUploadingImage}
               className="flex-1 max-w-[144px] py-3 bg-[#e86b6b] hover:bg-[#e55956] text-white text-lg font-bold rounded-xl transition-all shadow-md flex items-center justify-center disabled:opacity-75 disabled:cursor-not-allowed gap-2"
             >
               {isSaving && <Loader2 className="w-5 h-5 animate-spin" />}

@@ -61,11 +61,30 @@ const config: Config = {
         "brand-home-btn": "hsl(var(--brand-home-btn))",
         "brand-search": "hsl(var(--brand-search))",
         "brand-nav-border": "hsl(var(--brand-nav-border))",
+        // Admin panel intermediate greys/reds used in components
+        gray: {
+          150: "#f1f3f5",
+          250: "#e5e8eb",
+          350: "#cfd4da",
+          450: "#9aa3ad",
+          750: "#374151",
+        },
+        red: {
+          650: "#c53030",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+      },
+      spacing: {
+        "4.5": "1.125rem",
+        "5.5": "1.375rem",
+        "6.5": "1.625rem",
+      },
+      scale: {
+        "102": "1.02",
       },
       keyframes: {
         "accordion-down": {

@@ -20,14 +20,16 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
 
 async function fetchAdmin<T>(path: string, options: RequestInit = {}): Promise<T> {
   const url = `${API_BASE_URL}/admin${path}`;
+  // Only set JSON Content-Type when there is a body (avoids confusing multipart paths if reused)
+  const method = (options.method || "GET").toUpperCase();
+  const hasBody = options.body != null && method !== "GET" && method !== "HEAD";
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
+    ...(hasBody ? { "Content-Type": "application/json" } : {}),
     ...(options.headers as Record<string, string> || {}),
   };
 
-  // Default: no browser cache for mutations; GETs may pass cache: "default" / next options.
-  const method = (options.method || "GET").toUpperCase();
-  const defaultCache: RequestCache = method === "GET" ? "no-store" : "no-store";
+  // Admin API: never browser-cache (private data; also fixes stale empty media lists)
+  const defaultCache: RequestCache = "no-store";
   const response = await fetch(url, { cache: defaultCache, ...options, headers });
   
   if (!response.ok) {
@@ -75,17 +77,24 @@ export const getAdminMedia = (prefix: string = "", recursive: boolean = false) =
 
 export async function uploadAdminMedia(formData: FormData): Promise<AdminUploadResponse> {
   const url = `${API_BASE_URL}/admin/storage`;
-  const options: RequestInit = {
+  // Do not set Content-Type — browser sets multipart boundary for FormData
+  const response = await fetch(url, {
     method: "POST",
     body: formData,
-  };
-
-  const response = await fetch(url, options);
+    cache: "no-store",
+  });
   if (!response.ok) {
-    throw new Error(`Failed to upload media: ${response.status}`);
+    let message = `Failed to upload media: ${response.status}`;
+    try {
+      const errorData = await response.json();
+      message = errorData.message || message;
+    } catch {
+      // ignore parse errors
+    }
+    throw new Error(message);
   }
   const data = await response.json();
-  if (data.status === "error") {
+  if (data.status === "error" || data.success === false) {
     throw new Error(data.message || "Upload failed");
   }
   return data.data;

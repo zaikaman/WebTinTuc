@@ -36,6 +36,14 @@ function setAdminUiFlag() {
   }
 }
 
+export type AdminProfile = {
+  email: string;
+  displayName: string;
+  username: string;
+  role: string;
+  initials: string;
+};
+
 export type AdminAuthValue = {
   isLoggedIn: boolean;
   isAuthVerified: boolean;
@@ -43,6 +51,7 @@ export type AdminAuthValue = {
   loginPassword: string;
   showPassword: boolean;
   isLoading: boolean;
+  adminProfile: AdminProfile | null;
   setLoginUsername: (v: string) => void;
   setLoginPassword: (v: string) => void;
   setShowPassword: (v: boolean) => void;
@@ -52,17 +61,45 @@ export type AdminAuthValue = {
 
 const AdminAuthContext = createContext<AdminAuthValue | null>(null);
 
-async function verifyAdminSessionNetwork(): Promise<boolean> {
+function buildAdminProfile(
+  user: { email?: string | null },
+  profile: { role?: string; display_name?: string | null; username?: string | null }
+): AdminProfile {
+  const displayName =
+    profile.display_name?.trim() ||
+    profile.username?.trim() ||
+    user.email?.split("@")[0] ||
+    "Admin";
+  const username = profile.username?.trim() || user.email || "admin";
+  const initials = displayName
+    .split(/\s+/)
+    .map((p) => p[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase() || "AD";
+  return {
+    email: user.email || "",
+    displayName,
+    username,
+    role: profile.role || "admin",
+    initials,
+  };
+}
+
+async function verifyAdminSessionNetwork(): Promise<{
+  ok: boolean;
+  profile: AdminProfile | null;
+}> {
   const {
     data: { user },
     error: userError,
   } = await supabase.auth.getUser();
 
-  if (userError || !user) return false;
+  if (userError || !user) return { ok: false, profile: null };
 
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
-    .select("role")
+    .select("role, display_name, username")
     .eq("id", user.id)
     .single();
 
@@ -72,10 +109,10 @@ async function verifyAdminSessionNetwork(): Promise<boolean> {
     } catch {
       // ignore
     }
-    return false;
+    return { ok: false, profile: null };
   }
 
-  return true;
+  return { ok: true, profile: buildAdminProfile(user, profile) };
 }
 
 export function AdminAuthProvider({ children }: { children: ReactNode }) {
@@ -88,24 +125,27 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const [loginPassword, setLoginPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [adminProfile, setAdminProfile] = useState<AdminProfile | null>(null);
   const verifyingRef = useRef(false);
 
   const markLoggedOut = useCallback(() => {
     clearAdminUiFlag();
     sessionCache = { isAdmin: false, checkedAt: Date.now() };
     setIsLoggedIn(false);
+    setAdminProfile(null);
   }, []);
 
-  const markLoggedIn = useCallback(() => {
+  const markLoggedIn = useCallback((profile?: AdminProfile | null) => {
     setAdminUiFlag();
     sessionCache = { isAdmin: true, checkedAt: Date.now() };
     setIsLoggedIn(true);
+    if (profile) setAdminProfile(profile);
   }, []);
 
   const verifyAdminSession = useCallback(async (): Promise<boolean> => {
-    const ok = await verifyAdminSessionNetwork();
-    if (ok) {
-      markLoggedIn();
+    const result = await verifyAdminSessionNetwork();
+    if (result.ok) {
+      markLoggedIn(result.profile);
       return true;
     }
     markLoggedOut();
@@ -130,9 +170,9 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         }
         // Background revalidate without blocking UI
         try {
-          const ok = await verifyAdminSessionNetwork();
+          const result = await verifyAdminSessionNetwork();
           if (!cancelled) {
-            if (ok) markLoggedIn();
+            if (result.ok) markLoggedIn(result.profile);
             else markLoggedOut();
             setIsAuthVerified(true);
           }
@@ -194,7 +234,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
 
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
-          .select("role")
+          .select("role, display_name, username")
           .eq("id", data.user.id)
           .single();
 
@@ -205,7 +245,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        markLoggedIn();
+        markLoggedIn(buildAdminProfile(data.user, profile));
         setIsAuthVerified(true);
         toast.success("Đăng nhập quản trị thành công!");
       } catch (err) {
@@ -239,6 +279,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
       loginPassword,
       showPassword,
       isLoading,
+      adminProfile,
       setLoginUsername,
       setLoginPassword,
       setShowPassword,
@@ -252,6 +293,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
       loginPassword,
       showPassword,
       isLoading,
+      adminProfile,
       handleLogin,
       handleLogout,
     ]

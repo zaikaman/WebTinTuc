@@ -8,12 +8,51 @@ import {
   uploadAdminMedia,
 } from "@/lib/api/adminClient";
 import LogoFooterTab from "@/components/admin/LogoFooterTab";
+import QueryErrorBanner from "@/components/admin/QueryErrorBanner";
 import { adminKeys } from "@/lib/query/adminKeys";
+import { updateSiteSettingsCache } from "@/lib/hooks/useSiteSettings";
 import { toast } from "sonner";
+
+function applySettingsToForm(
+  data: any,
+  setters: {
+    setLogoWebsiteName: (v: string) => void;
+    setLogoUrl: (v: string | null) => void;
+    setFooterOperator: (v: string) => void;
+    setHeaderZaloUrl: (v: string) => void;
+    setHeaderEmailUrl: (v: string) => void;
+    setFooterAddress: (v: string) => void;
+    setFooterPhone: (v: string) => void;
+    setFooterEmail: (v: string) => void;
+    setFooterLicense: (v: string) => void;
+    setFooterResponsible: (v: string) => void;
+  }
+) {
+  if (data.brand) {
+    setters.setLogoWebsiteName(data.brand.name || "Tên Web");
+    setters.setLogoUrl(data.brand.logo_url || null);
+    setters.setFooterOperator(data.brand.copyright || "");
+    setters.setHeaderZaloUrl(
+      data.brand.socialLinks?.find((l: any) => l.platform === "zalo")?.href ||
+        "https://zalo.me"
+    );
+    setters.setHeaderEmailUrl(
+      data.brand.socialLinks?.find((l: any) => l.platform === "email")?.href ||
+        "mailto:quangcao@linhka.vn"
+    );
+  }
+  if (data.footer) {
+    setters.setFooterAddress(data.footer.address || "");
+    setters.setFooterPhone(data.footer.phone || "");
+    setters.setFooterEmail(data.footer.email || "");
+    setters.setFooterLicense(data.footer.license || "");
+    setters.setFooterResponsible(data.footer.responsible || "");
+  }
+}
 
 export default function LogoFooterPage() {
   const queryClient = useQueryClient();
-  const { data, isLoading, isFetching } = useQuery({
+  const { data, isLoading, isFetching, isError, error, refetch, dataUpdatedAt } = useQuery({
     queryKey: adminKeys.settings,
     queryFn: () => getAdminSettings(),
     staleTime: 120_000,
@@ -34,37 +73,36 @@ export default function LogoFooterPage() {
     "mailto:quangcao@linhka.vn"
   );
   const [isSettingsSaving, setIsSettingsSaving] = useState(false);
-  const [hydrated, setHydrated] = useState(false);
+  const [lastHydratedAt, setLastHydratedAt] = useState(0);
+  const [dirty, setDirty] = useState(false);
 
+  // Re-hydrate whenever query data is newer and form is not dirty
   useEffect(() => {
-    if (!data || hydrated) return;
-    if (data.brand) {
-      setLogoWebsiteName(data.brand.name || "Tên Web");
-      setLogoUrl(data.brand.logo_url || null);
-      setFooterOperator(data.brand.copyright || "");
-      setHeaderZaloUrl(
-        data.brand.socialLinks?.find((l: any) => l.platform === "zalo")?.href ||
-          "https://zalo.me"
-      );
-      setHeaderEmailUrl(
-        data.brand.socialLinks?.find((l: any) => l.platform === "email")
-          ?.href || "mailto:quangcao@linhka.vn"
-      );
-    }
-    if (data.footer) {
-      setFooterAddress(data.footer.address || "");
-      setFooterPhone(data.footer.phone || "");
-      setFooterEmail(data.footer.email || "");
-      setFooterLicense(data.footer.license || "");
-      setFooterResponsible(data.footer.responsible || "");
-    }
-    setHydrated(true);
-  }, [data, hydrated]);
+    if (!data || !dataUpdatedAt) return;
+    if (dirty && lastHydratedAt > 0) return;
+    if (dataUpdatedAt === lastHydratedAt) return;
+    applySettingsToForm(data, {
+      setLogoWebsiteName,
+      setLogoUrl,
+      setFooterOperator,
+      setHeaderZaloUrl,
+      setHeaderEmailUrl,
+      setFooterAddress,
+      setFooterPhone,
+      setFooterEmail,
+      setFooterLicense,
+      setFooterResponsible,
+    });
+    setLastHydratedAt(dataUpdatedAt);
+    setDirty(false);
+  }, [data, dataUpdatedAt, dirty, lastHydratedAt]);
 
-  // Re-hydrate when cache updates after save/invalidate
-  useEffect(() => {
-    if (!data || !hydrated) return;
-  }, [data, hydrated]);
+  const markDirty = useCallback(<T,>(setter: (v: T) => void) => {
+    return (v: T) => {
+      setDirty(true);
+      setter(v);
+    };
+  }, []);
 
   const handleSave = useCallback(async () => {
     try {
@@ -99,6 +137,8 @@ export default function LogoFooterPage() {
       };
       await updateAdminSettings(updatedPayload);
       queryClient.setQueryData(adminKeys.settings, updatedPayload);
+      updateSiteSettingsCache(updatedPayload);
+      setDirty(false);
       toast.success("Lưu thay đổi thành công!", { id: "save-logo-footer" });
     } catch (err: any) {
       toast.error(err?.message || "Lỗi khi lưu cấu hình!", {
@@ -129,6 +169,7 @@ export default function LogoFooterPage() {
       formData.append("folder", "settings");
       const res = await uploadAdminMedia(formData);
       if (res?.url) {
+        setDirty(true);
         setLogoUrl(res.url);
         toast.success("Đã tải logo lên thành công!", { id: "upload-logo" });
       } else {
@@ -141,10 +182,19 @@ export default function LogoFooterPage() {
     }
   }, []);
 
-  const showLoading = isLoading && !data && !hydrated;
+  const showLoading = isLoading && !data && lastHydratedAt === 0;
 
   return (
     <div className={isFetching && data ? "opacity-95" : undefined}>
+      {isError && (
+        <div className="mb-4">
+          <QueryErrorBanner
+            message={(error as Error)?.message || "Không thể tải cấu hình Logo & Footer."}
+            onRetry={() => void refetch()}
+            isRetrying={isFetching}
+          />
+        </div>
+      )}
       <LogoFooterTab
         loading={showLoading}
         isSaving={isSettingsSaving}
@@ -158,16 +208,16 @@ export default function LogoFooterPage() {
         footerEmail={footerEmail}
         footerLicense={footerLicense}
         footerResponsible={footerResponsible}
-        onLogoUrlChange={setLogoUrl}
-        onLogoWebsiteNameChange={setLogoWebsiteName}
-        onHeaderZaloUrlChange={setHeaderZaloUrl}
-        onHeaderEmailUrlChange={setHeaderEmailUrl}
-        onFooterOperatorChange={setFooterOperator}
-        onFooterAddressChange={setFooterAddress}
-        onFooterPhoneChange={setFooterPhone}
-        onFooterEmailChange={setFooterEmail}
-        onFooterLicenseChange={setFooterLicense}
-        onFooterResponsibleChange={setFooterResponsible}
+        onLogoUrlChange={markDirty(setLogoUrl)}
+        onLogoWebsiteNameChange={markDirty(setLogoWebsiteName)}
+        onHeaderZaloUrlChange={markDirty(setHeaderZaloUrl)}
+        onHeaderEmailUrlChange={markDirty(setHeaderEmailUrl)}
+        onFooterOperatorChange={markDirty(setFooterOperator)}
+        onFooterAddressChange={markDirty(setFooterAddress)}
+        onFooterPhoneChange={markDirty(setFooterPhone)}
+        onFooterEmailChange={markDirty(setFooterEmail)}
+        onFooterLicenseChange={markDirty(setFooterLicense)}
+        onFooterResponsibleChange={markDirty(setFooterResponsible)}
         onSave={handleSave}
         onUploadLogo={handleUploadLogo}
       />

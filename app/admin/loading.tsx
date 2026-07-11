@@ -1,7 +1,15 @@
+/** Content-area skeleton — avoids full-screen flash over the shared admin shell. */
 export default function AdminLoading() {
   return (
-    <div className="min-h-screen bg-[#f4f6f8] flex items-center justify-center">
-      <div className="animate-spin h-8 w-8 border-4 border-[#E55956] border-t-transparent rounded-full" />
+    <div className="flex flex-col gap-6 animate-pulse w-full">
+      <div className="h-20 bg-white rounded-2xl border border-gray-100 shadow-sm" />
+      <div className="h-14 bg-white rounded-2xl border border-gray-100 shadow-sm" />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="h-32 bg-white rounded-2xl border border-gray-100" />
+        <div className="h-32 bg-white rounded-2xl border border-gray-100" />
+        <div className="h-32 bg-white rounded-2xl border border-gray-100" />
+      </div>
+      <div className="h-64 bg-white rounded-2xl border border-gray-100" />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
-import { Search, Plus, ChevronDown, ChevronRight, ChevronLeft, Upload, Loader2, Copy, Eye, Trash2, Video } from "lucide-react";
+import { Search, Plus, ChevronDown, ChevronRight, Upload, Loader2, Copy, Eye, Trash2, Video } from "lucide-react";
+import AdminPagination from "./AdminPagination";
 import type { MediaItem } from "./AdminTypes";
 
 interface MediaTabProps {
@@ -27,6 +28,9 @@ interface MediaTabProps {
   onMediaCopyUrl: (url: string) => void;
   onMediaPreview: (url: string) => void;
   onUploadClick: () => void;
+  selectedKeys?: Set<string>;
+  onSelectedKeysChange?: (keys: Set<string>) => void;
+  onBulkDelete?: () => void;
 }
 
 export default function MediaTab({
@@ -53,7 +57,42 @@ export default function MediaTab({
   onMediaCopyUrl,
   onMediaPreview,
   onUploadClick,
+  selectedKeys = new Set(),
+  onSelectedKeysChange,
+  onBulkDelete,
 }: MediaTabProps) {
+  const pageKeys = paginatedMedia.map((m) => m.key);
+  const allPageSelected =
+    pageKeys.length > 0 && pageKeys.every((k) => selectedKeys.has(k));
+
+  const toggleSelectAll = () => {
+    if (!onSelectedKeysChange) return;
+    const next = new Set(selectedKeys);
+    if (allPageSelected) {
+      pageKeys.forEach((k) => next.delete(k));
+    } else {
+      pageKeys.forEach((k) => next.add(k));
+    }
+    onSelectedKeysChange(next);
+  };
+
+  const toggleOne = (key: string) => {
+    if (!onSelectedKeysChange) return;
+    const next = new Set(selectedKeys);
+    if (next.has(key)) next.delete(key);
+    else next.add(key);
+    onSelectedKeysChange(next);
+  };
+
+  const folderLabel = (path: string) => {
+    if (!path.includes("/")) return path;
+    return path.split("/").pop() || path;
+  };
+
+  const breadcrumbParts = activeFolder
+    ? activeFolder.split("/").filter(Boolean)
+    : [];
+
   return (
     <div className="flex flex-col gap-6 animate-fade-in">
       {/* Header Panel */}
@@ -67,7 +106,7 @@ export default function MediaTab({
           type="button"
           onClick={onUploadClick}
           disabled={isUploading}
-          className="flex items-center justify-center gap-2 px-5 py-2.5 bg-[#eb5757] hover:bg-[#d94848] text-white text-xs font-bold rounded-xl shadow-sm transition-all self-start sm:self-center disabled:opacity-75 disabled:cursor-not-allowed"
+          className="flex items-center justify-center gap-2 px-5 py-2.5 bg-[#E55956] hover:bg-[#cb4643] text-white text-xs font-bold rounded-xl shadow-sm transition-all self-start sm:self-center disabled:opacity-75 disabled:cursor-not-allowed"
         >
           {isUploading ? (
             <Loader2 size={14} className="animate-spin" />
@@ -80,7 +119,6 @@ export default function MediaTab({
 
       {/* Filter & Search Bar Panel */}
       <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-        {/* Filter by Types */}
         <div className="flex flex-col gap-1.5">
           <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Lọc</span>
           <div className="flex gap-2">
@@ -94,7 +132,7 @@ export default function MediaTab({
                 type="button"
                 onClick={() => onMediaTypeFilterChange(type.id)}
                 className={`px-5 py-2 rounded-xl text-xs font-bold transition-all ${mediaTypeFilter === type.id
-                  ? "bg-[#eb5757] text-white shadow-sm"
+                  ? "bg-[#E55956] text-white shadow-sm"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                   }`}
               >
@@ -104,7 +142,6 @@ export default function MediaTab({
           </div>
         </div>
 
-        {/* Search */}
         <div className="flex flex-col gap-1.5 w-full md:w-[350px]">
           <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Tìm kiếm thông tin</span>
           <div className="relative">
@@ -114,13 +151,12 @@ export default function MediaTab({
               value={mediaSearchQuery}
               onChange={(e) => onMediaSearchQueryChange(e.target.value)}
               placeholder="Tìm kiếm"
-              className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-full text-xs outline-none focus:border-[#eb5757] focus:ring-1 focus:ring-[#eb5757]/15 transition-all bg-white"
+              className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-full text-xs outline-none focus:border-[#E55956] focus:ring-1 focus:ring-[#E55956]/15 transition-all bg-white"
             />
           </div>
         </div>
       </div>
 
-      {/* Split Content Area */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Column: Cây thư mục */}
         <div className="lg:col-span-3 bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
@@ -130,50 +166,52 @@ export default function MediaTab({
               type="button"
               onClick={onOpenFolderDialog}
               className="p-1 border border-gray-300 hover:border-gray-400 rounded transition-colors hover:bg-gray-50 flex items-center justify-center"
+              title="Tạo thư mục"
             >
               <Plus size={12} className="text-gray-700 font-bold" />
             </button>
           </div>
 
           <div className="p-4 space-y-2">
-            {/* Root Folder Item */}
             <div
               onClick={() => onActiveFolderChange("")}
-              className={`flex items-center gap-1.5 cursor-pointer font-bold text-xs transition-all ${!activeFolder ? "text-[#eb5757]" : "text-gray-800 hover:text-gray-900"
+              className={`flex items-center gap-1.5 cursor-pointer font-bold text-xs transition-all ${!activeFolder ? "text-[#E55956]" : "text-gray-800 hover:text-gray-900"
                 }`}
             >
-              <ChevronDown size={14} className={!activeFolder ? "text-[#eb5757]" : "text-gray-500"} />
+              <ChevronDown size={14} className={!activeFolder ? "text-[#E55956]" : "text-gray-500"} />
               <span>Root</span>
             </div>
 
-            {/* Subdirectories */}
             <div className="pl-4 mt-1.5 space-y-1 border-l border-gray-100 ml-1.5">
-              {folders.map((folderName) => {
-                const isActive = activeFolder === folderName;
+              {folders.map((folderPath) => {
+                const isActive = activeFolder === folderPath;
+                const depth = folderPath.split("/").length - 1;
                 return (
                   <div
-                    key={folderName}
+                    key={folderPath}
                     className={`group/folder flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all ${isActive
-                      ? "bg-[#ffe4e4] text-[#eb5757]"
+                      ? "bg-[#ffe4e4] text-[#E55956]"
                       : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
                       }`}
+                    style={{ marginLeft: depth > 0 ? Math.min(depth, 3) * 8 : 0 }}
                   >
                     <div
-                      onClick={() => onActiveFolderChange(folderName)}
-                      className="flex items-center gap-1.5 flex-1"
+                      onClick={() => onActiveFolderChange(folderPath)}
+                      className="flex items-center gap-1.5 flex-1 min-w-0"
+                      title={folderPath}
                     >
-                      <ChevronRight size={12} className={isActive ? "text-[#eb5757]" : "text-gray-400"} />
-                      <span>{folderName}</span>
+                      <ChevronRight size={12} className={isActive ? "text-[#E55956]" : "text-gray-400"} />
+                      <span className="truncate">{folderLabel(folderPath)}</span>
                     </div>
 
                     <button
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        onFolderDelete(folderName);
+                        onFolderDelete(folderPath);
                       }}
                       className="opacity-0 group-hover/folder:opacity-100 p-0.5 hover:text-red-650 transition-opacity flex items-center justify-center"
-                      title="Ẩn thư mục"
+                      title="Ẩn thư mục khỏi danh sách (không xóa trên R2)"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="font-bold text-gray-500 hover:text-red-650">
                         <line x1="18" y1="6" x2="6" y2="18" />
@@ -187,24 +225,30 @@ export default function MediaTab({
           </div>
         </div>
 
-        {/* Right Column: Main Content */}
+        {/* Right Column */}
         <div className="lg:col-span-9 bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-col gap-4 min-h-[500px]">
-          {/* Breadcrumb row */}
           <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-            <div className="flex items-center gap-1.5 text-xs font-bold text-gray-800">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-gray-800 flex-wrap">
               <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
               </svg>
-              <span className="cursor-pointer hover:text-gray-900" onClick={() => onActiveFolderChange("")}>Root</span>
-              {activeFolder && (
-                <>
-                  <ChevronRight size={12} className="text-gray-450" />
-                  <span className="text-gray-900">{activeFolder}</span>
-                </>
-              )}
+              <span className="cursor-pointer hover:text-[#E55956]" onClick={() => onActiveFolderChange("")}>Root</span>
+              {breadcrumbParts.map((part, i) => {
+                const path = breadcrumbParts.slice(0, i + 1).join("/");
+                return (
+                  <span key={path} className="flex items-center gap-1.5">
+                    <ChevronRight size={12} className="text-gray-450" />
+                    <span
+                      className={`cursor-pointer hover:text-[#E55956] ${i === breadcrumbParts.length - 1 ? "text-gray-900" : "text-gray-600"}`}
+                      onClick={() => onActiveFolderChange(path)}
+                    >
+                      {part}
+                    </span>
+                  </span>
+                );
+              })}
             </div>
 
-            {/* Sorting select */}
             <div className="relative">
               <select
                 value={mediaSort}
@@ -219,14 +263,32 @@ export default function MediaTab({
             </div>
           </div>
 
-          {/* Actions Row */}
-          <div className="flex items-center gap-2 text-xs font-bold text-gray-800 py-1">
-            <input type="checkbox" className="w-4 h-4 rounded border-gray-300 text-[#eb5757] focus:ring-[#eb5757]/20 cursor-pointer" />
-            <span>Chọn tất cả</span>
-            <span className="text-gray-500 font-medium ml-1.5">{filteredMedia.length} file</span>
+          {/* Selection row */}
+          <div className="flex items-center gap-3 text-xs font-bold text-gray-800 py-1 flex-wrap">
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={allPageSelected}
+                onChange={toggleSelectAll}
+                className="w-4 h-4 rounded border-gray-300 text-[#E55956] focus:ring-[#E55956]/20 cursor-pointer"
+              />
+              <span>Chọn tất cả</span>
+            </label>
+            <span className="text-gray-500 font-medium">{filteredMedia.length} file</span>
+            {selectedKeys.size > 0 && (
+              <>
+                <span className="text-[#E55956] font-bold">{selectedKeys.size} đã chọn</span>
+                <button
+                  type="button"
+                  onClick={onBulkDelete}
+                  className="px-3 py-1 rounded-lg bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 font-bold transition-colors"
+                >
+                  Xóa đã chọn
+                </button>
+              </>
+            )}
           </div>
 
-          {/* Cards Grid */}
           {loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4.5">
               {[...Array(6)].map((_, i) => (
@@ -254,13 +316,24 @@ export default function MediaTab({
                     }
                     return item.createdAt;
                   })();
+                  const isSelected = selectedKeys.has(item.key);
 
                   return (
                     <div
-                      key={item.id}
-                      className="group relative border border-gray-250 rounded-xl overflow-hidden bg-white shadow-sm flex flex-col justify-between transition-all duration-300 hover:shadow-md hover:border-gray-350 animate-fade-in"
+                      key={item.key || item.id}
+                      className={`group relative border rounded-xl overflow-hidden bg-white shadow-sm flex flex-col justify-between transition-all duration-300 hover:shadow-md animate-fade-in ${
+                        isSelected ? "border-[#E55956] ring-2 ring-[#E55956]/20" : "border-gray-250 hover:border-gray-350"
+                      }`}
                     >
-                      {/* Thumbnail */}
+                      <div className="absolute top-2 left-2 z-30">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleOne(item.key)}
+                          className="w-4 h-4 rounded border-gray-300 text-[#E55956] focus:ring-[#E55956]/20 cursor-pointer bg-white shadow"
+                        />
+                      </div>
+
                       <div className="relative aspect-[4/3] w-full bg-gray-100 overflow-hidden flex items-center justify-center border-b border-gray-150">
                         {item.type === "video" ? (
                           <div className="w-full h-full relative flex items-center justify-center bg-slate-950">
@@ -277,7 +350,7 @@ export default function MediaTab({
                             )}
                             <div className="absolute inset-0 bg-black/25 flex items-center justify-center">
                               <div className="w-9 h-9 rounded-full bg-white/90 flex items-center justify-center text-gray-900 shadow-md group-hover:scale-110 transition-transform">
-                                <svg className="w-4.5 h-4.5 fill-current ml-0.5" viewBox="0 0 24 24">
+                                <svg className="w-4 h-4 fill-current ml-0.5" viewBox="0 0 24 24">
                                   <path d="M8 5v14l11-7z" />
                                 </svg>
                               </div>
@@ -294,7 +367,6 @@ export default function MediaTab({
                           />
                         )}
 
-                        {/* Glassmorphic Hover Action Overlay */}
                         <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-2 z-20">
                           <button
                             type="button"
@@ -328,7 +400,6 @@ export default function MediaTab({
                         </div>
                       </div>
 
-                      {/* Info Panel */}
                       <div className="p-3 bg-gray-50 flex flex-col gap-1 border-t border-gray-150">
                         <h5 className="text-[11px] font-bold text-gray-800 truncate leading-snug" title={item.title}>
                           {item.title}
@@ -343,45 +414,12 @@ export default function MediaTab({
                 })}
               </div>
 
-              {/* Pagination footer */}
               <div className="flex justify-center mt-6">
-                <div className="inline-flex items-center bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden divide-x divide-gray-200">
-                  <button
-                    type="button"
-                    onClick={() => { if (mediaPage > 1) onMediaPageChange(mediaPage - 1); }}
-                    disabled={mediaPage === 1}
-                    className="px-3 py-2 hover:bg-gray-50 text-gray-500 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
-                  >
-                    <ChevronLeft size={16} />
-                  </button>
-
-                  {Array.from({ length: mediaTotalPages }).map((_, idx) => {
-                    const pageNumber = idx + 1;
-                    const isCurrent = mediaPage === pageNumber;
-                    return (
-                      <button
-                        key={pageNumber}
-                        type="button"
-                        onClick={() => onMediaPageChange(pageNumber)}
-                        className={`px-4 py-2 text-xs font-bold transition-all ${isCurrent
-                          ? "bg-[#eb5757] text-white"
-                          : "text-gray-700 hover:bg-gray-50"
-                          }`}
-                      >
-                        {pageNumber}
-                      </button>
-                    );
-                  })}
-
-                  <button
-                    type="button"
-                    onClick={() => { if (mediaPage < mediaTotalPages) onMediaPageChange(mediaPage + 1); }}
-                    disabled={mediaPage === mediaTotalPages}
-                    className="px-3 py-2 hover:bg-gray-50 text-gray-500 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
-                  >
-                    <ChevronRight size={16} />
-                  </button>
-                </div>
+                <AdminPagination
+                  currentPage={mediaPage}
+                  totalPages={mediaTotalPages}
+                  onPageChange={onMediaPageChange}
+                />
               </div>
             </>
           ) : (

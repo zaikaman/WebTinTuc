@@ -12,6 +12,7 @@ import { formatDateForDisplay } from "@/components/admin/AdminUtils";
 import DefaultTab from "@/components/admin/DefaultTab";
 import AccountDialog from "@/components/admin/AccountDialog";
 import DeleteConfirmDialog from "@/components/admin/DeleteConfirmDialog";
+import QueryErrorBanner from "@/components/admin/QueryErrorBanner";
 import { adminKeys } from "@/lib/query/adminKeys";
 import { toast } from "sonner";
 import type { AdminAccount } from "@/components/admin/AdminTypes";
@@ -43,7 +44,7 @@ export default function AccountsPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [localOverride, setLocalOverride] = useState<AdminAccount[] | null>(null);
 
-  const { data, isLoading, isFetching } = useQuery({
+  const { data, isLoading, isFetching, isError, error, refetch } = useQuery({
     queryKey: adminKeys.accounts(QS),
     queryFn: () => getAdminAccounts(QS),
     staleTime: 60_000,
@@ -146,7 +147,6 @@ export default function AccountsPage() {
         return;
       }
 
-      setAccountDialogOpen(false);
       setIsAccountSaving(true);
       try {
         if (dialogMode === "add") {
@@ -171,6 +171,7 @@ export default function AccountsPage() {
           await updateAdminAccount(editAccountId, payload);
           toast.success("Cập nhật tài khoản thành công!", { id: "account-submit" });
         }
+        setAccountDialogOpen(false);
         invalidate();
       } catch (err: any) {
         toast.error(err?.message || "Có lỗi xảy ra, vui lòng thử lại!", {
@@ -188,6 +189,15 @@ export default function AccountsPage() {
   return (
     <>
       <div className={isFetching && data ? "opacity-95" : undefined}>
+        {isError && (
+          <div className="mb-4">
+            <QueryErrorBanner
+              message={(error as Error)?.message || "Không thể tải danh sách tài khoản."}
+              onRetry={() => void refetch()}
+              isRetrying={isFetching}
+            />
+          </div>
+        )}
         <DefaultTab
           activeTab="accounts"
           searchQuery={searchQuery}
@@ -235,6 +245,7 @@ export default function AccountsPage() {
           onAccountEdit={handleOpenEditDialog}
           onAccountDelete={handleConfirmDelete}
           formatDateForDisplay={formatDateForDisplay}
+          pageSize={itemsPerPage}
         />
       </div>
 

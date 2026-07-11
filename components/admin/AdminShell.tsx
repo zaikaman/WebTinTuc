@@ -74,13 +74,18 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3">
               <div className="hidden md:flex flex-col text-right">
-                <span className="text-sm font-bold text-gray-900">Administrator</span>
+                <span className="text-sm font-bold text-gray-900">
+                  {auth.adminProfile?.displayName || "Administrator"}
+                </span>
                 <span className="text-[10px] font-semibold text-[#E55956] uppercase tracking-wider">
-                  Super Admin
+                  {auth.adminProfile?.role || "admin"}
                 </span>
               </div>
-              <div className="w-[40px] h-[40px] rounded-full bg-slate-200 flex items-center justify-center font-bold text-slate-600 border border-slate-300 select-none">
-                AD
+              <div
+                className="w-[40px] h-[40px] rounded-full bg-slate-200 flex items-center justify-center font-bold text-slate-600 border border-slate-300 select-none"
+                title={auth.adminProfile?.email || undefined}
+              >
+                {auth.adminProfile?.initials || "AD"}
               </div>
             </div>
 

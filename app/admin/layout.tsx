@@ -13,6 +13,7 @@ import {
   getAdminCategories,
   getAdminArticles,
 } from "@/lib/api/adminClient";
+import { clearSiteSettingsCache } from "@/lib/hooks/useSiteSettings";
 
 function AdminGate({ children }: { children: React.ReactNode }) {
   const auth = useAdminAuth();
@@ -20,8 +21,23 @@ function AdminGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const warmedRef = useRef(false);
+  const prevLoggedIn = useRef(auth.isLoggedIn);
 
   const isLoginPath = pathname === "/admin" || pathname === "/admin/";
+
+  // Clear query cache + warm flag on logout / re-login to avoid cross-session leakage
+  useEffect(() => {
+    if (prevLoggedIn.current && !auth.isLoggedIn) {
+      queryClient.clear();
+      warmedRef.current = false;
+      clearSiteSettingsCache();
+    }
+    if (!prevLoggedIn.current && auth.isLoggedIn) {
+      queryClient.clear();
+      warmedRef.current = false;
+    }
+    prevLoggedIn.current = auth.isLoggedIn;
+  }, [auth.isLoggedIn, queryClient]);
 
   // Soft client redirect (middleware also gates)
   useEffect(() => {
@@ -51,13 +67,13 @@ function AdminGate({ children }: { children: React.ReactNode }) {
         staleTime: 60_000,
       });
       void queryClient.prefetchQuery({
+        // Prefetch key matches list convention: omit includeDeleted when false
         queryKey: adminKeys.articles({
           page: 1,
           limit: 20,
           includeDeleted: false,
         }),
-        queryFn: () =>
-          getAdminArticles("?page=1&limit=20&includeDeleted=false"),
+        queryFn: () => getAdminArticles("?page=1&limit=20"),
         staleTime: 30_000,
       });
     };

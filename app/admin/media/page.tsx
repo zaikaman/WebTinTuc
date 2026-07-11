@@ -10,11 +10,13 @@ import {
 } from "@/lib/api/adminClient";
 import MediaTab from "@/components/admin/MediaTab";
 import FolderDialog from "@/components/admin/FolderDialog";
+import QueryErrorBanner from "@/components/admin/QueryErrorBanner";
 import { adminKeys } from "@/lib/query/adminKeys";
 import { toast } from "sonner";
 import type { MediaItem } from "@/components/admin/AdminTypes";
 
 const mediaItemsPerPage = 6;
+const DEFAULT_ROOT_FOLDERS = ["articles", "ads", "categories"];
 
 function mapFiles(files: any[], folderPrefix: string): MediaItem[] {
   return (files || []).map((f: any, idx: number) => ({
@@ -30,9 +32,14 @@ function mapFiles(files: any[], folderPrefix: string): MediaItem[] {
     folder: folderPrefix
       ? folderPrefix.replace(/\/$/, "")
       : f.key.includes("/")
-        ? f.key.split("/")[0]
+        ? f.key.split("/").slice(0, -1).join("/")
         : "",
   }));
+}
+
+/** Normalize folder path: no leading/trailing slashes */
+function normalizeFolderPath(path: string): string {
+  return path.replace(/^\/+|\/+$/g, "");
 }
 
 export default function MediaPage() {
@@ -40,22 +47,25 @@ export default function MediaPage() {
   const [mediaSort, setMediaSort] = useState<"newest" | "oldest" | "az">("newest");
   const [mediaSearchQuery, setMediaSearchQuery] = useState("");
   const [mediaTypeFilter, setMediaTypeFilter] = useState<"all" | "image" | "video">("all");
+  /** Full path relative to bucket root, e.g. "articles" or "articles/foo" */
   const [activeFolder, setActiveFolder] = useState<string>("");
-  const [folders, setFolders] = useState<string[]>(["articles", "ads", "categories"]);
+  /** Full folder paths for the tree (root-level + nested under active) */
+  const [folders, setFolders] = useState<string[]>(DEFAULT_ROOT_FOLDERS);
+  const [hiddenFolders, setHiddenFolders] = useState<Set<string>>(new Set());
   const [folderDialogOpen, setFolderDialogOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [isMediaUploading, setIsMediaUploading] = useState(false);
   const [deletingMediaKey, setDeletingMediaKey] = useState<string | null>(null);
   const [mediaPage, setMediaPage] = useState(1);
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Root = show ALL media (recursive). Subfolder = only that folder (fast).
-  // Non-recursive root only returns files with no prefix (usually empty) + CommonPrefixes.
   const isRoot = !activeFolder;
-  const prefix = isRoot ? "" : `${activeFolder.replace(/\/$/, "")}/`;
+  const prefix = isRoot ? "" : `${normalizeFolderPath(activeFolder)}/`;
   const recursive = isRoot;
 
-  const { data, isLoading, isFetching } = useQuery({
+  const { data, isLoading, isFetching, isError, error, refetch } = useQuery({
     queryKey: adminKeys.media(prefix, recursive),
     queryFn: () => getAdminMedia(prefix, recursive),
     staleTime: 45_000,
@@ -68,20 +78,56 @@ export default function MediaPage() {
     staleTime: 120_000,
   });
 
+  // When inside a folder, also list its immediate subfolders
+  const { data: activeFolderData } = useQuery({
+    queryKey: adminKeys.media(prefix, false),
+    queryFn: () => getAdminMedia(prefix, false),
+    staleTime: 45_000,
+    enabled: !isRoot,
+  });
+
   useEffect(() => {
-    const fromApi = rootFoldersData?.subFolders?.map((sf: any) => sf.name) || [];
-    // Also derive folders from recursive root file keys (covers edge cases)
+    const rootPaths: string[] =
+      rootFoldersData?.subFolders?.map((sf: any) =>
+        normalizeFolderPath(sf.path || sf.name)
+      ) || [];
+
+    // Derive top-level from recursive root file keys
     const fromFiles =
       isRoot && data?.files
         ? data.files
-            .map((f: any) => (f.key?.includes("/") ? f.key.split("/")[0] : ""))
+            .map((f: any) =>
+              f.key?.includes("/") ? f.key.split("/")[0] : ""
+            )
             .filter(Boolean)
         : [];
-    const unique = Array.from(
-      new Set([...fromApi, ...fromFiles, "articles", "ads", "categories"])
-    );
-    setFolders(unique);
-  }, [rootFoldersData, data, isRoot]);
+
+    // Nested subfolders under current active folder
+    const nestedPaths: string[] =
+      activeFolderData?.subFolders?.map((sf: any) =>
+        normalizeFolderPath(sf.path || `${activeFolder}/${sf.name}`)
+      ) || [];
+
+    const fromApi = [
+      ...DEFAULT_ROOT_FOLDERS,
+      ...rootPaths,
+      ...fromFiles,
+      ...nestedPaths,
+    ].filter((f) => f && !hiddenFolders.has(f));
+
+    setFolders((prev) => {
+      const unique = Array.from(
+        new Set([...fromApi, ...prev.filter((f) => !hiddenFolders.has(f))])
+      );
+      if (
+        unique.length === prev.length &&
+        unique.every((f) => prev.includes(f))
+      ) {
+        return prev;
+      }
+      return unique;
+    });
+  }, [rootFoldersData, data, isRoot, activeFolderData, activeFolder, hiddenFolders]);
 
   const mediaItems = useMemo(
     () => mapFiles(data?.files || [], activeFolder),
@@ -130,6 +176,7 @@ export default function MediaPage() {
 
   useEffect(() => {
     setMediaPage(1);
+    setSelectedKeys(new Set());
   }, [mediaSearchQuery, mediaTypeFilter, activeFolder]);
 
   const handleMediaDirectUpload = useCallback(
@@ -153,7 +200,7 @@ export default function MediaPage() {
           try {
             const formData = new FormData();
             formData.append("file", file);
-            if (activeFolder) formData.append("folder", activeFolder);
+            if (activeFolder) formData.append("folder", normalizeFolderPath(activeFolder));
             await uploadAdminMedia(formData);
             toast.success(`Tải lên thành công: ${file.name}`, {
               id: `upload-${file.name}`,
@@ -174,15 +221,18 @@ export default function MediaPage() {
   );
 
   const handleFolderDelete = useCallback(
-    (folderName: string) => {
+    (folderPath: string) => {
       if (
         confirm(
-          `Bạn có chắc chắn muốn xóa thư mục "${folderName}" khỏi danh sách hiển thị?`
+          `Ẩn thư mục "${folderPath}" khỏi danh sách hiển thị?\n\nLưu ý: Thao tác này chỉ ẩn trên giao diện, không xóa file trên R2.`
         )
       ) {
-        setFolders((prev) => prev.filter((f) => f !== folderName));
-        if (activeFolder === folderName) setActiveFolder("");
-        toast.success(`Đã xóa thư mục: ${folderName}`);
+        setHiddenFolders((prev) => new Set([...prev, folderPath]));
+        setFolders((prev) => prev.filter((f) => f !== folderPath));
+        if (activeFolder === folderPath || activeFolder.startsWith(folderPath + "/")) {
+          setActiveFolder("");
+        }
+        toast.success(`Đã ẩn thư mục: ${folderPath}`);
       }
     },
     [activeFolder]
@@ -197,6 +247,11 @@ export default function MediaPage() {
           toast.loading("Đang xóa...", { id: "media-delete" });
           await deleteAdminMedia(key);
           toast.success("Đã xóa file media thành công!", { id: "media-delete" });
+          setSelectedKeys((prev) => {
+            const next = new Set(prev);
+            next.delete(key);
+            return next;
+          });
           invalidateMedia();
         } catch (err: any) {
           toast.error(err?.message || "Lỗi khi xóa file media!", {
@@ -210,13 +265,42 @@ export default function MediaPage() {
     [invalidateMedia]
   );
 
-  const handleMediaCopyUrl = useCallback((url: string) => {
+  const handleBulkDelete = useCallback(async () => {
+    if (selectedKeys.size === 0) return;
+    if (
+      !confirm(
+        `Bạn có chắc chắn muốn xóa ${selectedKeys.size} file media đã chọn không?`
+      )
+    ) {
+      return;
+    }
+    toast.loading(`Đang xóa ${selectedKeys.size} file...`, { id: "media-bulk-delete" });
+    try {
+      for (const key of selectedKeys) {
+        await deleteAdminMedia(key);
+      }
+      toast.success(`Đã xóa ${selectedKeys.size} file!`, { id: "media-bulk-delete" });
+      setSelectedKeys(new Set());
+      invalidateMedia();
+    } catch (err: any) {
+      toast.error(err?.message || "Lỗi khi xóa hàng loạt!", {
+        id: "media-bulk-delete",
+      });
+      invalidateMedia();
+    }
+  }, [selectedKeys, invalidateMedia]);
+
+  const handleMediaCopyUrl = useCallback(async (url: string) => {
     const copyUrl =
       url.startsWith("blob:") || url.startsWith("data:") || url.startsWith("http")
         ? url
         : window.location.origin + url;
-    navigator.clipboard.writeText(copyUrl);
-    toast.success("Đã sao chép link media vào bộ nhớ tạm!");
+    try {
+      await navigator.clipboard.writeText(copyUrl);
+      toast.success("Đã sao chép link media vào bộ nhớ tạm!");
+    } catch {
+      toast.error("Không thể sao chép (trình duyệt chặn quyền clipboard).");
+    }
   }, []);
 
   const handleMediaPreview = useCallback((url: string) => {
@@ -228,17 +312,20 @@ export default function MediaPage() {
   }, []);
 
   const handleCreateFolder = useCallback(async () => {
+    const name = newFolderName.trim();
+    if (!name) return;
     try {
       toast.loading("Đang tạo thư mục...", { id: "media-folder" });
-      await createAdminFolder(newFolderName.trim(), activeFolder);
-      toast.success(`Đã thêm thư mục: ${newFolderName.trim()}`, {
+      await createAdminFolder(name, activeFolder ? normalizeFolderPath(activeFolder) : "");
+      const fullPath = activeFolder
+        ? `${normalizeFolderPath(activeFolder)}/${name}`
+        : name;
+      toast.success(`Đã thêm thư mục: ${fullPath}`, {
         id: "media-folder",
       });
       setFolderDialogOpen(false);
       setNewFolderName("");
-      setFolders((prev) =>
-        Array.from(new Set([...prev, newFolderName.trim()]))
-      );
+      setFolders((prev) => Array.from(new Set([...prev, fullPath])));
       invalidateMedia();
     } catch (err: any) {
       toast.error(err?.message || "Lỗi khi tạo thư mục!", { id: "media-folder" });
@@ -247,9 +334,34 @@ export default function MediaPage() {
 
   const showLoading = isLoading && !data;
 
+  // Folders to show in sidebar: root-level when at root; siblings+children when nested
+  const visibleFolders = useMemo(() => {
+    if (isRoot) {
+      // Only top-level folder names (no slash)
+      return folders.filter((f) => !f.includes("/"));
+    }
+    // Show immediate children of active folder + path segments for breadcrumb navigation
+    const parent = normalizeFolderPath(activeFolder);
+    const children = folders.filter(
+      (f) => f.startsWith(parent + "/") && !f.slice(parent.length + 1).includes("/")
+    );
+    // Also show other top-level for navigation back
+    const topLevel = folders.filter((f) => !f.includes("/"));
+    return Array.from(new Set([...topLevel, ...children]));
+  }, [folders, activeFolder, isRoot]);
+
   return (
     <>
       <div className={isFetching && data ? "opacity-95" : undefined}>
+        {isError && (
+          <div className="mb-4">
+            <QueryErrorBanner
+              message={(error as Error)?.message || "Không thể tải thư viện media."}
+              onRetry={() => void refetch()}
+              isRetrying={isFetching}
+            />
+          </div>
+        )}
         <MediaTab
           loading={showLoading}
           isUploading={isMediaUploading}
@@ -257,7 +369,7 @@ export default function MediaPage() {
           onMediaTypeFilterChange={setMediaTypeFilter as any}
           mediaSearchQuery={mediaSearchQuery}
           onMediaSearchQueryChange={setMediaSearchQuery}
-          folders={folders}
+          folders={visibleFolders}
           activeFolder={activeFolder}
           onActiveFolderChange={setActiveFolder}
           onFolderDelete={handleFolderDelete}
@@ -277,6 +389,9 @@ export default function MediaPage() {
           onMediaCopyUrl={handleMediaCopyUrl}
           onMediaPreview={handleMediaPreview}
           onUploadClick={() => fileInputRef.current?.click()}
+          selectedKeys={selectedKeys}
+          onSelectedKeysChange={setSelectedKeys}
+          onBulkDelete={handleBulkDelete}
         />
       </div>
 

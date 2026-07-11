@@ -105,26 +105,31 @@ export default function PostEditorView({
   const loadMedia = useCallback(async () => {
     try {
       setMediaLoading(true);
-      // Only list articles folder (non-recursive) for library picker speed
-      const res = await getAdminMedia("articles/", false);
+      // Recursive articles/ listing so nested uploads appear in the editor library
+      const res = await getAdminMedia("articles/", true);
       if (res?.files) {
         setMediaItems(
-          res.files.map((f: any, idx: number) => ({
-            id: idx + 1,
-            key: f.key,
-            title: f.name,
-            type: f.type,
-            url: f.url,
-            size: (f.size / 1024).toFixed(2) + " KB",
-            createdAt: f.lastModified
-              ? new Date(f.lastModified).toISOString().split("T")[0]
-              : "",
-            folder: "articles",
-          }))
+          res.files
+            .filter((f: any) => f.type === "image" || f.type === "video")
+            .map((f: any, idx: number) => ({
+              id: idx + 1,
+              key: f.key,
+              title: f.name,
+              type: f.type,
+              url: f.url,
+              size: (f.size / 1024).toFixed(2) + " KB",
+              createdAt: f.lastModified
+                ? new Date(f.lastModified).toISOString().split("T")[0]
+                : "",
+              folder: f.key?.includes("/")
+                ? f.key.split("/").slice(0, -1).join("/")
+                : "articles",
+            }))
         );
       }
     } catch (err) {
       console.error("Error loading media:", err);
+      toast.error("Không thể tải thư viện media");
     } finally {
       setMediaLoading(false);
     }
@@ -184,7 +189,7 @@ export default function PostEditorView({
     };
   }, [mode, editId]);
 
-  // Draft restore (add mode only)
+  // Draft restore (add mode only) — once per browser session to avoid noisy remount toasts
   useEffect(() => {
     if (mode !== "add") return;
     try {
@@ -195,8 +200,15 @@ export default function PostEditorView({
         const savedContent = localStorage.getItem("admin_editor_post_content");
         if (savedContent) setPostContent(savedContent);
         const savedCover = localStorage.getItem("admin_editor_post_cover_image");
-        if (savedCover) setPostCoverImage(savedCover);
-        toast.info("Đã khôi phục bản nháp bài viết đang viết dở!");
+        // Skip base64 drafts (legacy) — they bloat quota and are not valid CDN keys
+        if (savedCover && !savedCover.startsWith("data:")) {
+          setPostCoverImage(savedCover);
+        }
+        const toastKey = "admin_editor_draft_toast_shown";
+        if (!sessionStorage.getItem(toastKey)) {
+          sessionStorage.setItem(toastKey, "1");
+          toast.info("Đã khôi phục bản nháp bài viết đang viết dở!");
+        }
       }
     } catch {
       // ignore
@@ -306,8 +318,22 @@ export default function PostEditorView({
   const handleSavePost = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
-      if (!postForm.title?.trim()) {
+      const title = postForm.title?.trim() || "";
+      if (!title) {
         toast.error("Vui lòng nhập tiêu đề bài viết!");
+        return;
+      }
+      if (title.length < 5) {
+        toast.error("Tiêu đề bài viết phải có ít nhất 5 ký tự!");
+        return;
+      }
+      if (title.length > 255) {
+        toast.error("Tiêu đề bài viết không được vượt quá 255 ký tự!");
+        return;
+      }
+      // Never persist base64 data URLs as thumbnail_key
+      if (postCoverImage?.startsWith("data:")) {
+        toast.error("Ảnh bìa chưa được tải lên. Vui lòng chọn lại ảnh bìa!");
         return;
       }
       try {
@@ -317,11 +343,11 @@ export default function PostEditorView({
         });
         const targetCategory = categories.find((c: any) => c.name === postForm.category);
         const payload = {
-          title: postForm.title,
+          title,
           category_id: targetCategory ? targetCategory.id : undefined,
           views: Number(postForm.views) || 0,
           status: postForm.status === "Đã đăng" ? "published" : "draft",
-          thumbnail_key: postCoverImage,
+          thumbnail_key: postCoverImage || null,
           content: htmlToBlocks(postContent),
         };
         if (mode === "add") {
@@ -706,13 +732,30 @@ export default function PostEditorView({
                   id="cover-upload-input"
                   className="hidden"
                   accept="image/*"
-                  onChange={(e) => {
+                  onChange={async (e) => {
                     const file = e.target.files?.[0];
-                    if (file) {
-                      const reader = new FileReader();
-                      reader.onloadend = () =>
-                        setPostCoverImage(reader.result as string);
-                      reader.readAsDataURL(file);
+                    e.target.value = "";
+                    if (!file) return;
+                    if (!file.type.startsWith("image/")) {
+                      toast.error("Vui lòng chọn file ảnh hợp lệ!");
+                      return;
+                    }
+                    toast.loading("Đang tải ảnh bìa lên...", { id: "cover-upload" });
+                    try {
+                      const fd = new FormData();
+                      fd.append("file", file);
+                      fd.append("folder", "articles");
+                      const res = await uploadAdminMedia(fd);
+                      if (res?.url) {
+                        setPostCoverImage(res.url);
+                        toast.success("Tải ảnh bìa thành công!", { id: "cover-upload" });
+                      } else {
+                        throw new Error("Không nhận được URL từ server");
+                      }
+                    } catch (err: any) {
+                      toast.error("Tải ảnh bìa thất bại: " + (err?.message || err), {
+                        id: "cover-upload",
+                      });
                     }
                   }}
                 />

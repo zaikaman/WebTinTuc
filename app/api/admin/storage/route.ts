@@ -10,7 +10,10 @@ export async function GET(request: NextRequest) {
     await requireAdmin(request)
     const { prefix } = parseQuery(request, storagePrefixQuerySchema)
     const recursive = request.nextUrl.searchParams.get('recursive') === 'true'
-    return ok(await getStorageTree(prefix, recursive))
+    // Admin storage listings must not be CDN-cached (private, no-store)
+    return ok(await getStorageTree(prefix, recursive), {
+      headers: { 'Cache-Control': 'private, no-store' },
+    })
   } catch (error) {
     return fail(error)
   }
