@@ -358,9 +358,17 @@ Client may filter images; server accepts any `File` with client-provided `Conten
 
 ### 17. Middleware redirect cache is per-instance only
 
-**Where:** `middleware.ts` in-memory `Map`, TTL 5 minutes
+**Where:** `middleware.ts` in-memory `Map`; coordination via `lib/redirect-cache.ts`
 
-**Impact:** On serverless multi-instance, cache is not shared; after redirect updates, some edges serve old rules up to TTL. Acceptable for SEO redirects if admins can wait; document it. Consider short TTL or explicit purge.
+**Impact:** On serverless multi-instance, the local Map is not shared; after redirect updates, some edges can serve old rules until invalidation or TTL.
+
+**Status:** Mitigated / documented (2026-07-11).
+
+- **Documented** in `middleware.ts` and `lib/redirect-cache.ts` (per-isolate Map; not for security routing).
+- **Shorter TTL:** `REDIRECT_CACHE_TTL_MS` = **60s** (was 5 minutes) so max blind staleness without Redis is one minute.
+- **Explicit purge (optional Redis):** create/update/delete redirect actions call `bumpRedirectCacheVersion()` (`INCR redirects:cache:version`). Middleware polls every `REDIRECT_VERSION_CHECK_MS` (10s) and clears the local Map when the generation changes. Without Upstash env vars, behavior falls back to TTL only.
+
+**Ops expectation:** With Redis configured, expect ≤ ~10s lag after admin edits; without Redis, wait up to 60s. Acceptable for SEO redirects.
 
 ---
 
