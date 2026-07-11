@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
+import { JsonLd } from "@/components/JsonLd";
 import { getSiteSettings } from "@/lib/api/news";
 import { OfflineDetector } from "@/components/OfflineDetector";
 
@@ -27,10 +28,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
-      />
+      <JsonLd data={breadcrumbJsonLd} />
       <div className="w-full max-w-[970px] mx-auto min-h-screen flex flex-col">
         <Suspense fallback={<div className="h-[94px] bg-[#e24a48] w-full" />}>
           <Header brand={settings.brand} categories={categories} />

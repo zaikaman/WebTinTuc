@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getCategoryFeed, getPublicAds } from "@/lib/api/news";
 import { CategoryContent } from "@/components/CategoryContent";
+import { JsonLd } from "@/components/JsonLd";
 import type { CategoryFeed } from "@/lib/types/news";
 
 export const dynamicParams = true;
@@ -92,21 +93,18 @@ function CategoryJsonLd({ data, category, label }: { data: CategoryFeed; categor
   }
 
   return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{
-        __html: JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "CollectionPage",
-          "@id": `${siteUrl}/${category}#collection`,
-          name: `${label} - WebTinTuc`,
-          description: `Chuyên mục ${label.toLowerCase()} trên WebTinTuc`,
-          url: `${siteUrl}/${category}`,
-          mainEntity: {
-            "@type": "ItemList",
-            itemListElement: listItems,
-          },
-        }),
+    <JsonLd
+      data={{
+        "@context": "https://schema.org",
+        "@type": "CollectionPage",
+        "@id": `${siteUrl}/${category}#collection`,
+        name: `${label} - WebTinTuc`,
+        description: `Chuyên mục ${label.toLowerCase()} trên WebTinTuc`,
+        url: `${siteUrl}/${category}`,
+        mainEntity: {
+          "@type": "ItemList",
+          itemListElement: listItems,
+        },
       }}
     />
   );

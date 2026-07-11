@@ -83,6 +83,7 @@ const jsonLd = {
 };
 
 import { HoverPreloader } from "@/components/HoverPreloader";
+import { JsonLd } from "@/components/JsonLd";
 import { Toaster } from "sonner";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -93,10 +94,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="dns-prefetch" href="https://supabase.co" />
         <link rel="preconnect" href="https://*.r2.dev" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://*.r2.dev" />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-        />
+        <JsonLd data={jsonLd} />
       </head>
       <body className="min-h-screen bg-[#f4f6f8] text-[#333] font-sans antialiased">
         <Toaster position="top-right" richColors />

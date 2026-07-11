@@ -5,6 +5,15 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+/**
+ * Serialize data for embedding in a <script type="application/ld+json"> tag.
+ * Escapes `<` so a string value containing `</script>` cannot break out of the tag.
+ * (Common Next.js / OWASP pattern for JSON-in-script.)
+ */
+export function serializeJsonLd(data: unknown): string {
+  return JSON.stringify(data).replace(/</g, "\\u003c");
+}
+
 export function formatCategory(category: string): string {
   if (!category) return "";
   const lower = category.toLowerCase();

@@ -11,6 +11,7 @@ import { Clock, Link2, Star } from "lucide-react";
 import { formatCategory, formatVietnameseDate } from "@/lib/utils";
 import { proxyImageUrl } from "@/lib/image-proxy";
 import AdBanner from "@/components/AdBanner";
+import { JsonLd } from "@/components/JsonLd";
 import MobileAdsStack from "@/components/MobileAdsStack";
 import ViewTracker from "@/components/ViewTracker";
 
@@ -154,14 +155,8 @@ export default async function PostDetailPage({ params }: PageProps) {
   return (
     <>
       <ViewTracker articleId={article.dbId} />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleBreadcrumbJsonLd) }}
-      />
+      <JsonLd data={articleJsonLd} />
+      <JsonLd data={articleBreadcrumbJsonLd} />
       <main className="w-full px-3 md:px-0 py-4 font-sans text-xs">
       {/* Top Banner Advertisement (QC 970x250) */}
       <AdBanner 
