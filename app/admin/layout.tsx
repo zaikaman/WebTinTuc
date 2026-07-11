@@ -25,16 +25,16 @@ function AdminGate({ children }: { children: React.ReactNode }) {
 
   const isLoginPath = pathname === "/admin" || pathname === "/admin/";
 
-  // Clear query cache + warm flag on logout / re-login to avoid cross-session leakage
+  // Clear query cache only on real logout. Do NOT clear on false→true:
+  // after a hard refresh, isLoggedIn starts false then becomes true once the
+  // session is verified. Clearing at that moment removes in-flight useQuery
+  // observers (e.g. dashboard) and leaves the UI stuck on skeleton forever.
+  // Cross-session leakage is already handled by the logout branch below.
   useEffect(() => {
     if (prevLoggedIn.current && !auth.isLoggedIn) {
       queryClient.clear();
       warmedRef.current = false;
       clearSiteSettingsCache();
-    }
-    if (!prevLoggedIn.current && auth.isLoggedIn) {
-      queryClient.clear();
-      warmedRef.current = false;
     }
     prevLoggedIn.current = auth.isLoggedIn;
   }, [auth.isLoggedIn, queryClient]);
@@ -53,9 +53,12 @@ function AdminGate({ children }: { children: React.ReactNode }) {
   // Warm React Query + server caches after login (idle)
   useEffect(() => {
     if (!auth.isLoggedIn || !auth.isAuthVerified || warmedRef.current) return;
-    warmedRef.current = true;
+
+    let cancelled = false;
 
     const warm = () => {
+      if (cancelled || warmedRef.current) return;
+      warmedRef.current = true;
       void queryClient.prefetchQuery({
         queryKey: adminKeys.dashboard({}),
         queryFn: () => getAdminDashboardStats({}),
@@ -80,10 +83,16 @@ function AdminGate({ children }: { children: React.ReactNode }) {
 
     if (typeof window !== "undefined" && "requestIdleCallback" in window) {
       const id = window.requestIdleCallback(warm, { timeout: 1500 });
-      return () => window.cancelIdleCallback(id);
+      return () => {
+        cancelled = true;
+        window.cancelIdleCallback(id);
+      };
     }
     const t = setTimeout(warm, 200);
-    return () => clearTimeout(t);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
   }, [auth.isLoggedIn, auth.isAuthVerified, queryClient]);
 
   if (!auth.isAuthVerified) {
