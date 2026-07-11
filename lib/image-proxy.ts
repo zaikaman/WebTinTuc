@@ -1,51 +1,36 @@
 /**
- * Known image hostnames that are allowed to be served directly (no proxy needed).
- * These domains are already configured in next.config.ts `images.remotePatterns`.
- */
-const ALLOWED_HOSTNAMES = [
-  'r2.dev',
-  'r2.cloudflarestorage.com',
-  'images.unsplash.com',
-]
-
-/**
- * Transform an external image URL to go through our local image proxy,
- * so Next.js `<Image>` can optimize it without needing a `remotePatterns` entry.
+ * Normalize image URLs for public rendering.
  *
- * - Relative paths (`/...`) are returned as-is.
- * - Data URIs (`data:...`) are returned as-is.
- * - URLs from known hostnames (R2, Unsplash) are returned as-is.
- * - All other external URLs are rewritten to `/api/image-proxy?url=...`.
+ * Images are expected to live on R2 (or hosts already in `next.config.ts`
+ * `images.remotePatterns`, e.g. Unsplash). The open public `/api/image-proxy`
+ * endpoint was removed (SSRF / bandwidth abuse risk).
  *
- * @param url - The image URL to potentially proxy.
- * @returns The original URL (if local or allowed) or a proxied URL.
+ * - Relative paths (`/...`) and data URIs are returned as-is.
+ * - Legacy wrappers `/api/image-proxy?url=...` are unwrapped to the original URL.
+ * - All other absolute URLs are returned as-is (no server-side fetch proxy).
+ *
+ * Admin flows that still need to fetch an external image (import link → R2,
+ * crop) use the authenticated `/api/admin/proxy-image` endpoint instead.
  */
 export function proxyImageUrl(url: string | null | undefined): string {
-  if (!url) return ''
+  if (!url) return ""
 
-  // Local relative paths need no proxy
-  if (url.startsWith('/')) return url
+  // Data URIs need no transformation
+  if (url.startsWith("data:")) return url
 
-  // Data URIs need no proxy
-  if (url.startsWith('data:')) return url
-
-  // Already a proxy URL? Don't re-wrap
-  if (url.startsWith('/api/image-proxy?')) return url
-
-  try {
-    const parsed = new URL(url)
-
-    // Check if the hostname is from an already-allowed domain
-    const isAllowed = ALLOWED_HOSTNAMES.some(
-      (allowed) => parsed.hostname === allowed || parsed.hostname.endsWith(`.${allowed}`)
-    )
-
-    if (isAllowed) return url
-
-    // For truly external images, proxy through our server
-    return `/api/image-proxy?url=${encodeURIComponent(url)}`
-  } catch {
-    // Invalid URL – return as-is and let the browser handle it
+  // Relative path — may still be a legacy proxy wrapper
+  if (url.startsWith("/") && !url.startsWith("//")) {
+    if (url.startsWith("/api/image-proxy?")) {
+      try {
+        const original = new URL(url, "http://localhost").searchParams.get("url")
+        if (original) return proxyImageUrl(original)
+      } catch {
+        // Invalid wrapper — fall through
+      }
+    }
     return url
   }
+
+  // Absolute URL (http/https/protocol-relative) — serve directly
+  return url
 }

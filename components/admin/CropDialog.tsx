@@ -135,6 +135,11 @@ export default function CropDialog({
         ? `/api/admin/proxy-image?url=${encodeURIComponent(cropImageUrl)}`
         : cropImageUrl;
     img.src = proxyUrl;
+    img.onerror = () => {
+      toast.error(
+        "Không thể tải ảnh để cắt. Thử chèn lại bằng link để lưu lên R2, hoặc kiểm tra link ảnh."
+      );
+    };
     img.onload = () => {
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");

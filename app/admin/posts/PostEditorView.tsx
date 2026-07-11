@@ -630,6 +630,7 @@ export default function PostEditorView({
 
   const handleInsertImage = useCallback(async () => {
     let finalImageUrl = "";
+
     if (imageTab === "upload") {
       if (!imageFile) {
         toast.error("Vui lòng chọn file ảnh!");
@@ -651,23 +652,101 @@ export default function PostEditorView({
         });
         return;
       }
-    } else {
-      if (!imageUrl.trim()) {
+    } else if (imageTab === "link") {
+      // External URL: download via admin proxy then store on R2 so resize/crop work reliably
+      const rawUrl = imageUrl.trim();
+      if (!rawUrl) {
         toast.error("Vui lòng nhập link ảnh!");
+        return;
+      }
+      if (!/^https?:\/\//i.test(rawUrl)) {
+        toast.error("Link ảnh phải bắt đầu bằng http:// hoặc https://");
+        return;
+      }
+
+      // Already on our R2 — no need to re-upload
+      const r2Public =
+        process.env.NEXT_PUBLIC_R2_PUBLIC_URL || process.env.R2_PUBLIC_URL || "";
+      if (r2Public && rawUrl.startsWith(r2Public.replace(/\/$/, ""))) {
+        finalImageUrl = rawUrl;
+      } else {
+        toast.loading("Đang tải ảnh từ link và lưu lên R2...", {
+          id: "upload-image",
+        });
+        try {
+          const proxyRes = await fetch(
+            `/api/admin/proxy-image?url=${encodeURIComponent(rawUrl)}`
+          );
+          if (!proxyRes.ok) {
+            throw new Error(
+              "Không thể tải ảnh từ link (có thể bị chặn hoặc link không hợp lệ)"
+            );
+          }
+          const blob = await proxyRes.blob();
+          const contentType = blob.type || "image/jpeg";
+          if (!contentType.startsWith("image/")) {
+            throw new Error("Link không trỏ tới file ảnh hợp lệ");
+          }
+          const extMap: Record<string, string> = {
+            "image/jpeg": "jpg",
+            "image/jpg": "jpg",
+            "image/png": "png",
+            "image/webp": "webp",
+            "image/gif": "gif",
+            "image/svg+xml": "svg",
+            "image/avif": "avif",
+          };
+          const ext =
+            extMap[contentType] ||
+            rawUrl.split("?")[0].split(".").pop()?.toLowerCase() ||
+            "jpg";
+          const safeExt = /^[a-z0-9]{2,5}$/i.test(ext) ? ext : "jpg";
+          const file = new File(
+            [blob],
+            `link-${Date.now()}.${safeExt}`,
+            { type: contentType }
+          );
+          const fd = new FormData();
+          fd.append("file", file);
+          fd.append("folder", "articles");
+          const res = await uploadAdminMedia(fd);
+          if (!res?.url) throw new Error("No URL");
+          finalImageUrl = res.url;
+          toast.success("Đã lưu ảnh lên R2!", { id: "upload-image" });
+        } catch (err: any) {
+          toast.error("Lưu ảnh từ link thất bại: " + (err.message || err), {
+            id: "upload-image",
+          });
+          return;
+        }
+      }
+    } else {
+      // library — already on R2
+      if (!imageUrl.trim()) {
+        toast.error("Vui lòng chọn ảnh từ thư viện!");
         return;
       }
       finalImageUrl = imageUrl.trim();
     }
+
     if (!finalImageUrl) {
       toast.error("Đường dẫn không hợp lệ!");
       return;
     }
+
+    // Use blocksToHtml so resize (25/50/75/100%) + crop toolbar are present immediately
     const wrapperId = "img-" + Math.random().toString(36).substring(2, 9);
-    const imgHtml = `<p><br></p><div id="${wrapperId}" class="my-4 relative group" contenteditable="false" style="max-width:100%;margin:0 auto"><img src="${finalImageUrl}" alt="${imageCaption}" class="w-full rounded-xl border border-gray-200 shadow-sm" />${
-      imageCaption
-        ? `<p class="text-center text-xs italic text-gray-500 mt-1.5">${imageCaption}</p>`
-        : ""
-    }</div><p><br></p>`;
+    const imgHtml =
+      "<p><br></p>" +
+      blocksToHtml([
+        {
+          type: "image",
+          src: finalImageUrl,
+          caption: imageCaption,
+          width: "100%",
+          id: wrapperId,
+        },
+      ]);
     insertHtmlToEditor(imgHtml);
     setImageDialogOpen(false);
     setImageUrl("");
@@ -690,7 +769,10 @@ export default function PostEditorView({
         fd.append("folder", "articles");
         const res = await uploadAdminMedia(fd);
         if (res?.url) {
-          videoHtml = `<p><br></p><div class="my-4 relative group" contenteditable="false" style="max-width:100%;margin:0 auto"><video controls src="${res.url}" class="w-full max-h-[400px] rounded-xl border border-gray-200 shadow-sm"></video></div><p><br></p>`;
+          // blocksToHtml adds resize toolbar for video blocks
+          videoHtml =
+            "<p><br></p>" +
+            blocksToHtml([{ type: "video", src: res.url, width: "100%" }]);
           toast.success("Tải lên thành công!", { id: "upload-video" });
         } else throw new Error("No URL");
       } catch (err: any) {
@@ -714,11 +796,16 @@ export default function PostEditorView({
         } catch {
           // ignore
         }
-        videoHtml = videoId
-          ? `<p><br></p><div class="my-4" contenteditable="false"><iframe class="w-full aspect-video rounded-xl" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe></div><p><br></p>`
-          : `<p><br></p><div class="my-4" contenteditable="false"><iframe class="w-full aspect-video rounded-xl" src="${url}" frameborder="0" allowfullscreen></iframe></div><p><br></p>`;
+        const embedSrc = videoId
+          ? `https://www.youtube.com/embed/${videoId}`
+          : url;
+        videoHtml =
+          "<p><br></p>" +
+          blocksToHtml([{ type: "iframe", src: embedSrc, width: "100%" }]);
       } else {
-        videoHtml = `<p><br></p><div class="my-4" contenteditable="false"><video controls src="${url}" class="w-full max-h-[400px] rounded-xl"></video></div><p><br></p>`;
+        videoHtml =
+          "<p><br></p>" +
+          blocksToHtml([{ type: "video", src: url, width: "100%" }]);
       }
       toast.success("Đã chèn video thành công!");
     }

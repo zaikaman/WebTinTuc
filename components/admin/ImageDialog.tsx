@@ -125,6 +125,9 @@ export default function ImageDialog({
                   placeholder="https://example.com/image.jpg"
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#E55956] focus:ring-2 focus:ring-[#E55956]/15 transition-all bg-white shadow-sm font-medium"
                 />
+                <p className="text-[11px] text-gray-400 leading-relaxed">
+                  Ảnh từ link sẽ được tải về và lưu lên R2 Storage để bạn có thể resize và cắt cúp trong editor.
+                </p>
               </div>
               <div className="space-y-2">
                 <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">
