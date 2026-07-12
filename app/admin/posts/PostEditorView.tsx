@@ -72,6 +72,7 @@ export default function PostEditorView({
 
   const editorRef = useRef<HTMLDivElement>(null);
   const savedSelectionRef = useRef<Range | null>(null);
+  const isInitializedRef = useRef(false);
 
   const [fontMenuOpen, setFontMenuOpen] = useState(false);
   const [sizeMenuOpen, setSizeMenuOpen] = useState(false);
@@ -241,9 +242,18 @@ export default function PostEditorView({
     }
   }, [postForm, postContent, postCoverImage, editId, mode]);
 
+  // Reset initialization flag when mode/editId changes
   useEffect(() => {
-    if (editorRef.current && editorRef.current.innerHTML !== postContent) {
+    isInitializedRef.current = false;
+  }, [editId, mode]);
+
+  useEffect(() => {
+    if (detailLoading) return;
+    if (!editorRef.current) return;
+
+    if (!isInitializedRef.current && postContent !== undefined && postContent !== null) {
       editorRef.current.innerHTML = postContent;
+      isInitializedRef.current = true;
     }
   }, [postContent, detailLoading]);
 
@@ -388,16 +398,44 @@ export default function PostEditorView({
     }
   }, [getElementsInRange]);
 
-  const restoreSelection = useCallback(() => {
-    if (editorRef.current) editorRef.current.focus();
-    if (savedSelectionRef.current && window.getSelection()) {
-      const selection = window.getSelection();
-      if (selection) {
-        selection.removeAllRanges();
-        selection.addRange(savedSelectionRef.current);
+  const syncCurrentSelection = useCallback(() => {
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      let node: Node | null = range.commonAncestorContainer;
+      let isInside = false;
+      while (node) {
+        if (node === editorRef.current) {
+          isInside = true;
+          break;
+        }
+        node = node.parentNode;
+      }
+      if (isInside) {
+        savedSelectionRef.current = range.cloneRange();
+        return true;
       }
     }
+    return false;
   }, []);
+
+  const restoreSelection = useCallback(() => {
+    const hasCurrentSelection = syncCurrentSelection();
+    if (!hasCurrentSelection) {
+      if (editorRef.current) editorRef.current.focus();
+      if (savedSelectionRef.current && window.getSelection()) {
+        const selection = window.getSelection();
+        if (selection) {
+          selection.removeAllRanges();
+          selection.addRange(savedSelectionRef.current);
+        }
+      }
+    } else {
+      if (editorRef.current && document.activeElement !== editorRef.current) {
+        editorRef.current.focus();
+      }
+    }
+  }, [syncCurrentSelection]);
 
   const executeEditorCommand = useCallback(
     (command: string, value: string = "") => {
