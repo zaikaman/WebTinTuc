@@ -103,7 +103,7 @@ export async function getStorageTree(prefix: string = '', recursive: boolean = f
 
         let type = 'file'
         if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) type = 'image'
-        if (['mp4', 'webm', 'ogg', 'mov'].includes(ext)) type = 'video'
+        if (['mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv', 'flv', 'wmv'].includes(ext)) type = 'video'
 
         return {
           key,

@@ -156,7 +156,7 @@ export default function VideoDialog({
                 </div>
               ) : (
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 max-h-[300px] overflow-y-auto p-1">
-                  {mediaItems.filter((item) => item.type === "video" || item.key.match(/\.(mp4|webm|ogg)$/i)).map((item) => {
+                  {mediaItems.filter((item) => item.type === "video" || item.key.match(/\.(mp4|webm|ogg|mov|avi|mkv|flv|wmv)$/i)).map((item) => {
                     const fullUrl = item.url.startsWith("blob:") || item.url.startsWith("data:") || item.url.startsWith("http") ? item.url : (window.location.origin + item.url);
                     const isSelected = videoUrl === fullUrl;
                     return (
@@ -176,7 +176,7 @@ export default function VideoDialog({
                       </div>
                     );
                   })}
-                  {mediaItems.filter((item) => item.type === "video" || item.key.match(/\.(mp4|webm|ogg)$/i)).length === 0 && (
+                  {mediaItems.filter((item) => item.type === "video" || item.key.match(/\.(mp4|webm|ogg|mov|avi|mkv|flv|wmv)$/i)).length === 0 && (
                     <div className="col-span-full py-10 text-center text-xs text-gray-400 font-semibold">
                       Không tìm thấy video nào trong thư mục này
                     </div>

@@ -116,8 +116,8 @@ export default function PostEditorView({
   const loadMedia = useCallback(async () => {
     try {
       setMediaLoading(true);
-      // Recursive articles/ listing so nested uploads appear in the editor library
-      const res = await getAdminMedia("articles/", true);
+      // Load all media from root recursively so both root and subfolders files are selectable in the editor
+      const res = await getAdminMedia("", true);
       if (res?.files) {
         setMediaItems(
           res.files
@@ -629,14 +629,95 @@ export default function PostEditorView({
     const fragment = template.content;
 
     if (range && selection) {
-      range.deleteContents();
-      range.insertNode(fragment);
-      range.collapse(false);
-      selection.removeAllRanges();
-      selection.addRange(range);
+      // Find the direct child of the editor containing the caret
+      let currentBlock: HTMLElement | null = null;
+      let node: Node | null = range.startContainer;
+      while (node && node.parentNode && node.parentNode !== editorRef.current) {
+        node = node.parentNode;
+      }
+      if (node && node.parentNode === editorRef.current) {
+        currentBlock = node as HTMLElement;
+      }
+
+      if (
+        currentBlock &&
+        (currentBlock.tagName === "P" ||
+          currentBlock.tagName === "DIV" ||
+          currentBlock.tagName === "BLOCKQUOTE")
+      ) {
+        // Clear any highlight range selection
+        range.deleteContents();
+
+        // Extract content from caret to end of paragraph
+        const rightRange = document.createRange();
+        rightRange.setStart(range.startContainer, range.startOffset);
+        rightRange.setEndAfter(currentBlock);
+        const rightFragment = rightRange.extractContents();
+
+        const fragmentChildren = Array.from(fragment.childNodes);
+        if (fragmentChildren.length > 0) {
+          let refNode = currentBlock;
+          fragmentChildren.forEach((childNode) => {
+            currentBlock.parentNode?.insertBefore(childNode, refNode.nextSibling);
+            refNode = childNode as HTMLElement;
+          });
+
+          // Insert the extracted right portion after the last inserted node
+          let nextParagraph: Node | null = null;
+          if (rightFragment.firstChild) {
+            const firstChild = rightFragment.firstChild as HTMLElement;
+            if (firstChild.innerHTML === "" || firstChild.innerHTML === "<br>") {
+              firstChild.innerHTML = "<br>";
+            }
+            nextParagraph = firstChild;
+            refNode.parentNode?.insertBefore(rightFragment, refNode.nextSibling);
+          } else {
+            const emptyP = document.createElement("p");
+            emptyP.innerHTML = "<br>";
+            nextParagraph = emptyP;
+            refNode.parentNode?.insertBefore(emptyP, refNode.nextSibling);
+          }
+
+          // Set caret to the start of the next paragraph
+          const newRange = document.createRange();
+          newRange.selectNodeContents(nextParagraph);
+          newRange.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(newRange);
+        }
+      } else {
+        // Simple insertion if not inside a standard block
+        range.deleteContents();
+        const fragmentChildren = Array.from(fragment.childNodes);
+        if (fragmentChildren.length > 0) {
+          const lastNode = fragmentChildren[fragmentChildren.length - 1];
+          range.insertNode(fragment);
+          const newRange = document.createRange();
+          newRange.setStartAfter(lastNode);
+          newRange.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(newRange);
+        }
+      }
     } else {
-      editorRef.current.appendChild(fragment);
+      // Append to the end if editor is empty or focus is outside
+      const fragmentChildren = Array.from(fragment.childNodes);
+      if (fragmentChildren.length > 0) {
+        editorRef.current.appendChild(fragment);
+        const emptyP = document.createElement("p");
+        emptyP.innerHTML = "<br>";
+        editorRef.current.appendChild(emptyP);
+
+        const newRange = document.createRange();
+        newRange.selectNodeContents(emptyP);
+        newRange.collapse(true);
+        if (selection) {
+          selection.removeAllRanges();
+          selection.addRange(newRange);
+        }
+      }
     }
+
     setPostContent(editorRef.current.innerHTML);
   }, []);
 

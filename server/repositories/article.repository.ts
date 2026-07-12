@@ -75,7 +75,35 @@ export async function listAdminArticles(options: ArticleListOptions = {}) {
     .order(sortBy, { ascending: sortOrder === 'asc', nullsFirst: false })
 
   if (options.search) {
-    query = query.or(orIlikeContains(['title', 'summary', 'slug'], options.search))
+    const queryText = options.search.trim()
+    
+    // Regex matches any Vietnamese character with accents
+    const hasAccents = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễđìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹ]/i.test(queryText)
+
+    if (hasAccents) {
+      // Accent-sensitive search: use exact ilike matching on title to prevent mixing up "bão" and "bảo"
+      query = query.ilike('title', `%${queryText}%`)
+    } else {
+      // Accent-insensitive search: use textSearch on search_vector GIN index for smart token matching
+      const normalizedQuery = queryText
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // remove diacritics
+        .trim()
+
+      if (normalizedQuery.length >= 2) {
+        const tokens = normalizedQuery
+          .split(/\s+/)
+          .map((t) => t.replace(/['&|!():*<>]/g, ''))
+          .filter((t) => t.length > 0)
+
+        if (tokens.length > 0) {
+          const tsQuery = tokens.map((t) => `${t}:A`).join(' & ')
+          query = query.textSearch('search_vector', tsQuery, { config: 'simple' })
+        }
+      } else if (queryText.length > 0) {
+        query = query.ilike('title', `%${queryText}%`)
+      }
+    }
   }
   if (options.categoryId) query = query.eq('category_id', options.categoryId)
   if (normalizeStatus(options)) query = query.eq('status', normalizeStatus(options))
