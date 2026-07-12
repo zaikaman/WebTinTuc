@@ -6,9 +6,13 @@ interface ViewTrackerProps {
   articleId?: number | undefined;
 }
 
+const tracked = new Set<number>();
+
 export default function ViewTracker({ articleId }: ViewTrackerProps) {
   useEffect(() => {
     if (!articleId) return;
+    if (tracked.has(articleId)) return;
+    tracked.add(articleId);
 
     fetch("/api/articles/view", {
       method: "POST",

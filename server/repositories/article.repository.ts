@@ -1,6 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { ApiError } from '@/server/http'
-import { orIlikeContains } from '@/server/lib/postgrest'
 import { pageMeta, toRange } from '@/server/validations/common.schema'
 
 const ARTICLE_SELECT = `
@@ -247,60 +246,56 @@ export async function listFeaturedArticles(limit = 6) {
 
 export async function searchArticles(queryText: string, page = 1, limit = 10) {
   const { from, to } = toRange(page, limit)
-
-  // Normalize helper: strip accents and lowercase for accent-insensitive matching
-  const normalize = (str: string) =>
-    str
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/đ/g, 'd')
-      .replace(/Đ/g, 'D')
-      .toLowerCase()
-      .trim()
-
   const trimmedQuery = queryText.trim()
-  const normalizedQuery = normalize(trimmedQuery)
 
-  // Title-only search. search_vector weights: title = A, summary = B (see articles_search_vector_update).
-  // Restrict tsquery terms to weight A so summary-only matches (false positives in the header
-  // suggestions dropdown) are excluded, while unaccent + GIN index stay in use.
-  if (normalizedQuery.length >= 2) {
-    const tokens = normalizedQuery
-      .split(/\s+/)
-      .map((t) => t.replace(/['&|!():*<>]/g, ''))
-      .filter((t) => t.length > 0)
+  const hasAccents = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễđìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹ]/i.test(trimmedQuery)
 
-    if (tokens.length === 0) {
-      return { items: [], meta: pageMeta(0, page, limit) }
-    }
-
-    // to_tsquery (default textSearch type) supports weight labels; plainto_tsquery does not.
-    const tsQuery = tokens.map((t) => `${t}:A`).join(' & ')
-
-    const { data, error, count } = await supabaseAdmin
-      .from('articles')
-      .select(ARTICLE_LIST_SELECT, { count: 'exact' })
-      .textSearch('search_vector', tsQuery, { config: 'simple' })
-      .eq('status', 'published')
-      .is('deleted_at', null)
-      .range(from, to)
-      .order('published_at', { ascending: false, nullsFirst: false })
-
-    if (error) throw error
-    return { items: data ?? [], meta: pageMeta(count, page, limit) }
-  }
-
-  // Fallback for single-char queries — title only (substring match)
-  const { data, error, count } = await supabaseAdmin
+  let query = supabaseAdmin
     .from('articles')
     .select(ARTICLE_LIST_SELECT, { count: 'exact' })
-    .or(orIlikeContains(['title'], trimmedQuery || normalizedQuery))
     .eq('status', 'published')
     .is('deleted_at', null)
     .range(from, to)
     .order('published_at', { ascending: false, nullsFirst: false })
 
+  if (hasAccents) {
+    // Accent-sensitive search: match exactly to prevent confusing similar accented words (like "bão" vs "bảo")
+    query = query.ilike('title', `%${trimmedQuery}%`)
+  } else {
+    // Accent-insensitive search: use search_vector GIN index with simple config to match diacritics dynamically
+    const normalize = (str: string) =>
+      str
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/đ/g, 'd')
+        .replace(/Đ/g, 'D')
+        .toLowerCase()
+        .trim()
+
+    const normalizedQuery = normalize(trimmedQuery)
+
+    if (normalizedQuery.length >= 2) {
+      const tokens = normalizedQuery
+        .split(/\s+/)
+        .map((t) => t.replace(/['&|!():*<>]/g, ''))
+        .filter((t) => t.length > 0)
+
+      if (tokens.length > 0) {
+        const tsQuery = tokens.map((t) => `${t}:A`).join(' & ')
+        query = query.textSearch('search_vector', tsQuery, { config: 'simple' })
+      } else {
+        return { items: [], meta: pageMeta(0, page, limit) }
+      }
+    } else if (trimmedQuery.length > 0) {
+      query = query.ilike('title', `%${trimmedQuery}%`)
+    } else {
+      return { items: [], meta: pageMeta(0, page, limit) }
+    }
+  }
+
+  const { data, error, count } = await query
   if (error) throw error
+
   return { items: data ?? [], meta: pageMeta(count, page, limit) }
 }
 
