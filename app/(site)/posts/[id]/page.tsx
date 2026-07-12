@@ -297,19 +297,8 @@ export default async function PostDetailPage({ params }: PageProps) {
               )}
             </div>
 
-            {/* Middle Advertisement (QC 650x300 for PC, Swipable 3 vertical ads for Mobile) */}
-            <div className="my-5">
-              {/* PC View */}
-              <AdBanner 
-                position="inline" 
-                ads={ads} 
-                fallbackImg="/qc_650_300_premium.webp" 
-                className="hidden md:flex w-full rounded border border-gray-200 bg-gray-50 shadow-sm overflow-hidden aspect-[650/300]" 
-              />
-
-              {/* Mobile View: Interactive Stacked Ads */}
-              <MobileAdsStack ads={ads} />
-            </div>
+            {/* Mobile View: Interactive Stacked Ads */}
+            <MobileAdsStack ads={ads} />
 
             {/* Recommendations Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6 pt-6 border-t border-gray-200">
@@ -429,6 +418,14 @@ export default async function PostDetailPage({ params }: PageProps) {
           />
 
           {/* Ad 2: QC 300x600 */}
+          <AdBanner 
+            position="sidebar_2" 
+            ads={ads} 
+            fallbackImg="/ztc_bathtub_ad.webp" 
+            className="w-full md:w-[300px] md:h-[600px] rounded border border-gray-200 bg-gray-50 shadow-sm mx-auto overflow-hidden" 
+          />
+
+          {/* Ad 3: QC 300x600 */}
           <AdBanner 
             position="sidebar_3" 
             ads={ads} 

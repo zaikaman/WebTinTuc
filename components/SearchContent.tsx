@@ -503,7 +503,7 @@ export function SearchContent({ query, initialArticles, ads = [], categories = [
         </div>
 
         {/* Right Column: Sticky Sidebar Ads */}
-        <aside className="hidden lg:flex w-[300px] flex-shrink-0 lg:sticky lg:top-4 flex-col gap-4">
+        <aside className="hidden lg:block w-[300px] flex-shrink-0 lg:sticky lg:top-4 h-fit space-y-4">
           <AdBanner 
             position="sidebar_1" 
             ads={ads} 
@@ -514,6 +514,12 @@ export function SearchContent({ query, initialArticles, ads = [], categories = [
             position="sidebar_2" 
             ads={ads} 
             fallbackImg="/ztc_bathtub_ad.webp" 
+            className="w-full md:w-[300px] md:h-[600px] rounded border border-gray-200 bg-gray-50 shadow-sm mx-auto overflow-hidden animate-fadeIn" 
+          />
+          <AdBanner 
+            position="sidebar_3" 
+            ads={ads} 
+            fallbackImg="/zento_toilet_ad.webp" 
             className="w-full md:w-[300px] md:h-[600px] rounded border border-gray-200 bg-gray-50 shadow-sm mx-auto overflow-hidden animate-fadeIn" 
           />
         </aside>

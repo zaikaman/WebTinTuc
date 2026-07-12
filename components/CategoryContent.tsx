@@ -41,8 +41,9 @@ export function CategoryContent({ featured, initialList, ads = [] }: CategoryCon
     }, 600);
   };
 
-  const listPart1 = visibleList.slice(0, 6);
-  const listPart2 = visibleList.slice(6);
+  const middleIndex = Math.ceil(visibleList.length / 2);
+  const listPart1 = visibleList.slice(0, middleIndex);
+  const listPart2 = visibleList.slice(middleIndex);
 
   // Construct carousel articles array (up to 4 articles starting with the featured article)
   const carouselArticles = [featured];
@@ -50,6 +51,62 @@ export function CategoryContent({ featured, initialList, ads = [] }: CategoryCon
     .filter((art) => art.id !== featured.id)
     .slice(0, 3);
   carouselArticles.push(...extraArticles);
+
+  const renderArticleItem = (item: Article) => {
+    const categorySlug = item.categorySlug || item.category;
+    const displayIntro = item.intro || `Bản tin mới nhất về ${item.category.toLowerCase()} - Cập nhật nhanh các thông tin xoay quanh chủ đề "${item.title}" đang thu hút sự chú ý của độc giả.`;
+    return (
+      <div
+        key={item.id}
+        className="group flex gap-4 py-4 sm:py-5 first:pt-0 md:first:pt-2 last:pb-0 md:last:pb-2 transition-colors hover:bg-gray-50/30"
+      >
+        {/* Thumbnail Left */}
+        <Link
+          href={`/posts/${item.id}`}
+          prefetch={true}
+          className="relative w-[130px] h-[82px] sm:w-[220px] sm:h-[138px] flex-shrink-0 overflow-hidden border border-gray-200 bg-gray-50 rounded-md md:rounded-sm block"
+        >
+          <Image
+            src={proxyImageUrl(item.image) || "/placeholder.svg"}
+            alt={item.title}
+            fill
+            sizes="(max-width: 640px) 130px, 220px"
+            className="object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+        </Link>
+
+        {/* Title & Metadata Right */}
+        <div className="flex flex-col justify-between py-0.5 flex-1 min-h-[82px] sm:min-h-[138px]">
+          <div>
+            <Link href={`/posts/${item.id}`} prefetch={true} className="block">
+              <h3 className="text-gray-900 font-bold text-[14px] sm:text-[16px] leading-snug tracking-tight group-hover:text-[#e24a48] transition-colors line-clamp-2 font-sans">
+                {item.title}
+              </h3>
+            </Link>
+            <p className="hidden sm:line-clamp-2 text-gray-500 text-[12.5px] leading-relaxed mt-2 font-sans">
+              {displayIntro}
+            </p>
+          </div>
+
+          {/* Metadata */}
+          <div className="flex items-center gap-2 mt-2 text-[10px] sm:text-[11px] text-gray-500 font-sans font-medium">
+            <Link
+              href={`/${categorySlug}`}
+              prefetch={true}
+              className="text-[#df3232] hover:text-[#df3232]/80 font-bold text-[10px] sm:text-[11px] tracking-wide transition-colors duration-150 hover:underline"
+            >
+              {formatCategory(item.category)}
+            </Link>
+            <span className="text-gray-300">&#8226;</span>
+            <span className="flex items-center gap-1 text-gray-400">
+              <Clock size={11} className="mr-0.5" />
+              <span>{formatVietnameseDate(item.time)}</span>
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <main className="w-full px-3 md:px-0 py-4 font-sans text-xs bg-white">
@@ -73,81 +130,29 @@ export function CategoryContent({ featured, initialList, ads = [] }: CategoryCon
           {/* Interactive Stacked Ads container on mobile immediately below Featured Carousel */}
           <MobileAdsStack ads={ads} />
 
-          {/* List Part 1 (First 6 items) */}
-          <div className="bg-white md:border md:border-gray-200 p-0 md:p-4 rounded-sm md:shadow-sm flex flex-col gap-4">
-            {listPart1.map((item) => (
-              <Link
-                key={item.id}
-                href={`/posts/${item.id}`}
-                prefetch={true}
-                className="group flex gap-3.5 cursor-pointer pb-4 border-b border-gray-100 last:border-b-0 last:pb-0 transition-colors"
-              >                <div className="relative w-[110px] h-[75px] sm:w-[130px] sm:h-[88px] flex-shrink-0 overflow-hidden border border-gray-200 bg-gray-50 rounded-md md:rounded-sm">
-                  <Image
-                    src={proxyImageUrl(item.image) || "/placeholder.svg"}
-                    alt={item.title}
-                    fill
-                    sizes="(max-width: 640px) 110px, 130px"
-                    className="object-cover group-hover:scale-103 transition-transform duration-300"
-                  />
-                </div>
-                <div className="flex flex-col justify-between py-0.5 flex-1">
-                  <h3 className="text-gray-800 font-bold text-[13.5px] sm:text-[13px] leading-snug group-hover:text-[#df3232] transition-colors line-clamp-2 sm:line-clamp-3">
-                    {item.title}
-                  </h3>
-                  <div className="flex items-center gap-1.5 text-gray-400 font-semibold text-[10px] mt-1">
-                    <span className="text-[#df3232] font-bold">{formatCategory(item.category)}</span>
-                    <span className="text-gray-200 font-normal">|</span>
-                    <span className="flex items-center gap-1">
-                      <Clock size={11} className="text-gray-400 flex-shrink-0 -mt-0.5" />
-                      <span>{formatVietnameseDate(item.time)}</span>
-                    </span>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
+          {/* List Part 1 */}
+          {listPart1.length > 0 && (
+            <div className="flex flex-col bg-white md:border md:border-gray-200 md:rounded-sm p-0 md:p-4 md:shadow-sm divide-y divide-gray-200">
+              {listPart1.map(renderArticleItem)}
+            </div>
+          )}
 
           {/* Middle Banner Ad (QC 650x300) */}
-          <AdBanner 
+          {visibleList.length > 0 && (
+            <AdBanner 
               position="inline" 
               ads={ads} 
               fallbackImg="/qc_650_300_premium.webp" 
               className="w-full rounded border border-gray-200 bg-gray-50 shadow-sm overflow-hidden aspect-[650/300]" 
             />
+          )}
 
-          {/* List Part 2 (Next 6 items + Load More items) */}
-          <div className="bg-white md:border md:border-gray-200 p-0 md:p-4 rounded-sm md:shadow-sm flex flex-col gap-4">
-            {listPart2.map((item) => (
-              <Link
-                key={item.id}
-                href={`/posts/${item.id}`}
-                prefetch={true}
-                className="group flex gap-3.5 cursor-pointer pb-4 border-b border-gray-100 last:border-b-0 last:pb-0 transition-colors"
-              >                <div className="relative w-[110px] h-[75px] sm:w-[130px] sm:h-[88px] flex-shrink-0 overflow-hidden border border-gray-200 bg-gray-50 rounded-md md:rounded-sm">
-                  <Image
-                    src={proxyImageUrl(item.image) || "/placeholder.svg"}
-                    alt={item.title}
-                    fill
-                    sizes="(max-width: 640px) 110px, 130px"
-                    className="object-cover group-hover:scale-103 transition-transform duration-300"
-                  />
-                </div>
-                <div className="flex flex-col justify-between py-0.5 flex-1">
-                  <h3 className="text-gray-800 font-bold text-[13.5px] sm:text-[13px] leading-snug group-hover:text-[#df3232] transition-colors line-clamp-2 sm:line-clamp-3">
-                    {item.title}
-                  </h3>
-                  <div className="flex items-center gap-1.5 text-gray-400 font-semibold text-[10px] mt-1">
-                    <span className="text-[#df3232] font-bold">{formatCategory(item.category)}</span>
-                    <span className="text-gray-200 font-normal">|</span>
-                    <span className="flex items-center gap-1">
-                      <Clock size={11} className="text-gray-400 flex-shrink-0 -mt-0.5" />
-                      <span>{formatVietnameseDate(item.time)}</span>
-                    </span>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
+          {/* List Part 2 */}
+          {listPart2.length > 0 && (
+            <div className="flex flex-col bg-white md:border md:border-gray-200 md:rounded-sm p-0 md:p-4 md:shadow-sm divide-y divide-gray-200">
+              {listPart2.map(renderArticleItem)}
+            </div>
+          )}
 
           {/* "Xem Thêm" Load More Section */}
           <div className="bg-[#f2f2f2] p-4 flex justify-center items-center border border-gray-200 rounded-sm shadow-sm">
@@ -183,17 +188,23 @@ export function CategoryContent({ featured, initialList, ads = [] }: CategoryCon
         </div>
 
         {/* Right Column: Sticky Sidebar Ads - Hidden on Mobile */}
-        <aside className="hidden lg:flex w-[300px] flex-shrink-0 lg:sticky lg:top-4 flex-col gap-4">
+        <aside className="hidden lg:block w-[300px] flex-shrink-0 lg:sticky lg:top-4 h-fit space-y-4">
           <AdBanner 
             position="sidebar_1" 
             ads={ads} 
-            fallbackImg="/zento_cabinet_ad.png" 
+            fallbackImg="/zento_cabinet_ad.webp" 
             className="w-full md:w-[300px] md:h-[600px] rounded border border-gray-200 bg-gray-50 shadow-sm mx-auto overflow-hidden" 
           />
           <AdBanner 
             position="sidebar_2" 
             ads={ads} 
-            fallbackImg="/ztc_bathtub_ad.png" 
+            fallbackImg="/ztc_bathtub_ad.webp" 
+            className="w-full md:w-[300px] md:h-[600px] rounded border border-gray-200 bg-gray-50 shadow-sm mx-auto overflow-hidden" 
+          />
+          <AdBanner 
+            position="sidebar_3" 
+            ads={ads} 
+            fallbackImg="/zento_toilet_ad.webp" 
             className="w-full md:w-[300px] md:h-[600px] rounded border border-gray-200 bg-gray-50 shadow-sm mx-auto overflow-hidden" 
           />
         </aside>
