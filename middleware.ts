@@ -162,6 +162,7 @@ async function handleAdminGate(request: NextRequest): Promise<NextResponse | nul
     loginUrl.pathname = "/admin";
     loginUrl.search = "";
     const redirect = NextResponse.redirect(loginUrl);
+    redirect.headers.set("Cache-Control", "no-store, max-age=0, must-revalidate");
     // Preserve any refreshed/cleared auth cookies from updateSession.
     response.cookies.getAll().forEach((cookie) => {
       redirect.cookies.set(cookie.name, cookie.value);
@@ -190,6 +191,7 @@ async function handleAdminGate(request: NextRequest): Promise<NextResponse | nul
     loginUrl.pathname = "/admin";
     loginUrl.search = "";
     const redirect = NextResponse.redirect(loginUrl);
+    redirect.headers.set("Cache-Control", "no-store, max-age=0, must-revalidate");
     response.cookies.getAll().forEach((cookie) => {
       redirect.cookies.set(cookie.name, cookie.value);
     });
@@ -202,6 +204,7 @@ async function handleAdminGate(request: NextRequest): Promise<NextResponse | nul
     dashboardUrl.pathname = "/admin/dashboard";
     dashboardUrl.search = "";
     const redirect = NextResponse.redirect(dashboardUrl);
+    redirect.headers.set("Cache-Control", "no-store, max-age=0, must-revalidate");
     response.cookies.getAll().forEach((cookie) => {
       redirect.cookies.set(cookie.name, cookie.value);
     });
