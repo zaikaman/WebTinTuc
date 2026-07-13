@@ -96,7 +96,7 @@ export async function listAdminArticles(options: ArticleListOptions = {}) {
           .filter((t) => t.length > 0)
 
         if (tokens.length > 0) {
-          const tsQuery = tokens.map((t) => `${t}:A`).join(' & ')
+          const tsQuery = tokens.map((t) => `${t}:*A`).join(' & ')
           query = query.textSearch('search_vector', tsQuery, { config: 'simple' })
         }
       } else if (queryText.length > 0) {
@@ -281,7 +281,7 @@ export async function searchArticles(queryText: string, page = 1, limit = 10) {
         .filter((t) => t.length > 0)
 
       if (tokens.length > 0) {
-        const tsQuery = tokens.map((t) => `${t}:A`).join(' & ')
+        const tsQuery = tokens.map((t) => `${t}:*A`).join(' & ')
         query = query.textSearch('search_vector', tsQuery, { config: 'simple' })
       } else {
         return { items: [], meta: pageMeta(0, page, limit) }
