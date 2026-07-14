@@ -12,6 +12,7 @@ import QueryErrorBanner from "@/components/admin/QueryErrorBanner";
 import { adminKeys } from "@/lib/query/adminKeys";
 import { updateSiteSettingsCache } from "@/lib/hooks/useSiteSettings";
 import { toast } from "sonner";
+import { useUnsavedChangesWarning } from "@/lib/hooks/useUnsavedChangesWarning";
 
 function applySettingsToForm(
   data: any,
@@ -75,6 +76,9 @@ export default function LogoFooterPage() {
   const [isSettingsSaving, setIsSettingsSaving] = useState(false);
   const [lastHydratedAt, setLastHydratedAt] = useState(0);
   const [dirty, setDirty] = useState(false);
+
+  // Kích hoạt chặn đóng tab / F5 khi có thay đổi chưa lưu
+  useUnsavedChangesWarning(dirty);
 
   // Re-hydrate whenever query data is newer and form is not dirty
   useEffect(() => {

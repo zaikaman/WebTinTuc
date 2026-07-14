@@ -1,7 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useState, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   LayoutDashboard,
@@ -12,6 +13,7 @@ import {
   X,
 } from "lucide-react";
 import type { TabType } from "./AdminTypes";
+import ConfirmDiscardDialog from "@/components/admin/ConfirmDiscardDialog";
 
 interface AdminSidebarProps {
   activeTab: TabType;
@@ -67,6 +69,29 @@ export default function AdminSidebar({
   logoWebsiteName,
   onCloseSidebar,
 }: AdminSidebarProps) {
+  const router = useRouter();
+  const [discardTargetHref, setDiscardTargetHref] = useState<string | null>(null);
+
+  const handleNavClick = useCallback((e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (typeof window !== "undefined" && (window as any).__isAdminDirty) {
+      e.preventDefault();
+      setDiscardTargetHref(href);
+    } else {
+      onCloseSidebar();
+    }
+  }, [onCloseSidebar]);
+
+  const handleConfirmDiscard = useCallback(() => {
+    if (typeof window !== "undefined") {
+      (window as any).__isAdminDirty = false;
+    }
+    const href = discardTargetHref;
+    setDiscardTargetHref(null);
+    onCloseSidebar();
+    if (href) {
+      router.push(href);
+    }
+  }, [discardTargetHref, router, onCloseSidebar]);
   return (
     <>
       <AnimatePresence>
@@ -119,7 +144,7 @@ export default function AdminSidebar({
                   key={tab}
                   href={href}
                   prefetch
-                  onClick={onCloseSidebar}
+                  onClick={(e) => handleNavClick(e, href)}
                   className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 group ${
                     isActive
                       ? "bg-[#cb4643] text-white shadow-md border-l-4 border-white"
@@ -142,6 +167,13 @@ export default function AdminSidebar({
           Admin Control Center &copy; 2026
         </div>
       </div>
+      <ConfirmDiscardDialog
+        open={discardTargetHref !== null}
+        onOpenChange={(open) => {
+          if (!open) setDiscardTargetHref(null);
+        }}
+        onConfirm={handleConfirmDiscard}
+      />
     </>
   );
 }
