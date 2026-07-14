@@ -8,6 +8,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 import { supabase } from "@/lib/supabase/client";
@@ -19,6 +20,38 @@ const ADMIN_UI_FLAG = "admin_logged_in";
 /** Module-level session cache so remounts / soft navigations skip cold auth when possible. */
 let sessionCache: { isAdmin: boolean; checkedAt: number } | null = null;
 const SESSION_CACHE_TTL_MS = 5 * 60_000;
+
+// ─── useSyncExternalStore helpers ─────────────────────────────────────────────
+// Allows reading localStorage without causing a Server/Client hydration mismatch.
+// React uses getServerSnapshot during SSR + the hydration pass (always returns false),
+// then switches to getSnapshot on the client after hydration completes.
+function subscribeToAdminFlag(callback: () => void) {
+  window.addEventListener("storage", callback);
+  return () => window.removeEventListener("storage", callback);
+}
+function getAdminFlagSnapshot() {
+  if (sessionCache) return sessionCache.isAdmin;
+  try {
+    return localStorage.getItem(ADMIN_UI_FLAG) === "true";
+  } catch {
+    return false;
+  }
+}
+function getAdminFlagServerSnapshot() {
+  // Server & initial hydration: always false to match SSR output
+  return false;
+}
+function getAuthVerifiedSnapshot() {
+  if (sessionCache) {
+    return Date.now() - sessionCache.checkedAt < SESSION_CACHE_TTL_MS;
+  }
+  try {
+    return localStorage.getItem(ADMIN_UI_FLAG) === "true";
+  } catch {
+    return false;
+  }
+}
+// ──────────────────────────────────────────────────────────────────────────────
 
 function clearAdminUiFlag() {
   try {
@@ -118,22 +151,30 @@ async function verifyAdminSessionNetwork(): Promise<{
 }
 
 export function AdminAuthProvider({ children }: { children: ReactNode }) {
-  const [isLoggedIn, setIsLoggedIn] = useState(() => {
-    if (sessionCache) return sessionCache.isAdmin;
-    if (typeof window !== "undefined") {
-      return localStorage.getItem(ADMIN_UI_FLAG) === "true";
-    }
-    return false;
-  });
-  const [isAuthVerified, setIsAuthVerified] = useState(() => {
-    if (sessionCache) {
-      return Date.now() - sessionCache.checkedAt < SESSION_CACHE_TTL_MS;
-    }
-    if (typeof window !== "undefined") {
-      return localStorage.getItem(ADMIN_UI_FLAG) === "true";
-    }
-    return false;
-  });
+  // Read isLoggedIn from localStorage via useSyncExternalStore.
+  // getAdminFlagServerSnapshot always returns false → Server HTML = Client initial HTML.
+  // After hydration, React switches to getAdminFlagSnapshot → reads localStorage instantly.
+  // This eliminates the Hydration mismatch while still being fast (no useEffect flash).
+  const isLoggedInFromStore = useSyncExternalStore(
+    subscribeToAdminFlag,
+    getAdminFlagSnapshot,
+    getAdminFlagServerSnapshot,
+  );
+  const isAuthVerifiedFromStore = useSyncExternalStore(
+    subscribeToAdminFlag,
+    getAuthVerifiedSnapshot,
+    getAdminFlagServerSnapshot,
+  );
+
+  // Override state: markLoggedIn/markLoggedOut write to localStorage + sessionCache,
+  // which triggers useSyncExternalStore to re-read. But for direct programmatic
+  // state transitions (e.g. after login API call), we keep manual overrides.
+  const [isLoggedInOverride, setIsLoggedInOverride] = useState<boolean | null>(null);
+  const [isAuthVerifiedOverride, setIsAuthVerifiedOverride] = useState<boolean | null>(null);
+
+  const isLoggedIn = isLoggedInOverride ?? isLoggedInFromStore;
+  const isAuthVerified = isAuthVerifiedOverride ?? isAuthVerifiedFromStore;
+
   const [loginUsername, setLoginUsername] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -144,14 +185,15 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const markLoggedOut = useCallback(() => {
     clearAdminUiFlag();
     sessionCache = { isAdmin: false, checkedAt: Date.now() };
-    setIsLoggedIn(false);
+    setIsLoggedInOverride(false);
+    setIsAuthVerifiedOverride(null); // Let store re-read localStorage
     setAdminProfile(null);
   }, []);
 
   const markLoggedIn = useCallback((profile?: AdminProfile | null) => {
     setAdminUiFlag();
     sessionCache = { isAdmin: true, checkedAt: Date.now() };
-    setIsLoggedIn(true);
+    setIsLoggedInOverride(true);
     if (profile) setAdminProfile(profile);
   }, []);
 
@@ -178,8 +220,8 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
 
       if (cacheFresh) {
         if (!cancelled) {
-          setIsLoggedIn(sessionCache!.isAdmin);
-          setIsAuthVerified(true);
+          setIsLoggedInOverride(sessionCache!.isAdmin);
+          setIsAuthVerifiedOverride(true);
         }
         // Background revalidate without blocking UI
         try {
@@ -187,7 +229,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
           if (!cancelled) {
             if (result.ok) markLoggedIn(result.profile);
             else markLoggedOut();
-            setIsAuthVerified(true);
+            setIsAuthVerifiedOverride(true);
           }
         } catch {
           // Keep cached optimistic state on network blip
@@ -202,7 +244,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
       } catch {
         markLoggedOut();
       } finally {
-        if (!cancelled) setIsAuthVerified(true);
+        if (!cancelled) setIsAuthVerifiedOverride(true);
         verifyingRef.current = false;
       }
     };
@@ -219,7 +261,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     } = supabase.auth.onAuthStateChange((event) => {
       if (event === "SIGNED_OUT") {
         markLoggedOut();
-        setIsAuthVerified(true);
+        setIsAuthVerifiedOverride(true);
       }
     });
     return () => subscription.unsubscribe();
@@ -278,7 +320,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         }
 
         markLoggedIn(payload.data.profile);
-        setIsAuthVerified(true);
+        setIsAuthVerifiedOverride(true);
         setLoginPassword("");
         toast.success("Đăng nhập quản trị thành công!");
       } catch (err) {
@@ -299,7 +341,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
       // ignore
     } finally {
       markLoggedOut();
-      setIsAuthVerified(true);
+      setIsAuthVerifiedOverride(true);
       toast.success("Đã đăng xuất khỏi hệ thống!");
     }
   }, [markLoggedOut]);

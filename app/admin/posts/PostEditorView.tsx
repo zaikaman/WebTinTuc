@@ -30,6 +30,8 @@ import {
 import { htmlToBlocks, blocksToHtml } from "@/components/admin/AdminUtils";
 import { toast } from "sonner";
 import type { Post, MediaItem } from "@/components/admin/AdminTypes";
+import ConfirmDiscardDialog from "@/components/admin/ConfirmDiscardDialog";
+import { useUnsavedChangesWarning } from "@/lib/hooks/useUnsavedChangesWarning";
 
 const ImageDialog = dynamic(() => import("@/components/admin/ImageDialog"), {
   ssr: false,
@@ -69,6 +71,11 @@ export default function PostEditorView({
   });
   const [isPostSaving, setIsPostSaving] = useState(false);
   const [detailLoading, setDetailLoading] = useState(mode === "edit");
+  const [showDiscardDialog, setShowDiscardDialog] = useState(false);
+
+  const initialPostFormRef = useRef<Partial<Post> | null>(null);
+  const initialPostContentRef = useRef<string | null>(null);
+  const initialPostCoverImageRef = useRef<string | null>(null);
 
   const editorRef = useRef<HTMLDivElement>(null);
   const savedSelectionRef = useRef<Range | null>(null);
@@ -164,7 +171,7 @@ export default function PostEditorView({
         if (cancelled) return;
         if (!fullArticle) throw new Error("Không thể tải thông tin");
 
-        setPostForm({
+        const initialForm: Partial<Post> = {
           id: fullArticle.id,
           title: fullArticle.title,
           category: fullArticle.categories?.name || "Tin tức",
@@ -175,7 +182,7 @@ export default function PostEditorView({
             : "",
           coverImage: fullArticle.thumbnail_key || "",
           isDeleted: !!fullArticle.deleted_at,
-        });
+        };
 
         const raw = fullArticle.content as any;
         const blocks = Array.isArray(raw)
@@ -183,8 +190,17 @@ export default function PostEditorView({
           : Array.isArray(raw?.blocks)
             ? raw.blocks
             : null;
-        setPostContent(blocks ? blocksToHtml(blocks) : typeof raw === "string" ? raw : "");
-        setPostCoverImage(fullArticle.thumbnail_key || null);
+        const initialContent = blocks ? blocksToHtml(blocks) : typeof raw === "string" ? raw : "";
+        const initialCover = fullArticle.thumbnail_key || null;
+
+        setPostForm(initialForm);
+        setPostContent(initialContent);
+        setPostCoverImage(initialCover);
+
+        // Lưu trạng thái gốc
+        initialPostFormRef.current = initialForm;
+        initialPostContentRef.current = initialContent;
+        initialPostCoverImageRef.current = initialCover;
       } catch (err: any) {
         if (cancelled) return;
         toast.error(err?.message || "Không thể tải thông tin chi tiết bài viết", {
@@ -246,6 +262,63 @@ export default function PostEditorView({
   useEffect(() => {
     isInitializedRef.current = false;
   }, [editId, mode]);
+
+  // Khởi tạo trạng thái gốc cho chế độ tạo mới (add)
+  useEffect(() => {
+    if (mode === "add") {
+      initialPostFormRef.current = {
+        title: "",
+        category: categoryOptions[0] || "Công nghệ",
+        views: 0,
+        status: "Đã đăng",
+        createdAt: new Date().toISOString().split("T")[0],
+      };
+      initialPostContentRef.current = "";
+      initialPostCoverImageRef.current = null;
+    }
+  }, [mode, categoryOptions]);
+
+  // Kiểm tra dữ liệu bị chỉnh sửa (dirty check)
+  const isFormDirty = useCallback(() => {
+    if (!initialPostFormRef.current) return false;
+
+    // 1. So sánh tiêu đề
+    if ((postForm.title?.trim() || "") !== (initialPostFormRef.current.title?.trim() || "")) {
+      return true;
+    }
+
+    // 2. So sánh danh mục
+    if ((postForm.category || "") !== (initialPostFormRef.current.category || "")) {
+      return true;
+    }
+
+    // 3. So sánh trạng thái (Đã đăng / Nháp)
+    if ((postForm.status || "") !== (initialPostFormRef.current.status || "")) {
+      return true;
+    }
+
+    // 4. So sánh ảnh bìa
+    if (postCoverImage !== initialPostCoverImageRef.current) {
+      return true;
+    }
+
+    // 5. So sánh nội dung editor (lọc các ký tự trống / xuống dòng dư thừa)
+    const cleanHtml = (html: string) => {
+      if (!html) return "";
+      return html
+        .replace(/<p><br><\/p>/g, "")
+        .replace(/<br>/g, "")
+        .trim();
+    };
+    if (cleanHtml(postContent) !== cleanHtml(initialPostContentRef.current || "")) {
+      return true;
+    }
+
+    return false;
+  }, [postForm, postContent, postCoverImage]);
+
+  // Kích hoạt chặn F5 / đóng tab của trình duyệt khi có dữ liệu chưa lưu
+  useUnsavedChangesWarning(isFormDirty());
 
   useEffect(() => {
     if (detailLoading) return;
@@ -1017,6 +1090,16 @@ export default function PostEditorView({
   }, []);
 
   const handleBack = useCallback(() => {
+    if (isFormDirty()) {
+      setShowDiscardDialog(true);
+    } else {
+      clearDraft();
+      onBackRef.current();
+    }
+  }, [isFormDirty, clearDraft]);
+
+  const handleConfirmDiscard = useCallback(() => {
+    setShowDiscardDialog(false);
     clearDraft();
     onBackRef.current();
   }, [clearDraft]);
@@ -1494,6 +1577,11 @@ export default function PostEditorView({
           onCropAreaChange={setCropArea}
         />
       )}
+      <ConfirmDiscardDialog
+        open={showDiscardDialog}
+        onOpenChange={setShowDiscardDialog}
+        onConfirm={handleConfirmDiscard}
+      />
     </div>
   );
 }
